@@ -227,6 +227,9 @@ namespace FrontierTextTool
             // Update list
             string updEntry = Helpers.GetUpdateEntry(outputFile);
             UpdateList(updEntry);
+
+            // Upload to ftp
+            FileUploadSFTP(buffer, $"/var/www/html/mhfo/dat/{Path.GetFileName(inputFile)}");
         }
 
         // dump mhfpac.bin 4416 1278872
