@@ -1,7 +1,6 @@
 ﻿using CsvHelper;
 using ReFrontier;
 using LibReFrontier;
-using Renci.SshNet;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -33,8 +32,8 @@ namespace FrontierTextTool
 
         public class StringDatabase
         {
-            public UInt32 Offset { get; set; }
-            public UInt32 Hash { get; set; }
+            public uint Offset { get; set; }
+            public uint Hash { get; set; }
             public string jString { get; set; }
             public string eString { get; set; }
         }
@@ -44,12 +43,11 @@ namespace FrontierTextTool
         {
             string file = updEntry.Split(',')[3].Split('\\')[1];
             string[] lines = File.ReadAllLines("src\\MHFUP_00.DAT");
-            for (int i = 0; i < lines.Count(); i++)
+            for (int i = 0; i < lines.Length; i++)
             {
                 if (lines[i].Contains(file)) lines[i] = updEntry.Replace("output", "dat");
             }
             File.WriteAllLines("src\\MHFUP_00.DAT", lines);
-            FileUploadSFTP(File.ReadAllBytes("src\\MHFUP_00.DAT"), $"/var/www/html/mhfo/MHFUP_00.DAT");
         }
 
         // Insert CAT file to csv
@@ -62,24 +60,22 @@ namespace FrontierTextTool
             var stringDb = new List<StringDatabase>();
             using (var reader = new StreamReader(csvFile, Encoding.GetEncoding("shift-jis")))
             {
-                using (var csv = new CsvReader(reader))
+                using var csv = new CsvReader(reader);
+                csv.Configuration.Delimiter = "\t";
+                csv.Configuration.IgnoreQuotes = true;
+                csv.Configuration.MissingFieldFound = null;
+                csv.Read();
+                csv.ReadHeader();
+                while (csv.Read())
                 {
-                    csv.Configuration.Delimiter = "\t";
-                    csv.Configuration.IgnoreQuotes = true;
-                    csv.Configuration.MissingFieldFound = null;
-                    csv.Read();
-                    csv.ReadHeader();
-                    while (csv.Read())
+                    var record = new StringDatabase
                     {
-                        var record = new StringDatabase
-                        {
-                            Offset = csv.GetField<UInt32>("Offset"),
-                            Hash = csv.GetField<UInt32>("Hash"),
-                            eString = csv.GetField("eString"),
-                            jString = csv.GetField("jString")
-                        };
-                        stringDb.Add(record);
-                    }
+                        Offset = csv.GetField<uint>("Offset"),
+                        Hash = csv.GetField<uint>("Hash"),
+                        eString = csv.GetField("eString"),
+                        jString = csv.GetField("jString")
+                    };
+                    stringDb.Add(record);
                 }
             }
 
@@ -97,13 +93,13 @@ namespace FrontierTextTool
             string fileName = "csv\\" + Path.GetFileName(csvFile);
             //string fileName = "test.csv";
             if (File.Exists(fileName)) File.Delete(fileName);
-            StreamWriter txtOutput = new StreamWriter(fileName, true, Encoding.GetEncoding("shift-jis"));
+            StreamWriter txtOutput = new(fileName, true, Encoding.GetEncoding("shift-jis"));
             txtOutput.WriteLine("Offset\tHash\tjString\teString");
             foreach (var obj in stringDb) txtOutput.WriteLine($"{obj.Offset}\t{obj.Hash}\t{obj.jString}\t{obj.eString}");
             txtOutput.Close();
 
             if (!Directory.Exists("backup")) Directory.CreateDirectory("backup");
-            File.Move(catFile, $"backup\\{Path.GetFileNameWithoutExtension(catFile)}_{DateTime.Now.ToString("yyyyMMdd_HHmm")}.txt");
+            File.Move(catFile, $"backup\\{Path.GetFileNameWithoutExtension(catFile)}_{DateTime.Now:yyyyMMdd_HHmm}.txt");
         }
 
         // Clean pollution caused by Trados or other CAT
@@ -135,32 +131,30 @@ namespace FrontierTextTool
             var stringDatabase = new List<StringDatabase>();
             using (var reader = new StreamReader(inputCsv, Encoding.GetEncoding("shift-jis")))
             {
-                using (var csv = new CsvReader(reader))
+                using var csv = new CsvReader(reader);
+                csv.Configuration.Delimiter = "\t";
+                csv.Configuration.IgnoreQuotes = true;
+                csv.Configuration.MissingFieldFound = null;
+                csv.Read();
+                csv.ReadHeader();
+                while (csv.Read())
                 {
-                    csv.Configuration.Delimiter = "\t";
-                    csv.Configuration.IgnoreQuotes = true;
-                    csv.Configuration.MissingFieldFound = null;
-                    csv.Read();
-                    csv.ReadHeader();
-                    while (csv.Read())
+                    var record = new StringDatabase
                     {
-                        var record = new StringDatabase
-                        {
-                            Offset = csv.GetField<UInt32>("Offset"),
-                            Hash = csv.GetField<UInt32>("Hash"),
-                            eString = csv.GetField("eString").
-                            Replace("<TAB>", "\t"). // Replace tab
-                            Replace("<CLINE>", "\r\n"). // Replace carriage return
-                            Replace("<NLINE>", "\n") // Replace new line
+                        Offset = csv.GetField<uint>("Offset"),
+                        Hash = csv.GetField<uint>("Hash"),
+                        eString = csv.GetField("eString").
+                        Replace("<TAB>", "\t"). // Replace tab
+                        Replace("<CLINE>", "\r\n"). // Replace carriage return
+                        Replace("<NLINE>", "\n") // Replace new line
                     };
-                        stringDatabase.Add(record);
-                    }
+                    stringDatabase.Add(record);
                 }
             }
 
             // Get info for translation array and get all offsets that need to be remapped
-            List<UInt32> eStringsOffsets = new List<uint>();
-            List<Int32> eStringLengths = new List<int>();
+            List<uint> eStringsOffsets = [];
+            List<int> eStringLengths = [];
             foreach (var obj in stringDatabase)
             {
                 if (obj.eString != "")
@@ -173,7 +167,7 @@ namespace FrontierTextTool
             int eStringsCount = eStringLengths.Count;
 
             // Create dictionary with offset replacements
-            Dictionary<int, int> offsetDict = new Dictionary<int, int>();
+            Dictionary<int, int> offsetDict = [];
             for (int i = 0; i < eStringsCount; i++) 
                 offsetDict.Add((int)eStringsOffsets[i], inputArray.Length + eStringLengths.Take(i).Sum());
 
@@ -234,14 +228,14 @@ namespace FrontierTextTool
         static void DumpAndHash(string input, int startOffset, int endOffset)
         {
             byte[] buffer = File.ReadAllBytes(input);
-            MemoryStream msInput = new MemoryStream(buffer);
-            BinaryReader brInput = new BinaryReader(msInput);
+            MemoryStream msInput = new(buffer);
+            BinaryReader brInput = new(msInput);
 
-            Console.WriteLine($"Strings at: 0x{startOffset.ToString("X8")} - 0x{endOffset.ToString("X8")}. Size 0x{(endOffset - startOffset).ToString("X8")}");
+            Console.WriteLine($"Strings at: 0x{startOffset:X8} - 0x{endOffset:X8}. Size 0x{endOffset - startOffset:X8}");
 
             string fileName = Path.GetFileNameWithoutExtension(input);
             if (File.Exists($"{fileName}.csv")) File.Delete($"{fileName}.csv");
-            StreamWriter txtOutput = new StreamWriter($"{fileName}.csv", true, Encoding.GetEncoding("shift-jis"));
+            StreamWriter txtOutput = new($"{fileName}.csv", true, Encoding.GetEncoding("shift-jis"));
             txtOutput.WriteLine("Offset\tHash\tjString\teString");
 
             brInput.BaseStream.Seek(startOffset, SeekOrigin.Begin);
@@ -264,46 +258,42 @@ namespace FrontierTextTool
             var stringDbOld = new List<StringDatabase>();
             using (var reader = new StreamReader(oldCsv, Encoding.GetEncoding("shift-jis")))
             {
-                using (var csv = new CsvReader(reader))
+                using var csv = new CsvReader(reader);
+                csv.Configuration.Delimiter = "\t";
+                csv.Configuration.IgnoreQuotes = true;
+                csv.Configuration.MissingFieldFound = null;
+                csv.Read();
+                csv.ReadHeader();
+                while (csv.Read())
                 {
-                    csv.Configuration.Delimiter = "\t";
-                    csv.Configuration.IgnoreQuotes = true;
-                    csv.Configuration.MissingFieldFound = null;
-                    csv.Read();
-                    csv.ReadHeader();
-                    while (csv.Read())
+                    var record = new StringDatabase
                     {
-                        var record = new StringDatabase
-                        {
-                            Hash = csv.GetField<UInt32>("Hash"),
-                            eString = csv.GetField("eString")
-                        };
-                        stringDbOld.Add(record);
-                    }
+                        Hash = csv.GetField<uint>("Hash"),
+                        eString = csv.GetField("eString")
+                    };
+                    stringDbOld.Add(record);
                 }
             }
 
             var stringDbNew = new List<StringDatabase>();
             using (var reader = new StreamReader(newCsv, Encoding.GetEncoding("shift-jis")))
             {
-                using (var csv = new CsvReader(reader))
+                using var csv = new CsvReader(reader);
+                csv.Configuration.Delimiter = "\t";
+                csv.Configuration.IgnoreQuotes = true;
+                csv.Configuration.MissingFieldFound = null;
+                csv.Read();
+                csv.ReadHeader();
+                while (csv.Read())
                 {
-                    csv.Configuration.Delimiter = "\t";
-                    csv.Configuration.IgnoreQuotes = true;
-                    csv.Configuration.MissingFieldFound = null;
-                    csv.Read();
-                    csv.ReadHeader();
-                    while (csv.Read())
+                    var record = new StringDatabase
                     {
-                        var record = new StringDatabase
-                        {
-                            Offset = csv.GetField<UInt32>("Offset"),
-                            Hash = csv.GetField<UInt32>("Hash"),
-                            eString = csv.GetField("eString"),
-                            jString = csv.GetField("jString")
-                        };
-                        stringDbNew.Add(record);
-                    }
+                        Offset = csv.GetField<uint>("Offset"),
+                        Hash = csv.GetField<uint>("Hash"),
+                        eString = csv.GetField("eString"),
+                        jString = csv.GetField("jString")
+                    };
+                    stringDbNew.Add(record);
                 }
             }
 
@@ -314,7 +304,7 @@ namespace FrontierTextTool
                 if (stringDbOld[i].eString != "")
                 {
                     var matchedNewObjs = stringDbNew.Where(x => x.Hash.Equals(stringDbOld[i].Hash));
-                    if (matchedNewObjs.Count() > 0)
+                    if (matchedNewObjs.Any())
                     {
                         foreach (var obj in matchedNewObjs) obj.eString = stringDbOld[i].eString;
                     }
@@ -325,7 +315,7 @@ namespace FrontierTextTool
             // Using this approach because csvHelper would always escape some strings which might mess up in-game when copy-pasting where required
             string fileName = "csv\\" + Path.GetFileName(oldCsv);
             if (File.Exists(fileName)) File.Delete(fileName);
-            StreamWriter txtOutput = new StreamWriter(fileName, true, Encoding.GetEncoding("shift-jis"));
+            StreamWriter txtOutput = new(fileName, true, Encoding.GetEncoding("shift-jis"));
             txtOutput.WriteLine("Offset\tHash\tjString\teString");
             foreach (var obj in stringDbNew) txtOutput.WriteLine($"{obj.Offset}\t{obj.Hash}\t{obj.jString}\t{obj.eString}");
             txtOutput.Close();
@@ -336,34 +326,6 @@ namespace FrontierTextTool
         public static int GetNullterminatedStringLength(string input)
         {
             return Encoding.GetEncoding("shift-jis").GetBytes(input).Length + 1;
-        }
-
-        // Upload to ftp
-        public static void FileUploadSFTP(byte[] buffer, string path)
-        {
-            var host = "192.168.2.121";
-            var port = 22;
-            var username = "root";
-            var password = "coconut";
-
-            using (var client = new SftpClient(host, port, username, password))
-            {
-                client.Connect();
-                if (client.IsConnected)
-                {
-                    Console.WriteLine($"Connected. Uploading to {path}...");
-                    using (var ms = new MemoryStream(buffer))
-                    {
-                        client.BufferSize = (uint)ms.Length;
-                        client.UploadFile(ms, path);
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("Could not connect.");
-                    return;
-                }
-            }
         }
     }
 }

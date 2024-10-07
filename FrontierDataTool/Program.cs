@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Net;
 
 namespace FrontierDataTool
 {
@@ -14,45 +13,55 @@ namespace FrontierDataTool
         // Define offset pointers
         // --- mhfdat.bin ---
         // Strings
-        static int soStringHead = 0x64; 
-        static int soStringBody = 0x68; 
-        static int soStringArm = 0x6C; 
-        static int soStringWaist = 0x70; 
-        static int soStringLeg = 0x74;
+        static readonly int soStringHead = 0x64; 
+        static readonly int soStringBody = 0x68; 
+        static readonly int soStringArm = 0x6C; 
+        static readonly int soStringWaist = 0x70; 
+        static readonly int soStringLeg = 0x74;
 
-        static int eoStringHead = 0x60; 
-        static int eoStringBody = 0x64; 
-        static int eoStringArm = 0x68; 
-        static int eoStringWaist = 0x6C; 
-        static int eoStringLeg = 0x70;
+        static readonly int eoStringHead = 0x60; 
+        static readonly int eoStringBody = 0x64; 
+        static readonly int eoStringArm = 0x68; 
+        static readonly int eoStringWaist = 0x6C; 
+        static readonly int eoStringLeg = 0x70;
 
-        static int soStringRanged = 0x84; 
-        static int soStringMelee = 0x88;
+        static readonly int soStringRanged = 0x84; 
+        static readonly int soStringMelee = 0x88;
 
-        // static int eoStringRanged = 0x88; static int eoStringMelee = 0x174;
+        // static readonly int eoStringRanged = 0x88; 
+        // static readonly int eoStringMelee = 0x174;
         
-        static int soStringItem = 0x100; 
-        static int soStringItemDesc = 0x12C;
-        static int eoStringItem = 0xFC; 
-        static int eoStringItemDesc = 0x100;
+        static readonly int soStringItem = 0x100; 
+        static readonly int soStringItemDesc = 0x12C;
+        static readonly int eoStringItem = 0xFC; 
+        static readonly int eoStringItemDesc = 0x100;
 
         // Armor
-        static int soHead = 0x50; static int soBody = 0x54; static int soArm = 0x58; static int soWaist = 0x5C; static int soLeg = 0x60;
-        static int eoHead = 0xE8; static int eoBody = 0x50; static int eoArm = 0x54; static int eoWaist = 0x58; static int eoLeg = 0x5C;
+        static readonly int soHead = 0x50; 
+        static readonly int soBody = 0x54; 
+        static readonly int soArm = 0x58; 
+        static readonly int soWaist = 0x5C; 
+        static readonly int soLeg = 0x60;
+
+        static readonly int eoHead = 0xE8; 
+        static readonly int eoBody = 0x50; 
+        static readonly int eoArm = 0x54; static 
+        readonly int eoWaist = 0x58; 
+        static readonly int eoLeg = 0x5C;
 
         // Weapons
-        static int soRanged = 0x80; static int soMelee = 0x7C;
-        static int eoRanged = 0x7C; static int eoMelee = 0x90;
+        static readonly int soRanged = 0x80; static readonly int soMelee = 0x7C;
+        static readonly int eoRanged = 0x7C; static readonly int eoMelee = 0x90;
 
 
         // --- mhfpac.bin ---
         // Strings
-        static int soStringSkillPt = 0xA20; static int soStringSkillActivate = 0xA1C; static int soStringZSkill = 0xFBC; static int soStringSkillDesc = 0xb8;
-        static int eoStringSkillPt = 0xA1C; static int eoStringSkillActivate = 0xBC0; static int eoStringZSkill = 0xFB0; static int eoStringSkillDesc = 0xc0;
+        static readonly int soStringSkillPt = 0xA20; static readonly int soStringSkillActivate = 0xA1C; static readonly int soStringZSkill = 0xFBC; static readonly int soStringSkillDesc = 0xb8;
+        static readonly int eoStringSkillPt = 0xA1C; static readonly int eoStringSkillActivate = 0xBC0; static readonly int eoStringZSkill = 0xFB0; static readonly int eoStringSkillDesc = 0xc0;
 
         // --- mhfinf.pac ---
-        public static List<KeyValuePair<int, int>> offsetInfQuestData = new List<KeyValuePair<int, int>>()
-        {
+        public static List<KeyValuePair<int, int>> offsetInfQuestData =
+        [
             new KeyValuePair<int, int>(0x6bd60, 95),
             new KeyValuePair<int, int>(0x74100, 62),
             new KeyValuePair<int, int>(0x797e0, 99),
@@ -67,39 +76,39 @@ namespace FrontierDataTool
             new KeyValuePair<int, int>(0xc1400, 91),
 
             new KeyValuePair<int, int>(0x161220, 20), // Incorrect
-        };
+        ];
 
-        public static List<KeyValuePair<int, int>> dataPointersArmor = new List<KeyValuePair<int, int>>()
-        {
+        public static List<KeyValuePair<int, int>> dataPointersArmor =
+        [
             new KeyValuePair<int, int>(soHead, eoHead),
             new KeyValuePair<int, int>(soBody, eoBody),
             new KeyValuePair<int, int>(soArm, eoArm),
             new KeyValuePair<int, int>(soWaist, eoWaist),
             new KeyValuePair<int, int>(soLeg, eoLeg)
-        };
+        ];
 
-        public static List<KeyValuePair<int, int>> stringPointersArmor = new List<KeyValuePair<int, int>>()
-        {
+        public static List<KeyValuePair<int, int>> stringPointersArmor =
+        [
             new KeyValuePair<int, int>(soStringHead, eoStringHead),
             new KeyValuePair<int, int>(soStringBody, eoStringBody),
             new KeyValuePair<int, int>(soStringArm, eoStringArm),
             new KeyValuePair<int, int>(soStringWaist, eoStringWaist),
             new KeyValuePair<int, int>(soStringLeg, eoStringLeg)
-        };
+        ];
 
         public class StringDatabase
         {
-            public UInt32 Offset { get; set; }
-            public UInt32 Hash { get; set; }
+            public uint Offset { get; set; }
+            public uint Hash { get; set; }
             public string jString { get; set; }
             public string eString { get; set; }
         }
 
-        public static string[] elementIds = new string[] { "なし", "火", "水", "雷", "龍", "氷", "炎", "光", "雷極", "天翔", "熾凍", "黒焔", "奏", "闇", "紅魔", "風", "響", "灼零", "皇鳴" };
-        public static string[] ailmentIds = new string[] { "なし", "毒", "麻痺", "睡眠", "爆破" };
-        public static string[] wClassIds = new string[] { "大剣", "ヘビィボウガン", "ハンマー", "ランス", "片手剣", "ライトボウガン", "双剣", "太刀", "狩猟笛", "ガンランス", "弓", "穿龍棍", "スラッシュアックスＦ", "マグネットスパイク" };
-        public static string[] aClassIds = new string[] { "頭", "胴", "腕", "腰", "脚" };
-        public enum eqType { 通常 = 0, ＳＰ = 1, 剛種 = 2, 進化 = 4, ＨＣ = 8 };
+        public static string[] elementIds = ["なし", "火", "水", "雷", "龍", "氷", "炎", "光", "雷極", "天翔", "熾凍", "黒焔", "奏", "闇", "紅魔", "風", "響", "灼零", "皇鳴"];
+        public static string[] ailmentIds = ["なし", "毒", "麻痺", "睡眠", "爆破"];
+        public static string[] wClassIds = ["大剣", "ヘビィボウガン", "ハンマー", "ランス", "片手剣", "ライトボウガン", "双剣", "太刀", "狩猟笛", "ガンランス", "弓", "穿龍棍", "スラッシュアックスＦ", "マグネットスパイク"];
+        public static string[] aClassIds = ["頭", "胴", "腕", "腰", "脚"];
+        public enum EqType { 通常 = 0, ＳＰ = 1, 剛種 = 2, 進化 = 4, ＨＣ = 8 };
 
         static void Main(string[] args)
         {
@@ -116,13 +125,15 @@ namespace FrontierDataTool
             #region SkillSystem
             // Get and dump skill system dictionary
             Console.WriteLine("Dumping skill tree names.");
-            MemoryStream msInput = new MemoryStream(File.ReadAllBytes(mhfpac));
-            BinaryReader brInput = new BinaryReader(msInput);
-            brInput.BaseStream.Seek(soStringSkillPt, SeekOrigin.Begin); int sOffset = brInput.ReadInt32();
-            brInput.BaseStream.Seek(eoStringSkillPt, SeekOrigin.Begin); int eOffset = brInput.ReadInt32();
+            MemoryStream msInput = new(File.ReadAllBytes(mhfpac));
+            BinaryReader brInput = new(msInput);
+            brInput.BaseStream.Seek(soStringSkillPt, SeekOrigin.Begin); 
+            int sOffset = brInput.ReadInt32();
+            brInput.BaseStream.Seek(eoStringSkillPt, SeekOrigin.Begin);
+            int eOffset = brInput.ReadInt32();
 
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
-            List<KeyValuePair<int, string>> skillId = new List<KeyValuePair<int, string>>();
+            List<KeyValuePair<int, string>> skillId = [];
             int id = 0;
             while (brInput.BaseStream.Position < eOffset)
             {
@@ -132,10 +143,9 @@ namespace FrontierDataTool
             }
 
             string textName = $"mhsx_SkillSys_{suffix}.txt";
-            using (StreamWriter file = new StreamWriter(textName, false, Encoding.UTF8))
+            using (StreamWriter file = new(textName, false, Encoding.UTF8))
                 foreach (KeyValuePair<int, string> entry in skillId)
                     file.WriteLine("{0}", entry.Value);
-            FileUploadFTP(textName, $"/www/MHFO/{textName}");
             #endregion
 
             #region ActiveSkill
@@ -143,7 +153,7 @@ namespace FrontierDataTool
             brInput.BaseStream.Seek(soStringSkillActivate, SeekOrigin.Begin); sOffset = brInput.ReadInt32();
             brInput.BaseStream.Seek(eoStringSkillActivate, SeekOrigin.Begin); eOffset = brInput.ReadInt32();
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
-            List<string> activeSkill = new List<string>();
+            List<string> activeSkill = [];
             while (brInput.BaseStream.Position < eOffset)
             {
                 string name = StringFromPointer(brInput);
@@ -151,10 +161,9 @@ namespace FrontierDataTool
             }
 
             textName = $"mhsx_SkillActivate_{suffix}.txt";
-            using (StreamWriter file = new StreamWriter(textName, false, Encoding.UTF8))
+            using (StreamWriter file = new(textName, false, Encoding.UTF8))
                 foreach (string entry in activeSkill)
                     file.WriteLine("{0}", entry);
-            FileUploadFTP(textName, $"/www/MHFO/{textName}");
             #endregion
 
             #region SkillDescription
@@ -162,7 +171,7 @@ namespace FrontierDataTool
             brInput.BaseStream.Seek(soStringSkillDesc, SeekOrigin.Begin); sOffset = brInput.ReadInt32();
             brInput.BaseStream.Seek(eoStringSkillDesc, SeekOrigin.Begin); eOffset = brInput.ReadInt32();
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
-            List<string> skillDesc = new List<string>();
+            List<string> skillDesc = [];
             while (brInput.BaseStream.Position < eOffset)
             {
                 string name = StringFromPointer(brInput);
@@ -170,10 +179,9 @@ namespace FrontierDataTool
             }
 
             textName = $"mhsx_SkillDesc_{suffix}.txt";
-            using (StreamWriter file = new StreamWriter(textName, false, Encoding.UTF8))
+            using (StreamWriter file = new(textName, false, Encoding.UTF8))
                 foreach (string entry in skillDesc)
                     file.WriteLine("{0}", entry);
-            //FileUploadFTP(textName, $"/www/MHFO/{textName}");
             #endregion
 
             #region ZSkill
@@ -181,7 +189,7 @@ namespace FrontierDataTool
             brInput.BaseStream.Seek(soStringZSkill, SeekOrigin.Begin); sOffset = brInput.ReadInt32();
             brInput.BaseStream.Seek(eoStringZSkill, SeekOrigin.Begin); eOffset = brInput.ReadInt32();
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
-            List<string> zSkill = new List<string>();
+            List<string> zSkill = [];
             while (brInput.BaseStream.Position < eOffset)
             {
                 string name = StringFromPointer(brInput);
@@ -189,10 +197,9 @@ namespace FrontierDataTool
             }
 
             textName = $"mhsx_SkillZ_{suffix}.txt";
-            using (StreamWriter file = new StreamWriter(textName, false, Encoding.UTF8))
+            using (StreamWriter file = new(textName, false, Encoding.UTF8))
                 foreach (string entry in zSkill)
                     file.WriteLine("{0}", entry);
-            FileUploadFTP(textName, $"/www/MHFO/{textName}");
             #endregion
 
             #region Items
@@ -202,7 +209,7 @@ namespace FrontierDataTool
             brInput.BaseStream.Seek(soStringItem, SeekOrigin.Begin); sOffset = brInput.ReadInt32();
             brInput.BaseStream.Seek(eoStringItem, SeekOrigin.Begin); eOffset = brInput.ReadInt32();
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
-            List<string> items = new List<string>();
+            List<string> items = [];
             while (brInput.BaseStream.Position < eOffset)
             {
                 string name = StringFromPointer(brInput);
@@ -210,16 +217,15 @@ namespace FrontierDataTool
             }
 
             textName = $"mhsx_Items_{suffix}.txt";
-            using (StreamWriter file = new StreamWriter(textName, false, Encoding.UTF8))
+            using (StreamWriter file = new(textName, false, Encoding.UTF8))
                 foreach (string entry in items)
                     file.WriteLine("{0}", entry);
-            FileUploadFTP(textName, $"/www/MHFO/{textName}");
 
             Console.WriteLine("Dumping item descriptions.");
             brInput.BaseStream.Seek(soStringItemDesc, SeekOrigin.Begin); sOffset = brInput.ReadInt32();
             brInput.BaseStream.Seek(eoStringItemDesc, SeekOrigin.Begin); eOffset = brInput.ReadInt32();
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
-            List<string> itemsDesc = new List<string>();
+            List<string> itemsDesc = [];
             while (brInput.BaseStream.Position < eOffset)
             {
                 string name = StringFromPointer(brInput);
@@ -227,7 +233,7 @@ namespace FrontierDataTool
             }
 
             textName = $"Items_Desc_{suffix}.txt";
-            using (StreamWriter file = new StreamWriter(textName, false, Encoding.UTF8))
+            using (StreamWriter file = new(textName, false, Encoding.UTF8))
                 foreach (string entry in itemsDesc)
                     file.WriteLine("{0}", entry);
             #endregion
@@ -258,7 +264,7 @@ namespace FrontierDataTool
 
                 for (int j = 0; j < entryCount; j++)
                 {
-                    Structs.ArmorDataEntry entry = new Structs.ArmorDataEntry();
+                    Structs.ArmorDataEntry entry = new();
                     entry.equipClass = aClassIds[i];
                     entry.modelIdMale = brInput.ReadInt16();
                     entry.modelIdFemale = brInput.ReadInt16();
@@ -345,10 +351,9 @@ namespace FrontierDataTool
 
             // Write armor txt
             textName = $"mhsx_Armor_{suffix}.txt";
-            using (StreamWriter file = new StreamWriter(textName, false, Encoding.UTF8))
+            using (StreamWriter file = new(textName, false, Encoding.UTF8))
                 foreach (var entry in armorEntries)
                     file.WriteLine("{0}", entry.name);
-            FileUploadFTP(textName, $"/www/MHFO/{textName}");
             #endregion
 
             #region WeaponData
@@ -362,7 +367,7 @@ namespace FrontierDataTool
             Structs.MeleeWeaponEntry[] meleeEntries = new Structs.MeleeWeaponEntry[entryCountMelee];
             for (int i = 0; i < entryCountMelee; i++)
             {
-                Structs.MeleeWeaponEntry entry = new Structs.MeleeWeaponEntry();
+                Structs.MeleeWeaponEntry entry = new();
                 entry.modelId = brInput.ReadInt16();
                 entry.modelIdData = GetModelIdData(entry.modelId);
                 entry.rarity = brInput.ReadByte();
@@ -423,7 +428,7 @@ namespace FrontierDataTool
             Structs.RangedWeaponEntry[] rangedEntries = new Structs.RangedWeaponEntry[entryCountRanged];
             for (int i = 0; i < entryCountRanged; i++)
             {
-                Structs.RangedWeaponEntry entry = new Structs.RangedWeaponEntry();
+                Structs.RangedWeaponEntry entry = new();
                 entry.modelId = brInput.ReadInt16();
                 entry.modelIdData = GetModelIdData(entry.modelId);
                 entry.rarity = brInput.ReadByte();
@@ -516,7 +521,7 @@ namespace FrontierDataTool
                 brInput.BaseStream.Seek(offsetInfQuestData[j].Key, SeekOrigin.Begin);                
                 for (int i = 0; i < offsetInfQuestData[j].Value; i++)
                 {
-                    Structs.QuestData entry = new Structs.QuestData();
+                    Structs.QuestData entry = new();
                     entry.unk1 = brInput.ReadByte();
                     entry.unk2 = brInput.ReadByte();
                     entry.unk3 = brInput.ReadByte();
@@ -585,25 +590,25 @@ namespace FrontierDataTool
         // Add all-items shop to file, change item prices, change armor prices
         static void ModShop(string file)
         {
-            MemoryStream msInput = new MemoryStream(File.ReadAllBytes(file));
-            BinaryReader brInput = new BinaryReader(msInput);
-            BinaryWriter brOutput = new BinaryWriter(File.Open(file, FileMode.Open));
+            MemoryStream msInput = new(File.ReadAllBytes(file));
+            BinaryReader brInput = new(msInput);
+            BinaryWriter brOutput = new(File.Open(file, FileMode.Open));
 
             // Patch item prices
             brInput.BaseStream.Seek(0xFC, SeekOrigin.Begin); int sOffset = brInput.ReadInt32();
             brInput.BaseStream.Seek(0xA70, SeekOrigin.Begin); int eOffset = brInput.ReadInt32();
             int count = (eOffset - sOffset) / 0x24;
-            Console.WriteLine($"Patching prices for {count} items starting at 0x{sOffset.ToString("X8")}");
+            Console.WriteLine($"Patching prices for {count} items starting at 0x{sOffset:X8}");
             for (int i = 0; i < count; i++)
             {
                 brOutput.BaseStream.Seek(sOffset + (i * 0x24) + 12, SeekOrigin.Begin);
                 brInput.BaseStream.Seek(sOffset + (i * 0x24) + 12, SeekOrigin.Begin);
-                Int32 buyPrice = brInput.ReadInt32() / 50;
+                int buyPrice = brInput.ReadInt32() / 50;
                 brOutput.Write(buyPrice);
 
                 brOutput.BaseStream.Seek(sOffset + (i * 0x24) + 16, SeekOrigin.Begin);
                 brInput.BaseStream.Seek(sOffset + (i * 0x24) + 16, SeekOrigin.Begin);
-                Int32 sellPrice = brInput.ReadInt32() * 5;
+                int sellPrice = brInput.ReadInt32() * 5;
                 brOutput.Write(sellPrice);
             }
 
@@ -613,11 +618,11 @@ namespace FrontierDataTool
                 brInput.BaseStream.Seek(dataPointersArmor[i].Key, SeekOrigin.Begin); sOffset = brInput.ReadInt32();
                 brInput.BaseStream.Seek(dataPointersArmor[i].Value, SeekOrigin.Begin); eOffset = brInput.ReadInt32();
                 count = (eOffset - sOffset) / 0x48;
-                Console.WriteLine($"Patching prices for {count} armor pieces starting at 0x{sOffset.ToString("X8")}");
+                Console.WriteLine($"Patching prices for {count} armor pieces starting at 0x{sOffset:X8}");
                 for (int j = 0; j < count; j++)
                 {
                     brOutput.BaseStream.Seek(sOffset + (j * 0x48) + 12, SeekOrigin.Begin);
-                    brOutput.Write((Int32)50);
+                    brOutput.Write((int)50);
                 }
             }
 
@@ -631,7 +636,7 @@ namespace FrontierDataTool
 
             for (int i = 0; i < count; i++)
             {
-                byte[] id = BitConverter.GetBytes((Int16)(i + 1));
+                byte[] id = BitConverter.GetBytes((short)(i + 1));
                 byte[] item = new byte[8];
                 Array.Copy(id, item, 2);
                 Array.Copy(item, 0, shopArray, i * 8, 8);
@@ -644,17 +649,17 @@ namespace FrontierDataTool
             Array.Copy(shopArray, 0, outputArray, inputArray.Length, shopArray.Length);
 
             // Find and modify item shop data pointer
-            byte[] needle = new byte[] { 0x0F, 01, 01, 00, 00, 00, 00, 00, 03, 01, 01, 00, 00, 00, 00, 00 };
+            byte[] needle = [0x0F, 01, 01, 00, 00, 00, 00, 00, 03, 01, 01, 00, 00, 00, 00, 00];
             int offsetData = Helpers.GetOffsetOfArray(outputArray, needle);
             if (offsetData != -1)
             {
-                Console.WriteLine($"Found shop inventory to modify at 0x{offsetData.ToString("X8")}.");
+                Console.WriteLine($"Found shop inventory to modify at 0x{offsetData:X8}.");
                 byte[] offsetArray = BitConverter.GetBytes(offsetData);
                 offsetArray.Reverse();
                 int offsetPointer = Helpers.GetOffsetOfArray(outputArray, offsetArray);
                 if (offsetPointer != -1)
                 {
-                    Console.WriteLine($"Found shop pointer at 0x{offsetPointer.ToString("X8")}.");
+                    Console.WriteLine($"Found shop pointer at 0x{offsetPointer:X8}.");
                     byte[] patchedPointer = BitConverter.GetBytes(inputArray.Length);
                     patchedPointer.Reverse();
                     Array.Copy(patchedPointer, 0, outputArray, offsetPointer, patchedPointer.Length);                    
@@ -664,12 +669,12 @@ namespace FrontierDataTool
             else Console.WriteLine("Could not find shop needle, please check manually and correct code.");
 
             // Find and modify Hunter Pearl Skill unlocks
-            needle = new byte[] { 01, 00, 01, 00, 00, 00, 00, 00, 0x25, 00, 0x25, 00, 0x25, 00, 0x25, 00, 0x25, 00, 0x25, 00, 0x25, 00 };
+            needle = [01, 00, 01, 00, 00, 00, 00, 00, 0x25, 00, 0x25, 00, 0x25, 00, 0x25, 00, 0x25, 00, 0x25, 00, 0x25, 00];
             offsetData = Helpers.GetOffsetOfArray(outputArray, needle);
             if (offsetData != -1)
             {
-                Console.WriteLine($"Found hunter pearl skill data to modify at 0x{offsetData.ToString("X8")}.");
-                byte[] pearlPatch = new byte[] { 02, 00, 02, 00, 02, 00, 02, 00, 02, 00, 02, 00, 02, 00 };
+                Console.WriteLine($"Found hunter pearl skill data to modify at 0x{offsetData:X8}.");
+                byte[] pearlPatch = [02, 00, 02, 00, 02, 00, 02, 00, 02, 00, 02, 00, 02, 00];
                 for (int i = 0; i < 108; i++) Array.Copy(pearlPatch, 0, outputArray, offsetData + (i * 0x30) + 8, pearlPatch.Length);                
             }
             else Console.WriteLine("Could not find pearl skill needle, please check manually and correct code.");
@@ -690,28 +695,18 @@ namespace FrontierDataTool
 
         static string GetModelIdData(int id)
         {
-            string str = "";
-            if (id >= 0 && id < 1000) str = $"we{id.ToString("D3")}";
-            else if (id < 2000) str = $"wf{(id - 1000).ToString("D3")}";
-            else if (id < 3000) str = $"wg{(id - 2000).ToString("D3")}";
-            else if (id < 4000) str = $"wh{(id - 3000).ToString("D3")}";
-            else if (id < 5000) str = $"wi{(id - 4000).ToString("D3")}";
-            else if (id < 7000) str = $"wk{(id - 6000).ToString("D3")}";
-            else if (id < 8000) str = $"wl{(id - 7000).ToString("D3")}";
-            else if (id < 9000) str = $"wm{(id - 8000).ToString("D3")}";
-            else if (id < 10000) str = $"wg{(id - 9000).ToString("D3")}";
+            string str;
+            if (id >= 0 && id < 1000) str = $"we{id:D3}";
+            else if (id < 2000) str = $"wf{id - 1000:D3}";
+            else if (id < 3000) str = $"wg{id - 2000:D3}";
+            else if (id < 4000) str = $"wh{id - 3000:D3}";
+            else if (id < 5000) str = $"wi{id - 4000:D3}";
+            else if (id < 7000) str = $"wk{id - 6000:D3}";
+            else if (id < 8000) str = $"wl{id - 7000:D3}";
+            else if (id < 9000) str = $"wm{id - 8000:D3}";
+            else if (id < 10000) str = $"wg{id - 9000:D3}";
             else str = "Unmapped";
             return str;
-        }
-
-        // Upload to ftp
-        public static void FileUploadFTP(string file, string path)
-        {
-            using (WebClient client = new WebClient())
-            {
-                client.Credentials = new NetworkCredential("placeholder", "yetanotherplaceholder");
-                client.UploadFile($"ftp://your.place.net/{path}", WebRequestMethods.Ftp.UploadFile, file);
-            }
         }
     }
 }

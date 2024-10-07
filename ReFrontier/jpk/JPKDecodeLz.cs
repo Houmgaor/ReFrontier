@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.IO;
 
 namespace ReFrontier.jpk
@@ -24,7 +23,7 @@ namespace ReFrontier.jpk
             {
                 m_shiftIndex = 7;
                 //Debug.WriteLine("flag read from {0:X8}", s.Position);
-                m_flag = this.ReadByte(s);
+                m_flag = ReadByte(s);
             }
             return (byte)((m_flag >> m_shiftIndex) & 1);
         }

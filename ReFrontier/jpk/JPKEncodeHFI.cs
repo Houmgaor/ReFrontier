@@ -6,12 +6,12 @@ namespace ReFrontier.jpk
 {
     class JPKEncodeHFI : JPKEncodeLz
     {
-        private static Int16 m_hfTableLen = 0x1fe;
-        private Int16[] m_hfTable = new Int16[m_hfTableLen];
-        private Int16[] m_Paths = new Int16[0x100];
-        private Int16[] m_Lengths = new Int16[0x100];
+        private static readonly short m_hfTableLen = 0x1fe;
+        private readonly short[] m_hfTable = new short[m_hfTableLen];
+        private readonly short[] m_Paths = new short[0x100];
+        private readonly short[] m_Lengths = new short[0x100];
 
-        private void dbg(string s, params Object[] o)
+        private void dbg(string s, params object[] o)
         {
             //Debug.WriteLine(s, o);
         }
@@ -49,9 +49,9 @@ namespace ReFrontier.jpk
         {
             Array.Clear(m_Paths, 0, m_Paths.Length);
             Array.Clear(m_Lengths, 0, m_Lengths.Length);
-            Int16[] rndseq = new short[0x100];
-            for (Int16 i = 0; i < rndseq.Length; i++) rndseq[i] = i;
-            Random rnd = new Random();
+            short[] rndseq = new short[0x100];
+            for (short i = 0; i < rndseq.Length; i++) rndseq[i] = i;
+            Random rnd = new();
             rndseq = rndseq.OrderBy(x => rnd.Next()).ToArray();
             //string s = "";
             /*for (int i = 0; i < rndseq.Length; i++) {
@@ -59,7 +59,7 @@ namespace ReFrontier.jpk
               //if (i % 16 == 15) { dbg(s); s = ""; }
             }*/
             for (int i = 0; i < 0x100; i++) m_hfTable[i] = rndseq[i];
-            for (int i = 0x100; i < m_hfTableLen; i++) m_hfTable[i] = (Int16)i;
+            for (int i = 0x100; i < m_hfTableLen; i++) m_hfTable[i] = (short)i;
             /*for (int i = 0; i < m_hfTable.Length; i++) {
               s += String.Format(" {0:x}={1:x}", i, m_hfTable[i]);
               if (i % 16 == 15) { dbg(s); s = ""; }
@@ -81,7 +81,7 @@ namespace ReFrontier.jpk
         public override void ProcessOnEncode(byte[] inBuffer, Stream outStream, int level = 16, ShowProgress progress = null)
         {
             FillTable();
-            BinaryWriter br = new BinaryWriter(outStream);
+            BinaryWriter br = new(outStream);
             br.Write(m_hfTableLen);
             for (int i = 0; i < m_hfTableLen; i++) br.Write(m_hfTable[i]);
             base.ProcessOnEncode(inBuffer, outStream, level, progress);
@@ -102,7 +102,7 @@ namespace ReFrontier.jpk
             m_bits |= b;
             m_bitcount++;
         }
-        private void WriteBits(Stream s, Int16 bits, Int16 len)
+        private void WriteBits(Stream s, short bits, short len)
         {
             while (len > 0)
             {
@@ -120,8 +120,8 @@ namespace ReFrontier.jpk
         }
         public override void WriteByte(Stream s, byte b)
         {
-            Int16 bits = m_Paths[b];
-            Int16 len = m_Lengths[b];
+            short bits = m_Paths[b];
+            short len = m_Lengths[b];
             WriteBits(s, bits, len);
         }
     }

@@ -12,7 +12,7 @@ namespace ReFrontier.jpk
         private int m_level = 280;
         private int m_maxdist = 0x300;//0x1fff;
         Stream m_outstream;
-        byte[] m_towrite = new byte[1000];
+        readonly byte[] m_towrite = new byte[1000];
         int m_itowrite;
         private unsafe int FindRep(int ind, out uint ofs)
         {
@@ -90,7 +90,7 @@ namespace ReFrontier.jpk
             m_ind = 0;
             while (m_ind < inBuffer.Length)
             {
-                perc = percbord + (100 - percbord) * (Int64)m_ind / inBuffer.Length;
+                perc = percbord + (100 - percbord) * (long)m_ind / inBuffer.Length;
                 if (perc > perc0)
                 {
                     perc0 = perc;
@@ -118,9 +118,9 @@ namespace ReFrontier.jpk
                     else
                     {
                         SetFlag(1);
-                        UInt16 u16 = (UInt16)ofs;
+                        ushort u16 = (ushort)ofs;
                         byte hi, lo;
-                        if (len <= 9) u16 |= (UInt16)((len - 2) << 13);
+                        if (len <= 9) u16 |= (ushort)((len - 2) << 13);
                         hi = (byte)(u16 >> 8);
                         lo = (byte)(u16 & 0xff);
                         m_towrite[m_itowrite++] = hi;

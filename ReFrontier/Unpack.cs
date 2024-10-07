@@ -10,7 +10,7 @@ namespace ReFrontier
     {
         public static void UnpackSimpleArchive(string input, BinaryReader brInput, int magicSize, bool createLog, bool cleanUp, bool autoStage)
         {
-            FileInfo fileInfo = new FileInfo(input);
+            FileInfo fileInfo = new(input);
             string outputDir = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(input)}";
 
             // Abort if too small
@@ -67,7 +67,7 @@ namespace ReFrontier
 
             // Write to log file if desired; needs some other solution because it creates useless logs even if !createLog
             Directory.CreateDirectory(outputDir);
-            StreamWriter logOutput = new StreamWriter($"{outputDir}\\{Path.GetFileNameWithoutExtension(input)}.log");
+            StreamWriter logOutput = new($"{outputDir}\\{Path.GetFileNameWithoutExtension(input)}.log");
             if (createLog) { logOutput.WriteLine("SimpleArchive"); logOutput.WriteLine(input.Remove(0, input.LastIndexOf('\\') + 1)); logOutput.WriteLine(count); }
 
             for (int i = 0; i < count; i++)
@@ -78,7 +78,7 @@ namespace ReFrontier
                 // Skip if size is zero
                 if (entrySize == 0)
                 {
-                    Console.WriteLine($"Offset: 0x{entryOffset.ToString("X8")}, Size: 0x{entrySize.ToString("X8")} (SKIPPED)");
+                    Console.WriteLine($"Offset: 0x{entryOffset:X8}, Size: 0x{entrySize:X8} (SKIPPED)");
                     if (createLog) logOutput.WriteLine($"null,{entryOffset},{entrySize},0");
                     continue;
                 }
@@ -96,11 +96,11 @@ namespace ReFrontier
                 if (extension == null) extension = "bin";
 
                 // Print info
-                Console.WriteLine($"Offset: 0x{entryOffset.ToString("X8")}, Size: 0x{entrySize.ToString("X8")} ({extension})");
-                if (createLog) logOutput.WriteLine($"{(i + 1).ToString("D4")}_{entryOffset.ToString("X8")}.{extension},{entryOffset},{entrySize},{headerInt}");
+                Console.WriteLine($"Offset: 0x{entryOffset:X8}, Size: 0x{entrySize:X8} ({extension})");
+                if (createLog) logOutput.WriteLine($"{i + 1:D4}_{entryOffset:X8}.{extension},{entryOffset},{entrySize},{headerInt}");
 
                 // Extract file
-                File.WriteAllBytes($"{outputDir}\\{(i + 1).ToString("D4")}_{entryOffset.ToString("X8")}.{extension}", entryData);
+                File.WriteAllBytes($"{outputDir}\\{i + 1:D4}_{entryOffset:X8}.{extension}", entryData);
 
                 // Move to next entry block
                 brInput.BaseStream.Seek(magicSize + (i + 1) * 0x08, SeekOrigin.Begin);
@@ -114,11 +114,11 @@ namespace ReFrontier
 
         public static void UnpackMHA(string input, BinaryReader brInput, bool createLog)
         {
-            FileInfo fileInfo = new FileInfo(input);
+            FileInfo fileInfo = new(input);
             string outputDir = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(input)}";
             Directory.CreateDirectory(outputDir);
 
-            StreamWriter logOutput = new StreamWriter($"{outputDir}\\{Path.GetFileNameWithoutExtension(input)}.log");
+            StreamWriter logOutput = new($"{outputDir}\\{Path.GetFileNameWithoutExtension(input)}.log");
             if (createLog) { logOutput.WriteLine("MHA"); logOutput.WriteLine(input.Remove(0, input.LastIndexOf('\\') + 1)); }
 
             // Read header
@@ -126,8 +126,8 @@ namespace ReFrontier
             int count = brInput.ReadInt32();
             int pointerEntryNamesBlock = brInput.ReadInt32();
             int entryNamesBlockLength = brInput.ReadInt32();
-            Int16 unk1 = brInput.ReadInt16();
-            Int16 unk2 = brInput.ReadInt16();
+            short unk1 = brInput.ReadInt16();
+            short unk2 = brInput.ReadInt16();
             if (createLog) { logOutput.WriteLine(count); logOutput.WriteLine(unk1); logOutput.WriteLine(unk2); }
 
             // File Data
@@ -151,7 +151,7 @@ namespace ReFrontier
                 byte[] entryData = brInput.ReadBytes(entrySize);
                 File.WriteAllBytes($"{outputDir}\\{entryName}", entryData);
 
-                Console.WriteLine($"{entryName}, String Offset: 0x{stringOffset.ToString("X8")}, Offset: 0x{entryOffset.ToString("X8")}, Size: 0x{entrySize.ToString("X8")}, pSize: 0x{pSize.ToString("X8")}, File ID: 0x{fileId.ToString("X8")}");
+                Console.WriteLine($"{entryName}, String Offset: 0x{stringOffset:X8}, Offset: 0x{entryOffset:X8}, Size: 0x{entrySize:X8}, pSize: 0x{pSize:X8}, File ID: 0x{fileId:X8}");
             }
 
             logOutput.Close();
@@ -161,8 +161,8 @@ namespace ReFrontier
         public static void UnpackJPK(string input)
         {
             byte[] buffer = File.ReadAllBytes(input);
-            MemoryStream ms = new MemoryStream(buffer);
-            BinaryReader br = new BinaryReader(ms);
+            MemoryStream ms = new(buffer);
+            BinaryReader br = new(ms);
             if (br.ReadUInt32() == 0x1A524B4A)
             {
                 IJPKDecode decoder = null;
@@ -201,7 +201,7 @@ namespace ReFrontier
                     if (extension == null) extension = Helpers.CheckForMagic(headerInt, outBuffer);
                     if (extension == null) extension = "bin";
 
-                    FileInfo fileInfo = new FileInfo(input);
+                    FileInfo fileInfo = new(input);
                     string output = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(input)}.{extension}";
                     File.Delete(input);
                     File.WriteAllBytes(output, outBuffer);
@@ -215,11 +215,11 @@ namespace ReFrontier
         {
             Console.WriteLine("Trying to unpack as stage-specific container.");
 
-            FileInfo fileInfo = new FileInfo(input);
+            FileInfo fileInfo = new(input);
             string outputDir = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(input)}";
             Directory.CreateDirectory(outputDir);
 
-            StreamWriter logOutput = new StreamWriter($"{outputDir}\\{Path.GetFileNameWithoutExtension(input)}.log");
+            StreamWriter logOutput = new($"{outputDir}\\{Path.GetFileNameWithoutExtension(input)}.log");
             if (createLog) { logOutput.WriteLine("StageContainer"); logOutput.WriteLine(input.Remove(0, input.LastIndexOf('\\') + 1)); }
 
             // First three segments
@@ -230,7 +230,7 @@ namespace ReFrontier
 
                 if (size == 0)
                 {
-                    Console.WriteLine($"Offset: 0x{offset.ToString("X8")}, Size: 0x{size.ToString("X8")} (SKIPPED)");
+                    Console.WriteLine($"Offset: 0x{offset:X8}, Size: 0x{size:X8} (SKIPPED)");
                     if (createLog) logOutput.WriteLine($"null,{offset},{size},0");
                     continue;
                 }
@@ -247,11 +247,11 @@ namespace ReFrontier
                 if (extension == null) extension = "bin";
 
                 // Print info
-                Console.WriteLine($"Offset: 0x{offset.ToString("X8")}, Size: 0x{size.ToString("X8")} ({extension})");
-                if (createLog) logOutput.WriteLine($"{(i + 1).ToString("D4")}_{offset.ToString("X8")}.{extension},{offset},{size},{headerInt}");
+                Console.WriteLine($"Offset: 0x{offset:X8}, Size: 0x{size:X8} ({extension})");
+                if (createLog) logOutput.WriteLine($"{i + 1:D4}_{offset:X8}.{extension},{offset},{size},{headerInt}");
 
                 // Extract file
-                File.WriteAllBytes($"{outputDir}\\{(i + 1).ToString("D4")}_{offset.ToString("X8")}.{extension}", data);
+                File.WriteAllBytes($"{outputDir}\\{i + 1:D4}_{offset:X8}.{extension}", data);
 
                 // Move to next entry block
                 brInput.BaseStream.Seek((i + 1) * 0x08, SeekOrigin.Begin);
@@ -269,7 +269,7 @@ namespace ReFrontier
 
                 if (size == 0)
                 {
-                    Console.WriteLine($"Offset: 0x{offset.ToString("X8")}, Size: 0x{size.ToString("X8")}, Unk: 0x{unk.ToString("X8")} (SKIPPED)");
+                    Console.WriteLine($"Offset: 0x{offset:X8}, Size: 0x{size:X8}, Unk: 0x{unk:X8} (SKIPPED)");
                     if (createLog) logOutput.WriteLine($"null,{offset},{size},{unk},0");
                     continue;
                 }
@@ -286,11 +286,11 @@ namespace ReFrontier
                 if (extension == null) extension = "bin";
 
                 // Print info
-                Console.WriteLine($"Offset: 0x{offset.ToString("X8")}, Size: 0x{size.ToString("X8")}, Unk: 0x{unk.ToString("X8")} ({extension})");
-                if (createLog) logOutput.WriteLine($"{(i + 1).ToString("D4")}_{offset.ToString("X8")}.{extension},{offset},{size},{unk},{headerInt}");
+                Console.WriteLine($"Offset: 0x{offset:X8}, Size: 0x{size:X8}, Unk: 0x{unk:X8} ({extension})");
+                if (createLog) logOutput.WriteLine($"{i + 1:D4}_{offset:X8}.{extension},{offset},{size},{unk},{headerInt}");
 
                 // Extract file
-                File.WriteAllBytes($"{outputDir}\\{(i + 1).ToString("D4")}_{offset.ToString("X8")}.{extension}", data);
+                File.WriteAllBytes($"{outputDir}\\{i + 1:D4}_{offset:X8}.{extension}", data);
 
                 // Move to next entry block
                 brInput.BaseStream.Seek(0x18 + 0x08 + (i - 3 + 1) * 0x0C, SeekOrigin.Begin); // 0x18 = first three segments, 0x08 = header for this segment
@@ -304,10 +304,10 @@ namespace ReFrontier
 
         public static void PrintFTXT(string input, BinaryReader brInput)
         {
-            FileInfo fileInfo = new FileInfo(input);
+            FileInfo fileInfo = new(input);
             string outputPath = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(input)}.txt";
             if (File.Exists(outputPath)) File.Delete(outputPath);
-            StreamWriter txtOutput = new StreamWriter(outputPath, true, Encoding.GetEncoding("shift-jis"));
+            StreamWriter txtOutput = new(outputPath, true, Encoding.GetEncoding("shift-jis"));
 
             // Read header
             brInput.BaseStream.Seek(10, SeekOrigin.Current);

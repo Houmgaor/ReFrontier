@@ -85,7 +85,7 @@ namespace ReFrontier
                 {
                     if (!repack && !encrypt && !compress)
                     {
-                        string[] inputFiles = { input };
+                        string[] inputFiles = [input];
                         ProcessMultipleLevels(inputFiles);
                     }
                     else if (repack) Console.WriteLine("A single file was specified while in repacking mode. Stopping.");
@@ -126,17 +126,21 @@ namespace ReFrontier
             Helpers.Print($"Processing {input}", false);
 
             // Read file to memory
-            MemoryStream msInput = new MemoryStream(File.ReadAllBytes(input));
-            BinaryReader brInput = new BinaryReader(msInput);
-            if (msInput.Length == 0) { Console.WriteLine("File is empty. Skipping."); return; }
-
+            MemoryStream msInput = new(File.ReadAllBytes(input));
+            BinaryReader brInput = new(msInput);
+            if (msInput.Length == 0) {
+                Console.WriteLine("File is empty. Skipping.");
+                return;
+            }
             int fileMagic = brInput.ReadInt32();
 
             // Since stage containers have no file magic, check for them first
             if (stageContainer == true)
             {
                 brInput.BaseStream.Seek(0, SeekOrigin.Begin);
-                try { Unpack.UnpackStageContainer(input, brInput, createLog, cleanUp); } catch { }
+                try {
+                    Unpack.UnpackStageContainer(input, brInput, createLog, cleanUp); 
+                } catch { }
             }
             // MOMO Header: snp, snd
             else if (fileMagic == 0x4F4D4F4D)
@@ -183,7 +187,10 @@ namespace ReFrontier
             else if (fileMagic == 0x1A524B4A)
             {
                 Console.WriteLine("JKR Header detected.");
-                if (!ignoreJPK) { Unpack.UnpackJPK(input); Console.WriteLine("File decompressed."); }
+                if (!ignoreJPK) {
+                    Unpack.UnpackJPK(input);
+                    Console.WriteLine("File decompressed.");
+                }
             }
             // MHA Header
             else if (fileMagic == 0x0161686D)
@@ -201,10 +208,16 @@ namespace ReFrontier
             else
             {
                 brInput.BaseStream.Seek(0, SeekOrigin.Begin);
-                try { Unpack.UnpackSimpleArchive(input, brInput, 4, createLog, cleanUp, autoStage); } catch { }                
+                try {
+                    Unpack.UnpackSimpleArchive(input, brInput, 4, createLog, cleanUp, autoStage); 
+                } catch { }                
             }
 
-            if (fileMagic == 0x1A646365 && !decryptOnly) { Console.WriteLine("=============================="); ProcessFile(input); return; }
+            if (fileMagic == 0x1A646365 && !decryptOnly) {
+                Console.WriteLine("==============================");
+                ProcessFile(input);
+                return;
+            }
             else Console.WriteLine("==============================");
         }
 
@@ -219,14 +232,20 @@ namespace ReFrontier
                 // Disable stage processing files unpacked from parent
                 if (stageContainer == true) stageContainer = false;
 
-                FileInfo fileInfo = new FileInfo(inputFile);
-                string[] patterns = { "*.bin", "*.jkr", "*.ftxt", "*.snd" };
-                string directory = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(inputFile)}";
+                FileInfo fileInfo = new(inputFile);
+                string[] patterns = ["*.bin", "*.jkr", "*.ftxt", "*.snd"];
+                ;
+                string directory = Path.Join(
+                    fileInfo.DirectoryName, 
+                    Path.GetFileNameWithoutExtension(inputFile)
+                );
 
                 if (Directory.Exists(directory) && recursive)
                 {
                     //Process All Successive Levels
-                    ProcessMultipleLevels(Helpers.MyDirectory.GetFiles(directory, patterns, SearchOption.TopDirectoryOnly));
+                    ProcessMultipleLevels(
+                        Helpers.MyDirectory.GetFiles(directory, patterns, SearchOption.TopDirectoryOnly)
+                    );
                 }
             }
         }

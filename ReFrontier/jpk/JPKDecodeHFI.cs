@@ -12,7 +12,7 @@ namespace ReFrontier.jpk
 
         public override void ProcessOnDecode(Stream inStream, byte[] outBuffer)
         {
-            BinaryReader br = new BinaryReader(inStream);
+            BinaryReader br = new(inStream);
             m_hfTableLen = br.ReadInt16();
             m_hfTableOffset = (int)inStream.Position;
             m_hfDataOffset = m_hfTableOffset + m_hfTableLen * 4 - 0x3fc;
@@ -22,7 +22,7 @@ namespace ReFrontier.jpk
         public override byte ReadByte(Stream s) //implements jpkget_hf
         {
             int data = m_hfTableLen;
-            BinaryReader br = new BinaryReader(s);
+            BinaryReader br = new(s);
 
             while (data >= 0x100)
             {
