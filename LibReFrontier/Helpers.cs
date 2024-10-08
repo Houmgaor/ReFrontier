@@ -108,22 +108,27 @@ namespace LibReFrontier
         }
 
         /// <summary>
-        /// Return info for MHFUP_00.DAT
+        /// Get the update entry format for MHFUP_00.DAT.
         /// </summary>
-        /// <param name="fileName"></param>
-        /// <returns></returns>
+        /// <param name="fileName">File that was updated</param>
+        /// <returns>Modified data in custom format for MHFUP_00.DAT</returns>
         public static string GetUpdateEntry(string fileName)
         {
             DateTime date = File.GetLastWriteTime(fileName);
-            string dateHex2 = date.Subtract(new DateTime(1601, 1, 1)).Ticks.ToString("X16").Substring(0, 8);
-            string dateHex1 = date.Subtract(new DateTime(1601, 1, 1)).Ticks.ToString("X16").Substring(8);
+            string dateHex2 = date.Subtract(new DateTime(1601, 1, 1)).Ticks.ToString("X16")[..8];
+            string dateHex1 = date.Subtract(new DateTime(1601, 1, 1)).Ticks.ToString("X16")[8..];
             byte[] repackData = File.ReadAllBytes(fileName);
             uint crc32 = Crc32Algorithm.Compute(repackData);
             Console.WriteLine($"{crc32:X8},{dateHex1},{dateHex2},{fileName.Replace("output", "dat")},{repackData.Length},0");
             return $"{crc32:X8},{dateHex1},{dateHex2},{fileName},{repackData.Length},0";
         }
 
-        // Search for byte array
+        /// <summary>
+        /// Search for byte array
+        /// </summary>
+        /// <param name="haystack">Bytes to search into.</param>
+        /// <param name="needle">Bytes to search.</param>
+        /// <returns>Offset if found, -1 otherwise.</returns>
         public static int GetOffsetOfArray(byte[] haystack, byte[] needle)
         {
             for (int i = 0; i <= haystack.Length - needle.Length; i++)

@@ -79,9 +79,9 @@ namespace FrontierTextTool
         }
 
         /// <summary>
-        /// Update MHFUP_00.DAT
+        /// Update MHFUP_00.DAT.
         /// </summary>
-        /// <param name="updEntry"></param>
+        /// <param name="updEntry">Updated elements in specific format.</param>
         static void UpdateList(string updEntry)
         {
             string file = updEntry.Split(',')[3].Split('/')[1];
@@ -213,20 +213,13 @@ namespace FrontierTextTool
         }
 
         /// <summary>
-        /// Append translations and update pointers.
-        /// 
-        /// The output generated in output will be compressed and encoded.
+        /// Update string and string indices in fileBytes.
         /// </summary>
-        /// <param name="inputFile">File to insert the translation to, such as mhfdat.bin</param>
-        /// <param name="inputCsv">CSV with the updated transaltions.</param>
-        static void InsertStrings(string inputFile, string inputCsv)
+        /// <param name="stringDatabase">The new strings used for the update, contains offsets.</param>
+        /// <param name="fileBytes">The binary file to do updates to.</param>
+        /// <returns></returns>
+        static byte[] UpdateBinaryStrings(StringDatabase[] stringDatabase, byte[] fileBytes)
         {
-            Console.WriteLine($"Processing {inputFile}...");
-            byte[] inputArray = File.ReadAllBytes(inputFile);
-
-            // Read csv
-            var stringDatabase = LoadCsvToStringDatabase(inputCsv);
-
             // Get info for translation array and get all offsets that need to be remapped
             List<uint> eStringsOffsets = [];
             List<int> eStringLengths = [];
@@ -246,7 +239,7 @@ namespace FrontierTextTool
             for (int i = 0; i < eStringsCount; i++) 
                 offsetDict.Add(
                     (int)eStringsOffsets[i],
-                    inputArray.Length + eStringLengths.Take(i).Sum()
+                    fileBytes.Length + eStringLengths.Take(i).Sum()
                 );
 
             if (verbose)
@@ -266,29 +259,50 @@ namespace FrontierTextTool
             }
 
             // Replace offsets in binary file
-            for (int p = 0; p < inputArray.Length; p += 4)
+            for (int p = 0; p < fileBytes.Length; p += 4)
             {
-                if (p + 4 > inputArray.Length)
+                if (p + 4 > fileBytes.Length)
                     continue;
-                int cur = BitConverter.ToInt32(inputArray, p);
+                int cur = BitConverter.ToInt32(fileBytes, p);
                 if (offsetDict.ContainsKey(cur) && p > 10000)
                 {
                     offsetDict.TryGetValue(cur, out int replacement);
                     byte[] newPointer = BitConverter.GetBytes(replacement);
                     for (int w = 0; w < 4; w++)
-                        inputArray[p + w] = newPointer[w];
+                        fileBytes[p + w] = newPointer[w];
                 }
             }
 
             // Combine arrays
-            byte[] outputArray = new byte[inputArray.Length + eStringsLength];
-            Array.Copy(inputArray, outputArray, inputArray.Length);
-            Array.Copy(eStringsArray, 0, outputArray, inputArray.Length, eStringsArray.Length);
+            byte[] updatedBytes = new byte[fileBytes.Length + eStringsLength];
+            Array.Copy(fileBytes, updatedBytes, fileBytes.Length);
+            Array.Copy(eStringsArray, 0, updatedBytes, fileBytes.Length, eStringsArray.Length);
+            
+            return updatedBytes;
+        }
+
+        /// <summary>
+        /// Append translations and update pointers.
+        /// 
+        /// The output generated in output will be compressed and encoded.
+        /// </summary>
+        /// <param name="inputFile">File to insert the translation to, such as mhfdat.bin</param>
+        /// <param name="inputCsv">CSV with the updated transaltions.</param>
+        static void InsertStrings(string inputFile, string inputCsv)
+        {
+            Console.WriteLine($"Processing {inputFile}...");
+            byte[] inputBytes = File.ReadAllBytes(inputFile);
+
+            // Read csv
+            var stringDatabase = LoadCsvToStringDatabase(inputCsv);
+
+            // Update the array
+            var updatedBytes = UpdateBinaryStrings(stringDatabase, inputBytes);
 
             // Output file
             Directory.CreateDirectory("output");
             string outputFile = $"output/{Path.GetFileName(inputFile)}";
-            File.WriteAllBytes(outputFile, outputArray);
+            File.WriteAllBytes(outputFile, updatedBytes);
 
             // Pack with jpk type 0 and encrypt file with ecd
             Pack.JPKEncode(0, outputFile, outputFile, 15);
@@ -337,7 +351,9 @@ namespace FrontierTextTool
                 Replace("\t", "<TAB>"). // Replace tab
                 Replace("\r\n", "<CLINE>"). // Replace carriage return
                 Replace("\n", "<NLINE>"); // Replace new line
-                txtOutput.WriteLine($"{off}\t{Helpers.GetCrc32(Encoding.GetEncoding("shift-jis").GetBytes(str))}\t{str}\t");
+                txtOutput.WriteLine(
+                    $"{off}\t{Helpers.GetCrc32(Encoding.GetEncoding("shift-jis").GetBytes(str))}\t{str}\t"
+                );
             }
             txtOutput.Close();
         }
