@@ -150,8 +150,11 @@ namespace FrontierDataTool
 
             #region ActiveSkill
             Console.WriteLine("Dumping active skill names.");
-            brInput.BaseStream.Seek(soStringSkillActivate, SeekOrigin.Begin); sOffset = brInput.ReadInt32();
-            brInput.BaseStream.Seek(eoStringSkillActivate, SeekOrigin.Begin); eOffset = brInput.ReadInt32();
+            brInput.BaseStream.Seek(soStringSkillActivate, SeekOrigin.Begin);
+            sOffset = brInput.ReadInt32();
+            brInput.BaseStream.Seek(eoStringSkillActivate, SeekOrigin.Begin);
+            eOffset = brInput.ReadInt32();
+
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
             List<string> activeSkill = [];
             while (brInput.BaseStream.Position < eOffset)
@@ -168,8 +171,11 @@ namespace FrontierDataTool
 
             #region SkillDescription
             Console.WriteLine("Dumping active skill descriptions.");
-            brInput.BaseStream.Seek(soStringSkillDesc, SeekOrigin.Begin); sOffset = brInput.ReadInt32();
-            brInput.BaseStream.Seek(eoStringSkillDesc, SeekOrigin.Begin); eOffset = brInput.ReadInt32();
+            brInput.BaseStream.Seek(soStringSkillDesc, SeekOrigin.Begin);
+            sOffset = brInput.ReadInt32();
+            brInput.BaseStream.Seek(eoStringSkillDesc, SeekOrigin.Begin);
+            eOffset = brInput.ReadInt32();
+
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
             List<string> skillDesc = [];
             while (brInput.BaseStream.Position < eOffset)
@@ -186,8 +192,11 @@ namespace FrontierDataTool
 
             #region ZSkill
             Console.WriteLine("Dumping Z skill names.");
-            brInput.BaseStream.Seek(soStringZSkill, SeekOrigin.Begin); sOffset = brInput.ReadInt32();
-            brInput.BaseStream.Seek(eoStringZSkill, SeekOrigin.Begin); eOffset = brInput.ReadInt32();
+            brInput.BaseStream.Seek(soStringZSkill, SeekOrigin.Begin);
+            sOffset = brInput.ReadInt32();
+            brInput.BaseStream.Seek(eoStringZSkill, SeekOrigin.Begin);
+            eOffset = brInput.ReadInt32();
+
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
             List<string> zSkill = [];
             while (brInput.BaseStream.Position < eOffset)
@@ -206,8 +215,11 @@ namespace FrontierDataTool
             Console.WriteLine("Dumping item names.");
             msInput = new MemoryStream(File.ReadAllBytes(mhfdat));
             brInput = new BinaryReader(msInput);            
-            brInput.BaseStream.Seek(soStringItem, SeekOrigin.Begin); sOffset = brInput.ReadInt32();
-            brInput.BaseStream.Seek(eoStringItem, SeekOrigin.Begin); eOffset = brInput.ReadInt32();
+            brInput.BaseStream.Seek(soStringItem, SeekOrigin.Begin);
+            sOffset = brInput.ReadInt32();
+            brInput.BaseStream.Seek(eoStringItem, SeekOrigin.Begin);
+            eOffset = brInput.ReadInt32();
+
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
             List<string> items = [];
             while (brInput.BaseStream.Position < eOffset)
@@ -222,8 +234,11 @@ namespace FrontierDataTool
                     file.WriteLine("{0}", entry);
 
             Console.WriteLine("Dumping item descriptions.");
-            brInput.BaseStream.Seek(soStringItemDesc, SeekOrigin.Begin); sOffset = brInput.ReadInt32();
-            brInput.BaseStream.Seek(eoStringItemDesc, SeekOrigin.Begin); eOffset = brInput.ReadInt32();
+            brInput.BaseStream.Seek(soStringItemDesc, SeekOrigin.Begin);
+            sOffset = brInput.ReadInt32();
+            brInput.BaseStream.Seek(eoStringItemDesc, SeekOrigin.Begin);
+            eOffset = brInput.ReadInt32();
+
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
             List<string> itemsDesc = [];
             while (brInput.BaseStream.Position < eOffset)
@@ -244,8 +259,11 @@ namespace FrontierDataTool
             for (int i = 0; i < 5; i++)
             {
                 // Get raw data
-                brInput.BaseStream.Seek(dataPointersArmor[i].Key, SeekOrigin.Begin); sOffset = brInput.ReadInt32();
-                brInput.BaseStream.Seek(dataPointersArmor[i].Value, SeekOrigin.Begin); eOffset = brInput.ReadInt32();
+                brInput.BaseStream.Seek(dataPointersArmor[i].Key, SeekOrigin.Begin);
+                sOffset = brInput.ReadInt32();
+                brInput.BaseStream.Seek(dataPointersArmor[i].Value, SeekOrigin.Begin);
+                eOffset = brInput.ReadInt32();
+
                 int entryCount = (eOffset - sOffset) / 0x48;
                 totalCount += entryCount;
             }
@@ -256,18 +274,23 @@ namespace FrontierDataTool
             for (int i = 0; i < 5; i++)
             {
                 // Get raw data
-                brInput.BaseStream.Seek(dataPointersArmor[i].Key, SeekOrigin.Begin); sOffset = brInput.ReadInt32();
-                brInput.BaseStream.Seek(dataPointersArmor[i].Value, SeekOrigin.Begin); eOffset = brInput.ReadInt32();
+                brInput.BaseStream.Seek(dataPointersArmor[i].Key, SeekOrigin.Begin);
+                sOffset = brInput.ReadInt32();
+                brInput.BaseStream.Seek(dataPointersArmor[i].Value, SeekOrigin.Begin);
+                eOffset = brInput.ReadInt32();
+                
                 int entryCount = (eOffset - sOffset) / 0x48;
                 brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
                 Console.WriteLine($"{aClassIds[i]} count: {entryCount}");
 
                 for (int j = 0; j < entryCount; j++)
                 {
-                    Structs.ArmorDataEntry entry = new();
-                    entry.equipClass = aClassIds[i];
-                    entry.modelIdMale = brInput.ReadInt16();
-                    entry.modelIdFemale = brInput.ReadInt16();
+                    Structs.ArmorDataEntry entry = new()
+                    {
+                        equipClass = aClassIds[i],
+                        modelIdMale = brInput.ReadInt16(),
+                        modelIdFemale = brInput.ReadInt16()
+                    };
                     byte bitfield = brInput.ReadByte();
                     entry.isMaleEquip = (bitfield & (1 << 1 - 1)) != 0;
                     entry.isFemaleEquip = (bitfield & (1 << 2 - 1)) != 0;
@@ -331,7 +354,9 @@ namespace FrontierDataTool
                 }
 
                 // Get strings
-                brInput.BaseStream.Seek(stringPointersArmor[i].Key, SeekOrigin.Begin); sOffset = brInput.ReadInt32();
+                brInput.BaseStream.Seek(stringPointersArmor[i].Key, SeekOrigin.Begin);
+                sOffset = brInput.ReadInt32();
+
                 brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
                 for (int j = 0; j < entryCount - 1; j++)
                 {
@@ -358,8 +383,11 @@ namespace FrontierDataTool
 
             #region WeaponData
             // Dump melee weapon data
-            brInput.BaseStream.Seek(soMelee, SeekOrigin.Begin); sOffset = brInput.ReadInt32();
-            brInput.BaseStream.Seek(eoMelee, SeekOrigin.Begin); eOffset = brInput.ReadInt32();
+            brInput.BaseStream.Seek(soMelee, SeekOrigin.Begin);
+            sOffset = brInput.ReadInt32();
+            brInput.BaseStream.Seek(eoMelee, SeekOrigin.Begin);
+            eOffset = brInput.ReadInt32();
+
             int entryCountMelee = (eOffset - sOffset) / 0x34;
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
             Console.WriteLine($"Melee count: {entryCountMelee}");
@@ -367,8 +395,10 @@ namespace FrontierDataTool
             Structs.MeleeWeaponEntry[] meleeEntries = new Structs.MeleeWeaponEntry[entryCountMelee];
             for (int i = 0; i < entryCountMelee; i++)
             {
-                Structs.MeleeWeaponEntry entry = new();
-                entry.modelId = brInput.ReadInt16();
+                Structs.MeleeWeaponEntry entry = new()
+                {
+                    modelId = brInput.ReadInt16()
+                };
                 entry.modelIdData = GetModelIdData(entry.modelId);
                 entry.rarity = brInput.ReadByte();
                 entry.classId = wClassIds[brInput.ReadByte()];
@@ -402,7 +432,9 @@ namespace FrontierDataTool
             }
 
             // Get strings
-            brInput.BaseStream.Seek(soStringMelee, SeekOrigin.Begin); sOffset = brInput.ReadInt32();
+            brInput.BaseStream.Seek(soStringMelee, SeekOrigin.Begin);
+            sOffset = brInput.ReadInt32();
+
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
             for (int j = 0; j < entryCountMelee - 1; j++)
             {
@@ -419,8 +451,11 @@ namespace FrontierDataTool
             }
 
             // Dump ranged weapon data
-            brInput.BaseStream.Seek(soRanged, SeekOrigin.Begin); sOffset = brInput.ReadInt32();
-            brInput.BaseStream.Seek(eoRanged, SeekOrigin.Begin); eOffset = brInput.ReadInt32();
+            brInput.BaseStream.Seek(soRanged, SeekOrigin.Begin);
+            sOffset = brInput.ReadInt32();
+            brInput.BaseStream.Seek(eoRanged, SeekOrigin.Begin);
+            eOffset = brInput.ReadInt32();
+
             int entryCountRanged = (eOffset - sOffset) / 0x3C;
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
             Console.WriteLine($"Ranged count: {entryCountRanged}");
@@ -428,8 +463,10 @@ namespace FrontierDataTool
             Structs.RangedWeaponEntry[] rangedEntries = new Structs.RangedWeaponEntry[entryCountRanged];
             for (int i = 0; i < entryCountRanged; i++)
             {
-                Structs.RangedWeaponEntry entry = new();
-                entry.modelId = brInput.ReadInt16();
+                Structs.RangedWeaponEntry entry = new()
+                {
+                    modelId = brInput.ReadInt16()
+                };
                 entry.modelIdData = GetModelIdData(entry.modelId);
                 entry.rarity = brInput.ReadByte();
                 entry.maxSlotsMaybe = brInput.ReadByte();
@@ -489,7 +526,9 @@ namespace FrontierDataTool
             }
 
             // Get strings
-            brInput.BaseStream.Seek(soStringRanged, SeekOrigin.Begin); sOffset = brInput.ReadInt32();
+            brInput.BaseStream.Seek(soStringRanged, SeekOrigin.Begin);
+            sOffset = brInput.ReadInt32();
+
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
             for (int j = 0; j < entryCountRanged - 1; j++)
             {
@@ -512,7 +551,8 @@ namespace FrontierDataTool
             brInput = new BinaryReader(msInput);
 
             totalCount = 0;
-            for (int j = 0; j < offsetInfQuestData.Count; j++) totalCount += offsetInfQuestData[j].Value;
+            for (int j = 0; j < offsetInfQuestData.Count; j++)
+                totalCount += offsetInfQuestData[j].Value;
             Structs.QuestData[] quests = new Structs.QuestData[totalCount];
 
             currentCount = 0;
@@ -521,41 +561,52 @@ namespace FrontierDataTool
                 brInput.BaseStream.Seek(offsetInfQuestData[j].Key, SeekOrigin.Begin);                
                 for (int i = 0; i < offsetInfQuestData[j].Value; i++)
                 {
-                    Structs.QuestData entry = new();
-                    entry.unk1 = brInput.ReadByte();
-                    entry.unk2 = brInput.ReadByte();
-                    entry.unk3 = brInput.ReadByte();
-                    entry.unk4 = brInput.ReadByte();
-                    entry.level = brInput.ReadByte();
-                    entry.unk5 = brInput.ReadByte();
-                    entry.courseType = brInput.ReadByte();
-                    entry.unk7 = brInput.ReadByte();
-                    entry.unk8 = brInput.ReadByte();
-                    entry.unk9 = brInput.ReadByte();
-                    entry.unk10 = brInput.ReadByte();
-                    entry.unk11 = brInput.ReadByte();
-                    entry.fee = brInput.ReadInt32();
-                    entry.zennyMain = brInput.ReadInt32();
-                    entry.zennyKo = brInput.ReadInt32();
-                    entry.zennySubA = brInput.ReadInt32();
-                    entry.zennySubB = brInput.ReadInt32();
-                    entry.time = brInput.ReadInt32();
-                    entry.unk12 = brInput.ReadInt32();
-                    entry.unk13 = brInput.ReadByte();
-                    entry.unk14 = brInput.ReadByte();
-                    entry.unk15 = brInput.ReadByte();
-                    entry.unk16 = brInput.ReadByte();
-                    entry.unk17 = brInput.ReadByte();
-                    entry.unk18 = brInput.ReadByte();
-                    entry.unk19 = brInput.ReadByte();
-                    entry.unk20 = brInput.ReadByte();
-                    int questType = brInput.ReadInt32(); entry.mainGoalType = Enum.GetName(typeof(Structs.QuestTypes), questType); entry.mainGoalType ??= questType.ToString("X8");
+                    Structs.QuestData entry = new()
+                    {
+                        unk1 = brInput.ReadByte(),
+                        unk2 = brInput.ReadByte(),
+                        unk3 = brInput.ReadByte(),
+                        unk4 = brInput.ReadByte(),
+                        level = brInput.ReadByte(),
+                        unk5 = brInput.ReadByte(),
+                        courseType = brInput.ReadByte(),
+                        unk7 = brInput.ReadByte(),
+                        unk8 = brInput.ReadByte(),
+                        unk9 = brInput.ReadByte(),
+                        unk10 = brInput.ReadByte(),
+                        unk11 = brInput.ReadByte(),
+                        fee = brInput.ReadInt32(),
+                        zennyMain = brInput.ReadInt32(),
+                        zennyKo = brInput.ReadInt32(),
+                        zennySubA = brInput.ReadInt32(),
+                        zennySubB = brInput.ReadInt32(),
+                        time = brInput.ReadInt32(),
+                        unk12 = brInput.ReadInt32(),
+                        unk13 = brInput.ReadByte(),
+                        unk14 = brInput.ReadByte(),
+                        unk15 = brInput.ReadByte(),
+                        unk16 = brInput.ReadByte(),
+                        unk17 = brInput.ReadByte(),
+                        unk18 = brInput.ReadByte(),
+                        unk19 = brInput.ReadByte(),
+                        unk20 = brInput.ReadByte()
+                    };
+                    int questType = brInput.ReadInt32();
+                    entry.mainGoalType = Enum.GetName(typeof(Structs.QuestTypes), questType);
+                    entry.mainGoalType ??= questType.ToString("X8");
+
                     entry.mainGoalTarget = brInput.ReadInt16();
                     entry.mainGoalCount = brInput.ReadInt16();
-                    questType = brInput.ReadInt32(); entry.subAGoalType = Enum.GetName(typeof(Structs.QuestTypes), questType); entry.subAGoalType ??= questType.ToString("X8");
+                    questType = brInput.ReadInt32();
+                    entry.subAGoalType = Enum.GetName(typeof(Structs.QuestTypes), questType);
+                    entry.subAGoalType ??= questType.ToString("X8");
+
                     entry.subAGoalTarget = brInput.ReadInt16();
                     entry.subAGoalCount = brInput.ReadInt16();
-                    questType = brInput.ReadInt32(); entry.subBGoalType = Enum.GetName(typeof(Structs.QuestTypes), questType); entry.subBGoalType ??= questType.ToString("X8");
+                    questType = brInput.ReadInt32();
+                    entry.subBGoalType = Enum.GetName(typeof(Structs.QuestTypes), questType);
+                    entry.subBGoalType ??= questType.ToString("X8");
+
                     entry.subBGoalTarget = brInput.ReadInt16();
                     entry.subBGoalCount = brInput.ReadInt16();
 
@@ -595,8 +646,11 @@ namespace FrontierDataTool
             BinaryWriter brOutput = new(File.Open(file, FileMode.Open));
 
             // Patch item prices
-            brInput.BaseStream.Seek(0xFC, SeekOrigin.Begin); int sOffset = brInput.ReadInt32();
-            brInput.BaseStream.Seek(0xA70, SeekOrigin.Begin); int eOffset = brInput.ReadInt32();
+            brInput.BaseStream.Seek(0xFC, SeekOrigin.Begin);
+            int sOffset = brInput.ReadInt32();
+            brInput.BaseStream.Seek(0xA70, SeekOrigin.Begin);
+            int eOffset = brInput.ReadInt32();
+
             int count = (eOffset - sOffset) / 0x24;
             Console.WriteLine($"Patching prices for {count} items starting at 0x{sOffset:X8}");
             for (int i = 0; i < count; i++)
@@ -615,14 +669,17 @@ namespace FrontierDataTool
             // Patch equip prices
             for (int i = 0; i < 5; i++)
             {
-                brInput.BaseStream.Seek(dataPointersArmor[i].Key, SeekOrigin.Begin); sOffset = brInput.ReadInt32();
-                brInput.BaseStream.Seek(dataPointersArmor[i].Value, SeekOrigin.Begin); eOffset = brInput.ReadInt32();
+                brInput.BaseStream.Seek(dataPointersArmor[i].Key, SeekOrigin.Begin);
+                sOffset = brInput.ReadInt32();
+                brInput.BaseStream.Seek(dataPointersArmor[i].Value, SeekOrigin.Begin);
+                eOffset = brInput.ReadInt32();
+
                 count = (eOffset - sOffset) / 0x48;
                 Console.WriteLine($"Patching prices for {count} armor pieces starting at 0x{sOffset:X8}");
                 for (int j = 0; j < count; j++)
                 {
                     brOutput.BaseStream.Seek(sOffset + (j * 0x48) + 12, SeekOrigin.Begin);
-                    brOutput.Write((int)50);
+                    brOutput.Write(50);
                 }
             }
 
@@ -632,7 +689,7 @@ namespace FrontierDataTool
             // Generate shop array
             count = 16700;
             byte[] shopArray = new byte[(count * 8) + 5 * 32];
-            int blockSize = (count / 5) * 8;
+            int blockSize = count / 5 * 8;
 
             for (int i = 0; i < count; i++)
             {
@@ -675,7 +732,8 @@ namespace FrontierDataTool
             {
                 Console.WriteLine($"Found hunter pearl skill data to modify at 0x{offsetData:X8}.");
                 byte[] pearlPatch = [02, 00, 02, 00, 02, 00, 02, 00, 02, 00, 02, 00, 02, 00];
-                for (int i = 0; i < 108; i++) Array.Copy(pearlPatch, 0, outputArray, offsetData + (i * 0x30) + 8, pearlPatch.Length);                
+                for (int i = 0; i < 108; i++)
+                    Array.Copy(pearlPatch, 0, outputArray, offsetData + (i * 0x30) + 8, pearlPatch.Length);                
             }
             else Console.WriteLine("Could not find pearl skill needle, please check manually and correct code.");
 

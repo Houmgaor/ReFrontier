@@ -87,11 +87,11 @@ namespace ReFrontier
                 fileName = $"output/{fileName}";
                 using BinaryWriter bwOutput = new(File.Open(fileName, FileMode.Create));
                 // Header
-                bwOutput.Write((int)23160941);    // MHA magic
-                bwOutput.Write((int)0);           // pointerEntryMetaBlock
+                bwOutput.Write(23160941);    // MHA magic
+                bwOutput.Write(0);           // pointerEntryMetaBlock
                 bwOutput.Write(count);
-                bwOutput.Write((int)0);           // pointerEntryNamesBlock
-                bwOutput.Write((int)0);           // entryNamesBlockLength
+                bwOutput.Write(0);           // pointerEntryNamesBlock
+                bwOutput.Write(0);           // entryNamesBlockLength
                 bwOutput.Write(unk1);
                 bwOutput.Write(unk2);
 
@@ -162,7 +162,7 @@ namespace ReFrontier
                 // + 8 = rest count and unk header int
                 // the directory in the requested test file is padded to 16 bytes
                 // not sure if necessary and if this applies to all
-                byte[] tempDir = new byte[((3 * 8 + restCount * 0x0C + 8) + 15) & ~15];
+                byte[] tempDir = new byte[(3 * 8 + restCount * 0x0C + 8 + 15) & ~15];
                 bwOutput.Write(tempDir);
 
                 int offset = tempDir.Length;
@@ -222,7 +222,7 @@ namespace ReFrontier
                     {
                         Console.WriteLine("Writing null entry");
                         bwOutput.Write((long)0);
-                        bwOutput.Write((int)(0));
+                        bwOutput.Write(0);
                     }
                 }
             }

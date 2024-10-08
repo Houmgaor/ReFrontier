@@ -9,14 +9,19 @@ namespace LibReFrontier
 {
     public class Helpers
     {
-        // Read null-terminated string
+        /// <summary>
+        /// Read null-terminated string
+        /// </summary>
+        /// <param name="brInput"></param>
+        /// <param name="encoding"></param>
+        /// <returns></returns>
         public static string ReadNullterminatedString(BinaryReader brInput, Encoding encoding)
         {
             var charByteList = new List<byte>();
             string str = "";
             if (brInput.BaseStream.Position == brInput.BaseStream.Length)
             {
-                byte[] charByteArray = charByteList.ToArray();
+                byte[] charByteArray = [.. charByteList];
                 str = encoding.GetString(charByteArray);
                 return str;
             }
@@ -26,17 +31,21 @@ namespace LibReFrontier
                 charByteList.Add(b);
                 b = brInput.ReadByte();
             }
-            byte[] char_bytes = charByteList.ToArray();
+            byte[] char_bytes = [.. charByteList];
             str = encoding.GetString(char_bytes);
             return str;
         }
 
-        // Multi-filter GetFiles https://stackoverflow.com/a/3754470/5343630
+        /// <summary>
+        /// Multi-filter GetFiles https://stackoverflow.com/a/3754470/5343630
+        /// </summary>
         public static class MyDirectory
         {
-            public static string[] GetFiles(string path,
-                                string[] searchPatterns,
-                                SearchOption searchOption = SearchOption.TopDirectoryOnly)
+            public static string[] GetFiles(
+                string path,
+                string[] searchPatterns,
+                SearchOption searchOption = SearchOption.TopDirectoryOnly
+            )
             {
                 return searchPatterns.AsParallel()
                        .SelectMany(searchPattern =>
@@ -45,22 +54,31 @@ namespace LibReFrontier
             }
         }
 
-        // Print to console with seperator
+        /// <summary>
+        /// Print to console with seperator
+        /// </summary>
+        /// <param name="input">Value to print</param>
+        /// <param name="printBefore">Set to true to display input before the separator.</param>
         public static void Print(string input, bool printBefore)
         {
-            if (!printBefore)
-            {
-                Console.WriteLine(input);
-                Console.WriteLine("==============================");
-            }
-            else
+            if (printBefore)
             {
                 Console.WriteLine("\n==============================");
                 Console.WriteLine(input);
             }
+            else
+            {
+                Console.WriteLine(input);
+                Console.WriteLine("==============================");
+            }
         }
 
-        // String to byte array
+
+        /// <summary>
+        /// String to byte array
+        /// </summary>
+        /// <param name="hex"></param>
+        /// <returns></returns>
         public static byte[] StringToByteArray(string hex)
         {
             int NumberChars = hex.Length;
@@ -79,13 +97,21 @@ namespace LibReFrontier
             return hex.ToString();
         }
 
-        // CRC32 byte array - just to remove dependency from TextTool
+        /// <summary>
+        /// CRC32 byte array - just to remove dependency from TextTool
+        /// </summary>
+        /// <param name="array"></param>
+        /// <returns></returns>
         public static uint GetCrc32(byte[] array)
         {
             return Crc32Algorithm.Compute(array);
         }
 
-        // Return info for MHFUP_00.DAT
+        /// <summary>
+        /// Return info for MHFUP_00.DAT
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
         public static string GetUpdateEntry(string fileName)
         {
             DateTime date = File.GetLastWriteTime(fileName);
@@ -116,17 +142,14 @@ namespace LibReFrontier
             {
                 return false;
             }
-            else
+            for (int i = 0; i < needle.Length; i++)
             {
-                for (int i = 0; i < needle.Length; i++)
+                if (needle[i] != haystack[i + start])
                 {
-                    if (needle[i] != haystack[i + start])
-                    {
-                        return false;
-                    }
+                    return false;
                 }
-                return true;
             }
+            return true;
         }
 
         // Header <-> extensions

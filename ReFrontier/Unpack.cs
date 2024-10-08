@@ -114,8 +114,10 @@ namespace ReFrontier
             }
             // Clean up
             logOutput.Close();
-            if (!createLog) File.Delete($"{outputDir}/{Path.GetFileNameWithoutExtension(input)}.log");
-            if (cleanUp) File.Delete(input);
+            if (!createLog)
+                File.Delete($"{outputDir}/{Path.GetFileNameWithoutExtension(input)}.log");
+            if (cleanUp)
+                File.Delete(input);
         }
 
         public static void UnpackMHA(string input, BinaryReader brInput, bool createLog)
@@ -134,7 +136,7 @@ namespace ReFrontier
             int pointerEntryMetaBlock = brInput.ReadInt32();
             int count = brInput.ReadInt32();
             int pointerEntryNamesBlock = brInput.ReadInt32();
-            int entryNamesBlockLength = brInput.ReadInt32();
+            brInput.ReadInt32(); // entryNamesBlockLength
             short unk1 = brInput.ReadInt16();
             short unk2 = brInput.ReadInt16();
             if (createLog) {
@@ -239,7 +241,10 @@ namespace ReFrontier
             Directory.CreateDirectory(outputDir);
 
             StreamWriter logOutput = new($"{outputDir}/{Path.GetFileNameWithoutExtension(input)}.log");
-            if (createLog) { logOutput.WriteLine("StageContainer"); logOutput.WriteLine(input.Remove(0, input.LastIndexOf('/') + 1)); }
+            if (createLog) {
+                logOutput.WriteLine("StageContainer");
+                logOutput.WriteLine(input.Remove(0, input.LastIndexOf('/') + 1));
+            }
 
             // First three segments
             for (int i = 0; i < 3; i ++)
@@ -252,7 +257,8 @@ namespace ReFrontier
                     Console.WriteLine(
                         $"Offset: 0x{offset:X8}, Size: 0x{size:X8} (SKIPPED)"
                     );
-                    if (createLog) logOutput.WriteLine($"null,{offset},{size},0");
+                    if (createLog)
+                        logOutput.WriteLine($"null,{offset},{size},0");
                     continue;
                 }
 
@@ -298,7 +304,8 @@ namespace ReFrontier
                     Console.WriteLine(
                         $"Offset: 0x{offset:X8}, Size: 0x{size:X8}, Unk: 0x{unk:X8} (SKIPPED)"
                     );
-                    if (createLog) logOutput.WriteLine($"null,{offset},{size},{unk},0");
+                    if (createLog)
+                        logOutput.WriteLine($"null,{offset},{size},{unk},0");
                     continue;
                 }
 
@@ -315,7 +322,8 @@ namespace ReFrontier
 
                 // Print info
                 Console.WriteLine($"Offset: 0x{offset:X8}, Size: 0x{size:X8}, Unk: 0x{unk:X8} ({extension})");
-                if (createLog) logOutput.WriteLine($"{i + 1:D4}_{offset:X8}.{extension},{offset},{size},{unk},{headerInt}");
+                if (createLog)
+                    logOutput.WriteLine($"{i + 1:D4}_{offset:X8}.{extension},{offset},{size},{unk},{headerInt}");
 
                 // Extract file
                 File.WriteAllBytes($"{outputDir}/{i + 1:D4}_{offset:X8}.{extension}", data);
@@ -340,7 +348,7 @@ namespace ReFrontier
             // Read header
             brInput.BaseStream.Seek(10, SeekOrigin.Current);
             int stringCount = brInput.ReadInt16();
-            int textBlockSize = brInput.ReadInt32();
+            brInput.ReadInt32(); // textBlockSize
 
             for (int i = 0; i < stringCount; i++)
             {

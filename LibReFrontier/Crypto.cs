@@ -23,7 +23,7 @@ namespace LibReFrontier
             0xCD, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x0D, 0xCD, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x0D, 0xCD,
             0x00, 0x00, 0x00, 0x01, 0x02, 0xE9, 0x0E, 0xDD, 0x00, 0x00, 0x00, 0x03 ];
 
-        static uint getRndEcd(int index, ref uint rnd)
+        static uint GetRndEcd(int index, ref uint rnd)
         {
             rnd = rnd * LoadUInt32BE(rndBufEcd, 8 * index) + LoadUInt32BE(rndBufEcd, 8 * index + 4);
             return rnd;
@@ -45,20 +45,20 @@ namespace LibReFrontier
             return keyBuffer;
         }
 
-        public static void decEcd(byte[] buffer)
+        public static void DecEcd(byte[] buffer)
         {
             uint fsize = BitConverter.ToUInt32(buffer, 8);
             uint crc32 = BitConverter.ToUInt32(buffer, 12);
             int index = BitConverter.ToUInt16(buffer, 4);
             uint rnd = (crc32 << 16) | (crc32 >> 16) | 1;
 
-            uint xorpad = getRndEcd(index, ref rnd);
+            uint xorpad = GetRndEcd(index, ref rnd);
 
             byte r8 = (byte)xorpad;
 
             for (int i = 0; i < fsize; i++)
             {
-                xorpad = getRndEcd(index, ref rnd);
+                xorpad = GetRndEcd(index, ref rnd);
 
                 byte data = buffer[0x10 + i];
                 uint r11 = (uint)(data ^ r8);
@@ -67,9 +67,9 @@ namespace LibReFrontier
                 {
                     uint r10 = xorpad ^ r11;
                     r11 = r12;
-                    r12 = r12 ^ r10;
-                    r12 = r12 & 0xFF;
-                    xorpad = xorpad >> 4;
+                    r12 ^= r10;
+                    r12 &= 0xFF;
+                    xorpad >>= 4;
                 }
 
                 r8 = (byte)((r12 & 0xF) | ((r11 & 0xF) << 4));
@@ -77,7 +77,7 @@ namespace LibReFrontier
             }
         }
 
-        public static byte[] encEcd(byte[] buffer, byte[] bufferMeta)
+        public static byte[] EncEcd(byte[] buffer, byte[] bufferMeta)
         {
             // Update meta data
             int fsize = buffer.Length;
@@ -95,16 +95,17 @@ namespace LibReFrontier
 
             // Fill data with nullspace
             int i;
-            for (i = 16 + fsize; i < buf.Length; i++) buf[i] = 0;
+            for (i = 16 + fsize; i < buf.Length; i++)
+                buf[i] = 0;
 
             // Encrypt data
             uint rnd = (crc32w << 16) | (crc32w >> 16) | 1;
-            uint xorpad = getRndEcd(index, ref rnd);
+            uint xorpad = GetRndEcd(index, ref rnd);
             byte r8 = (byte)xorpad;
 
             for (i = 0; i < fsize; i++)
             {
-                xorpad = getRndEcd(index, ref rnd);
+                xorpad = GetRndEcd(index, ref rnd);
                 byte data = buffer[i];
                 uint r11 = 0;
                 uint r12 = 0;
@@ -113,8 +114,8 @@ namespace LibReFrontier
                     uint r10 = xorpad ^ r11;
                     r11 = r12;
                     r12 ^= r10;
-                    r12 = r12 & 0xFF;
-                    xorpad = xorpad >> 4;
+                    r12 &= 0xFF;
+                    xorpad >>= 4;
                 }
 
                 uint dig2 = data;
@@ -131,7 +132,7 @@ namespace LibReFrontier
             return buf;
         }
 
-        public static void decExf(byte[] buffer)
+        public static void DecExf(byte[] buffer)
         {
             byte[] header = new byte[16];
             Array.Copy(buffer, header, header.Length);
@@ -149,7 +150,7 @@ namespace LibReFrontier
                     uint r7 = keybuf[r0];
                     uint r9 = r4 >> 4;
                     uint r5 = r7 >> 4;
-                    r9 = r9 ^ r12;
+                    r9 ^= r12;
                     uint r26 = r5 ^ r4;
                     r26 = (uint)(r26 & ~0xf0) | ((r9 & 0xf) << 4);
                     buffer[i] = (byte)r26;

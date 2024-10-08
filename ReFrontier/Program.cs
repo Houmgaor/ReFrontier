@@ -110,7 +110,7 @@ namespace ReFrontier
                     {
                         byte[] buffer = File.ReadAllBytes(input);
                         byte[] bufferMeta = File.ReadAllBytes($"{input}.meta");
-                        buffer = Crypto.encEcd(buffer, bufferMeta);
+                        buffer = Crypto.EncEcd(buffer, bufferMeta);
                         File.WriteAllBytes(input, buffer);
                         Helpers.Print("File encrypted.", false);
                         Helpers.GetUpdateEntry(input);
@@ -162,7 +162,7 @@ namespace ReFrontier
                 if (noDecryption == false)
                 {
                     byte[] buffer = File.ReadAllBytes(input);
-                    Crypto.decEcd(buffer);
+                    Crypto.DecEcd(buffer);
 
                     byte[] ecdHeader = new byte[0x10];
                     Array.Copy(buffer, 0, ecdHeader, 0, 0x10);
@@ -184,7 +184,7 @@ namespace ReFrontier
             {
                 Console.WriteLine("EXF Header detected.");
                 byte[] buffer = File.ReadAllBytes(input);
-                Crypto.decExf(buffer);
+                Crypto.DecExf(buffer);
                 byte[] bufferStripped = new byte[buffer.Length - 0x10];
                 Array.Copy(buffer, 0x10, bufferStripped, 0, buffer.Length - 0x10);
                 File.WriteAllBytes(input, bufferStripped);
