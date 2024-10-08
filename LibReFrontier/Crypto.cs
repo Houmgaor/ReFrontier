@@ -45,6 +45,10 @@ namespace LibReFrontier
             return keyBuffer;
         }
 
+        /// <summary>
+        /// Decode an ECD encoded file.
+        /// </summary>
+        /// <param name="buffer">Input file buffer.</param>
         public static void DecEcd(byte[] buffer)
         {
             uint fsize = BitConverter.ToUInt32(buffer, 8);
@@ -77,6 +81,12 @@ namespace LibReFrontier
             }
         }
 
+        /// <summary>
+        /// Encode a file as ECD.
+        /// </summary>
+        /// <param name="buffer">The input file as a bytes buffer.</param>
+        /// <param name="bufferMeta">Meta file associated with the input.</param>
+        /// <returns></returns>
         public static byte[] EncEcd(byte[] buffer, byte[] bufferMeta)
         {
             // Update meta data

@@ -8,6 +8,10 @@ namespace ReFrontier
 {
     public class Pack
     {
+        /// <summary>
+        /// Standard processing of an input pack file.
+        /// </summary>
+        /// <param name="input">Input file path.</param>
         public static void ProcessPackInput(string input)
         {
             string logFile = $"{input}/{input.Remove(0, input.LastIndexOf('/')+1)}.log";
@@ -229,6 +233,13 @@ namespace ReFrontier
             Console.WriteLine("==============================");
         }
 
+        /// <summary>
+        /// Encode a file with JPK format
+        /// </summary>
+        /// <param name="atype">JPK type, between 0 and 4</param>
+        /// <param name="inPath">Input file path.</param>
+        /// <param name="otPath">Output file path.</param>
+        /// <param name="level">Compression level between 0 and 100.</param>
         public static void JPKEncode(ushort atype, string inPath, string otPath, int level)
         {
             Directory.CreateDirectory("output");

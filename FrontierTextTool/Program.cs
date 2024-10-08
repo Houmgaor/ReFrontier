@@ -15,6 +15,10 @@ namespace FrontierTextTool
         static bool autoClose = false;
 
         //[STAThread]
+        /// <summary>
+        /// Main CLI for text edition.
+        /// </summary>
+        /// <param name="args">Arguments passed</param>
         static void Main(string[] args)
         {
             if (args.Length < 2) {
@@ -25,23 +29,53 @@ namespace FrontierTextTool
             if (args.Any("-verbose".Contains)) verbose = true;
             if (args.Any("-close)".Contains)) autoClose = true;
 
-            if (args[0] == "dump") DumpAndHash(args[1], Convert.ToInt32(args[2]), Convert.ToInt32(args[3]));
-            if (args[0] == "insert") InsertStrings(args[1], args[2]);
-            if (args[0] == "merge") Merge(args[1], args[2]);
-            if (args[0] == "cleanTrados") CleanTrados(args[1]);
-            if (args[0] == "insertCAT") InsertCatFile(args[1], args[2]);
+            switch (args[0]) {
+                case "dump":
+                    DumpAndHash(args[1], Convert.ToInt32(args[2]), Convert.ToInt32(args[3]));
+                    break;
+                case "insert":
+                    InsertStrings(args[1], args[2]);
+                    break;
+                case "merge":
+                    Merge(args[1], args[2]);
+                    break;
+                case "cleanTrados":
+                    CleanTrados(args[1]);
+                    break;
+                case "insertCAT":
+                    InsertCatFile(args[1], args[2]);
+                    break;
+                default:
+                break;
+            }
+
             if (!autoClose) {
                 Console.WriteLine("Done");
                 Console.Read();
             }
         }
 
+        /// <summary>
+        /// Define how a string should be saved to the database.
+        /// </summary>
         public class StringDatabase
         {
+            /// <summary>
+            /// String offset from the beginning of the file.
+            /// </summary>
             public uint Offset { get; set; }
+            /// <summary>
+            /// CRC32 hash
+            /// </summary>
             public uint Hash { get; set; }
-            public string jString { get; set; }
-            public string eString { get; set; }
+            /// <summary>
+            /// Japanese version of the string
+            /// </summary>
+            public string JString { get; set; }
+            /// <summary>
+            /// English translation.
+            /// </summary>
+            public string EString { get; set; }
         }
 
         /// <summary>
@@ -86,8 +120,8 @@ namespace FrontierTextTool
                     {
                         Offset = csv.GetField<uint>("Offset"),
                         Hash = csv.GetField<uint>("Hash"),
-                        eString = csv.GetField("eString"),
-                        jString = csv.GetField("jString")
+                        EString = csv.GetField("eString"),
+                        JString = csv.GetField("jString")
                     };
                     stringDb.Add(record);
                 }
@@ -97,11 +131,11 @@ namespace FrontierTextTool
             for (int i = 0; i < stringDb.Count; i++)
             {
                 Console.Write($"\rUpdating entry {i + 1}/{stringDb.Count}");
-                if (stringDb[i].jString != catStrings[i])
-                    stringDb[i].eString = catStrings[i];
+                if (stringDb[i].JString != catStrings[i])
+                    stringDb[i].EString = catStrings[i];
                 // Allow for deletions
-                else if (stringDb[i].jString == catStrings[i] && stringDb[i].eString != "")
-                    stringDb[i].eString = "";
+                else if (stringDb[i].JString == catStrings[i] && stringDb[i].EString != "")
+                    stringDb[i].EString = "";
             }
             Console.WriteLine();
 
@@ -112,7 +146,7 @@ namespace FrontierTextTool
             StreamWriter txtOutput = new(fileName, true, Encoding.GetEncoding("shift-jis"));
             txtOutput.WriteLine("Offset\tHash\tjString\teString");
             foreach (var obj in stringDb)
-                txtOutput.WriteLine($"{obj.Offset}\t{obj.Hash}\t{obj.jString}\t{obj.eString}");
+                txtOutput.WriteLine($"{obj.Offset}\t{obj.Hash}\t{obj.JString}\t{obj.EString}");
             txtOutput.Close();
 
             if (!Directory.Exists("backup")) Directory.CreateDirectory("backup");
@@ -126,7 +160,7 @@ namespace FrontierTextTool
         /// <summary>
         /// Clean pollution caused by Trados or other CAT
         /// </summary>
-        /// <param name="file"></param>
+        /// <param name="file">Input file path.</param>
         static void CleanTrados(string file)
         {
             string text = File.ReadAllText(file, Encoding.UTF8);
@@ -146,16 +180,12 @@ namespace FrontierTextTool
         }
 
         /// <summary>
-        /// Append translations and update pointers.
+        /// Load a CSV file to a string database
         /// </summary>
-        /// <param name="inputFile"></param>
-        /// <param name="inputCsv"></param>
-        static void InsertStrings(string inputFile, string inputCsv)
+        /// <param name="inputCsv">Input CSV file path.</param>
+        /// <returns>StringDatabase object.</returns>
+        static StringDatabase[] LoadCsvToStringDatabase(string inputCsv)
         {
-            Console.WriteLine($"Processing {inputFile}...");
-            byte[] inputArray = File.ReadAllBytes(inputFile);
-
-            // Read csv
             var stringDatabase = new List<StringDatabase>();
             using (var reader = new StreamReader(inputCsv, Encoding.GetEncoding("shift-jis")))
             {
@@ -171,7 +201,7 @@ namespace FrontierTextTool
                     {
                         Offset = csv.GetField<uint>("Offset"),
                         Hash = csv.GetField<uint>("Hash"),
-                        eString = csv.GetField("eString").
+                        EString = csv.GetField("eString").
                         Replace("<TAB>", "\t"). // Replace tab
                         Replace("<CLINE>", "\r\n"). // Replace carriage return
                         Replace("<NLINE>", "\n") // Replace new line
@@ -179,16 +209,33 @@ namespace FrontierTextTool
                     stringDatabase.Add(record);
                 }
             }
+            return [.. stringDatabase];
+        }
+
+        /// <summary>
+        /// Append translations and update pointers.
+        /// 
+        /// The output generated in output will be compressed and encoded.
+        /// </summary>
+        /// <param name="inputFile">File to insert the translation to, such as mhfdat.bin</param>
+        /// <param name="inputCsv">CSV with the updated transaltions.</param>
+        static void InsertStrings(string inputFile, string inputCsv)
+        {
+            Console.WriteLine($"Processing {inputFile}...");
+            byte[] inputArray = File.ReadAllBytes(inputFile);
+
+            // Read csv
+            var stringDatabase = LoadCsvToStringDatabase(inputCsv);
 
             // Get info for translation array and get all offsets that need to be remapped
             List<uint> eStringsOffsets = [];
             List<int> eStringLengths = [];
             foreach (var obj in stringDatabase)
             {
-                if (obj.eString != "")
+                if (obj.EString != "")
                 {
                     eStringsOffsets.Add(obj.Offset);
-                    eStringLengths.Add(GetNullterminatedStringLength(obj.eString));
+                    eStringLengths.Add(GetNullterminatedStringLength(obj.EString));
                 }
             }
             int eStringsLength = eStringLengths.Sum();
@@ -197,19 +244,22 @@ namespace FrontierTextTool
             // Create dictionary with offset replacements
             Dictionary<int, int> offsetDict = [];
             for (int i = 0; i < eStringsCount; i++) 
-                offsetDict.Add((int)eStringsOffsets[i], inputArray.Length + eStringLengths.Take(i).Sum());
+                offsetDict.Add(
+                    (int)eStringsOffsets[i],
+                    inputArray.Length + eStringLengths.Take(i).Sum()
+                );
 
-            if (verbose) Console.WriteLine($"Filling array of size {eStringsLength:X8}...");
+            if (verbose)
+                Console.WriteLine($"Filling array of size {eStringsLength:X8}...");
             byte[] eStringsArray = new byte[eStringsLength];
-            for (int i = 0, j = 0; i < stringDatabase.Count; i++)
+            for (int i = 0, j = 0; i < stringDatabase.Length; i++)
             {
-                if (stringDatabase[i].eString != "")
+                if (stringDatabase[i].EString != "")
                 {
                     // Write string to string array
-                    int test = eStringLengths.Take(j).Sum();
                     if (verbose)
-                        Console.WriteLine($"String: '{stringDatabase[i].eString}', Length: {eStringLengths[j] - 1}");
-                    byte[] eStringArray = Encoding.GetEncoding("shift-jis").GetBytes(stringDatabase[i].eString);
+                        Console.WriteLine($"String: '{stringDatabase[i].EString}', Length: {eStringLengths[j] - 1}");
+                    byte[] eStringArray = Encoding.GetEncoding("shift-jis").GetBytes(stringDatabase[i].EString);
                     Array.Copy(eStringArray, 0, eStringsArray, eStringLengths.Take(j).Sum(), eStringLengths[j] - 1);
                     j++;
                 }
@@ -258,16 +308,18 @@ namespace FrontierTextTool
         /// dump mhfpac.bin 4416 1278872
         /// dump mhfdat.bin 3072 3328538
         /// </summary>
-        /// <param name="input"></param>
-        /// <param name="startOffset"></param>
-        /// <param name="endOffset"></param>
+        /// <param name="input">File to read</param>
+        /// <param name="startOffset">Initial offset to read file from.</param>
+        /// <param name="endOffset">End offset where stopping file reading</param>
         static void DumpAndHash(string input, int startOffset, int endOffset)
         {
             byte[] buffer = File.ReadAllBytes(input);
             MemoryStream msInput = new(buffer);
             BinaryReader brInput = new(msInput);
 
-            Console.WriteLine($"Strings at: 0x{startOffset:X8} - 0x{endOffset:X8}. Size 0x{endOffset - startOffset:X8}");
+            Console.WriteLine(
+                $"Strings at: 0x{startOffset:X8} - 0x{endOffset:X8}. Size 0x{endOffset - startOffset:X8}"
+            );
 
             string fileName = Path.GetFileNameWithoutExtension(input);
             if (File.Exists($"{fileName}.csv")) File.Delete($"{fileName}.csv");
@@ -278,10 +330,13 @@ namespace FrontierTextTool
             while (brInput.BaseStream.Position < endOffset)
             {
                 long off = brInput.BaseStream.Position;
-                string str = Helpers.ReadNullterminatedString(brInput, Encoding.GetEncoding("shift-jis")).
-                    Replace("\t", "<TAB>"). // Replace tab
-                    Replace("\r\n", "<CLINE>"). // Replace carriage return
-                    Replace("\n", "<NLINE>"); // Replace new line
+                string str = Helpers.ReadNullterminatedString(
+                    brInput, 
+                    Encoding.GetEncoding("shift-jis")
+                ).
+                Replace("\t", "<TAB>"). // Replace tab
+                Replace("\r\n", "<CLINE>"). // Replace carriage return
+                Replace("\n", "<NLINE>"); // Replace new line
                 txtOutput.WriteLine($"{off}\t{Helpers.GetCrc32(Encoding.GetEncoding("shift-jis").GetBytes(str))}\t{str}\t");
             }
             txtOutput.Close();
@@ -309,7 +364,7 @@ namespace FrontierTextTool
                     var record = new StringDatabase
                     {
                         Hash = csv.GetField<uint>("Hash"),
-                        eString = csv.GetField("eString")
+                        EString = csv.GetField("eString")
                     };
                     stringDbOld.Add(record);
                 }
@@ -330,8 +385,8 @@ namespace FrontierTextTool
                     {
                         Offset = csv.GetField<uint>("Offset"),
                         Hash = csv.GetField<uint>("Hash"),
-                        eString = csv.GetField("eString"),
-                        jString = csv.GetField("jString")
+                        EString = csv.GetField("eString"),
+                        JString = csv.GetField("jString")
                     };
                     stringDbNew.Add(record);
                 }
@@ -341,25 +396,26 @@ namespace FrontierTextTool
             for (int i = 0; i < stringDbOld.Count; i++)
             {
                 Console.Write($"\rUpdating entry {i+1}/{stringDbOld.Count}");
-                if (stringDbOld[i].eString != "")
+                if (stringDbOld[i].EString != "")
                 {
                     var matchedNewObjs = stringDbNew.Where(x => x.Hash.Equals(stringDbOld[i].Hash));
                     if (matchedNewObjs.Any())
                     {
                         foreach (var obj in matchedNewObjs)
-                            obj.eString = stringDbOld[i].eString;
+                            obj.EString = stringDbOld[i].EString;
                     }
                 }
             }
             Console.WriteLine();
 
-            // Using this approach because csvHelper would always escape some strings which might mess up in-game when copy-pasting where required
+            // Using this approach because csvHelper would always escape
+            // some strings which might mess up in-game when copy-pasting where required
             string fileName = "csv/" + Path.GetFileName(oldCsv);
             if (File.Exists(fileName)) File.Delete(fileName);
             StreamWriter txtOutput = new(fileName, true, Encoding.GetEncoding("shift-jis"));
             txtOutput.WriteLine("Offset\tHash\tjString\teString");
             foreach (var obj in stringDbNew)
-                txtOutput.WriteLine($"{obj.Offset}\t{obj.Hash}\t{obj.jString}\t{obj.eString}");
+                txtOutput.WriteLine($"{obj.Offset}\t{obj.Hash}\t{obj.JString}\t{obj.EString}");
             txtOutput.Close();
             File.Delete(newCsv);
         }
