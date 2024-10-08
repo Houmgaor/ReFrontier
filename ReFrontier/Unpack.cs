@@ -8,10 +8,13 @@ namespace ReFrontier
 {
     class Unpack
     {
-        public static void UnpackSimpleArchive(string input, BinaryReader brInput, int magicSize, bool createLog, bool cleanUp, bool autoStage)
+        public static void UnpackSimpleArchive(
+            string input, BinaryReader brInput, int magicSize, bool createLog, 
+            bool cleanUp, bool autoStage
+        )
         {
             FileInfo fileInfo = new(input);
-            string outputDir = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(input)}";
+            string outputDir = $"{fileInfo.DirectoryName}/{Path.GetFileNameWithoutExtension(input)}";
 
             // Abort if too small
             if (fileInfo.Length < 12)
@@ -67,8 +70,12 @@ namespace ReFrontier
 
             // Write to log file if desired; needs some other solution because it creates useless logs even if !createLog
             Directory.CreateDirectory(outputDir);
-            StreamWriter logOutput = new($"{outputDir}\\{Path.GetFileNameWithoutExtension(input)}.log");
-            if (createLog) { logOutput.WriteLine("SimpleArchive"); logOutput.WriteLine(input.Remove(0, input.LastIndexOf('\\') + 1)); logOutput.WriteLine(count); }
+            StreamWriter logOutput = new($"{outputDir}/{Path.GetFileNameWithoutExtension(input)}.log");
+            if (createLog) {
+                logOutput.WriteLine("SimpleArchive");
+                logOutput.WriteLine(input.Remove(0, input.LastIndexOf('/') + 1));
+                logOutput.WriteLine(count);
+            }
 
             for (int i = 0; i < count; i++)
             {
@@ -92,34 +99,36 @@ namespace ReFrontier
                 Array.Copy(entryData, header, 4);
                 uint headerInt = BitConverter.ToUInt32(header, 0);
                 string extension = Enum.GetName(typeof(Helpers.Extensions), headerInt);
-                if (extension == null) extension = Helpers.CheckForMagic(headerInt, entryData);
-                if (extension == null) extension = "bin";
+                extension ??= Helpers.CheckForMagic(headerInt, entryData);
+                extension ??= "bin";
 
                 // Print info
                 Console.WriteLine($"Offset: 0x{entryOffset:X8}, Size: 0x{entrySize:X8} ({extension})");
                 if (createLog) logOutput.WriteLine($"{i + 1:D4}_{entryOffset:X8}.{extension},{entryOffset},{entrySize},{headerInt}");
 
                 // Extract file
-                File.WriteAllBytes($"{outputDir}\\{i + 1:D4}_{entryOffset:X8}.{extension}", entryData);
+                File.WriteAllBytes($"{outputDir}/{i + 1:D4}_{entryOffset:X8}.{extension}", entryData);
 
                 // Move to next entry block
                 brInput.BaseStream.Seek(magicSize + (i + 1) * 0x08, SeekOrigin.Begin);
             }
             // Clean up
             logOutput.Close();
-            if (!createLog) File.Delete($"{outputDir}\\{Path.GetFileNameWithoutExtension(input)}.log");
+            if (!createLog) File.Delete($"{outputDir}/{Path.GetFileNameWithoutExtension(input)}.log");
             if (cleanUp) File.Delete(input);
-            //if (Directory.GetFiles(outputDir) == null) Directory.Delete(outputDir);
         }
 
         public static void UnpackMHA(string input, BinaryReader brInput, bool createLog)
         {
             FileInfo fileInfo = new(input);
-            string outputDir = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(input)}";
+            string outputDir = $"{fileInfo.DirectoryName}/{Path.GetFileNameWithoutExtension(input)}";
             Directory.CreateDirectory(outputDir);
 
-            StreamWriter logOutput = new($"{outputDir}\\{Path.GetFileNameWithoutExtension(input)}.log");
-            if (createLog) { logOutput.WriteLine("MHA"); logOutput.WriteLine(input.Remove(0, input.LastIndexOf('\\') + 1)); }
+            StreamWriter logOutput = new($"{outputDir}/{Path.GetFileNameWithoutExtension(input)}.log");
+            if (createLog) {
+                logOutput.WriteLine("MHA");
+                logOutput.WriteLine(input.Remove(0, input.LastIndexOf('/') + 1));
+            }
 
             // Read header
             int pointerEntryMetaBlock = brInput.ReadInt32();
@@ -128,7 +137,11 @@ namespace ReFrontier
             int entryNamesBlockLength = brInput.ReadInt32();
             short unk1 = brInput.ReadInt16();
             short unk2 = brInput.ReadInt16();
-            if (createLog) { logOutput.WriteLine(count); logOutput.WriteLine(unk1); logOutput.WriteLine(unk2); }
+            if (createLog) {
+                logOutput.WriteLine(count);
+                logOutput.WriteLine(unk1);
+                logOutput.WriteLine(unk2);
+            }
 
             // File Data
             for (int i = 0; i < count; i++)
@@ -149,15 +162,21 @@ namespace ReFrontier
                 // Extract file
                 brInput.BaseStream.Seek(entryOffset, SeekOrigin.Begin);
                 byte[] entryData = brInput.ReadBytes(entrySize);
-                File.WriteAllBytes($"{outputDir}\\{entryName}", entryData);
+                File.WriteAllBytes($"{outputDir}/{entryName}", entryData);
 
-                Console.WriteLine($"{entryName}, String Offset: 0x{stringOffset:X8}, Offset: 0x{entryOffset:X8}, Size: 0x{entrySize:X8}, pSize: 0x{pSize:X8}, File ID: 0x{fileId:X8}");
+                Console.WriteLine(
+                    $"{entryName}, String Offset: 0x{stringOffset:X8}, Offset: 0x{entryOffset:X8}, Size: 0x{entrySize:X8}, pSize: 0x{pSize:X8}, File ID: 0x{fileId:X8}"
+                );
             }
 
             logOutput.Close();
-            if (!createLog) File.Delete($"{outputDir}\\{Path.GetFileNameWithoutExtension(input)}.log");
+            if (!createLog) File.Delete($"{outputDir}/{Path.GetFileNameWithoutExtension(input)}.log");
         }
 
+        /// <summary>
+        /// Unpack a JPK file.
+        /// </summary>
+        /// <param name="input">File path.</param>
         public static void UnpackJPK(string input)
         {
             byte[] buffer = File.ReadAllBytes(input);
@@ -198,11 +217,11 @@ namespace ReFrontier
                     Array.Copy(outBuffer, header, 4);
                     uint headerInt = BitConverter.ToUInt32(header, 0);                    
                     string extension = Enum.GetName(typeof(Helpers.Extensions), headerInt);
-                    if (extension == null) extension = Helpers.CheckForMagic(headerInt, outBuffer);
-                    if (extension == null) extension = "bin";
+                    extension ??= Helpers.CheckForMagic(headerInt, outBuffer);
+                    extension ??= "bin";
 
                     FileInfo fileInfo = new(input);
-                    string output = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(input)}.{extension}";
+                    string output = $"{fileInfo.DirectoryName}/{Path.GetFileNameWithoutExtension(input)}.{extension}";
                     File.Delete(input);
                     File.WriteAllBytes(output, outBuffer);
                 }
@@ -216,11 +235,11 @@ namespace ReFrontier
             Console.WriteLine("Trying to unpack as stage-specific container.");
 
             FileInfo fileInfo = new(input);
-            string outputDir = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(input)}";
+            string outputDir = $"{fileInfo.DirectoryName}/{Path.GetFileNameWithoutExtension(input)}";
             Directory.CreateDirectory(outputDir);
 
-            StreamWriter logOutput = new($"{outputDir}\\{Path.GetFileNameWithoutExtension(input)}.log");
-            if (createLog) { logOutput.WriteLine("StageContainer"); logOutput.WriteLine(input.Remove(0, input.LastIndexOf('\\') + 1)); }
+            StreamWriter logOutput = new($"{outputDir}/{Path.GetFileNameWithoutExtension(input)}.log");
+            if (createLog) { logOutput.WriteLine("StageContainer"); logOutput.WriteLine(input.Remove(0, input.LastIndexOf('/') + 1)); }
 
             // First three segments
             for (int i = 0; i < 3; i ++)
@@ -230,7 +249,9 @@ namespace ReFrontier
 
                 if (size == 0)
                 {
-                    Console.WriteLine($"Offset: 0x{offset:X8}, Size: 0x{size:X8} (SKIPPED)");
+                    Console.WriteLine(
+                        $"Offset: 0x{offset:X8}, Size: 0x{size:X8} (SKIPPED)"
+                    );
                     if (createLog) logOutput.WriteLine($"null,{offset},{size},0");
                     continue;
                 }
@@ -243,15 +264,20 @@ namespace ReFrontier
                 Array.Copy(data, header, 4);
                 uint headerInt = BitConverter.ToUInt32(header, 0);
                 string extension = Enum.GetName(typeof(Helpers.Extensions), headerInt);
-                if (extension == null) extension = Helpers.CheckForMagic(headerInt, data);
-                if (extension == null) extension = "bin";
+                extension ??= Helpers.CheckForMagic(headerInt, data);
+                extension ??= "bin";
 
                 // Print info
-                Console.WriteLine($"Offset: 0x{offset:X8}, Size: 0x{size:X8} ({extension})");
-                if (createLog) logOutput.WriteLine($"{i + 1:D4}_{offset:X8}.{extension},{offset},{size},{headerInt}");
+                Console.WriteLine(
+                    $"Offset: 0x{offset:X8}, Size: 0x{size:X8} ({extension})"
+                );
+                if (createLog)
+                    logOutput.WriteLine(
+                        $"{i + 1:D4}_{offset:X8}.{extension},{offset},{size},{headerInt}"
+                    );
 
                 // Extract file
-                File.WriteAllBytes($"{outputDir}\\{i + 1:D4}_{offset:X8}.{extension}", data);
+                File.WriteAllBytes($"{outputDir}/{i + 1:D4}_{offset:X8}.{extension}", data);
 
                 // Move to next entry block
                 brInput.BaseStream.Seek((i + 1) * 0x08, SeekOrigin.Begin);
@@ -269,7 +295,9 @@ namespace ReFrontier
 
                 if (size == 0)
                 {
-                    Console.WriteLine($"Offset: 0x{offset:X8}, Size: 0x{size:X8}, Unk: 0x{unk:X8} (SKIPPED)");
+                    Console.WriteLine(
+                        $"Offset: 0x{offset:X8}, Size: 0x{size:X8}, Unk: 0x{unk:X8} (SKIPPED)"
+                    );
                     if (createLog) logOutput.WriteLine($"null,{offset},{size},{unk},0");
                     continue;
                 }
@@ -282,15 +310,15 @@ namespace ReFrontier
                 Array.Copy(data, header, 4);
                 uint headerInt = BitConverter.ToUInt32(header, 0);
                 string extension = Enum.GetName(typeof(Helpers.Extensions), headerInt);
-                if (extension == null) extension = Helpers.CheckForMagic(headerInt, data);
-                if (extension == null) extension = "bin";
+                extension ??= Helpers.CheckForMagic(headerInt, data);
+                extension ??= "bin";
 
                 // Print info
                 Console.WriteLine($"Offset: 0x{offset:X8}, Size: 0x{size:X8}, Unk: 0x{unk:X8} ({extension})");
                 if (createLog) logOutput.WriteLine($"{i + 1:D4}_{offset:X8}.{extension},{offset},{size},{unk},{headerInt}");
 
                 // Extract file
-                File.WriteAllBytes($"{outputDir}\\{i + 1:D4}_{offset:X8}.{extension}", data);
+                File.WriteAllBytes($"{outputDir}/{i + 1:D4}_{offset:X8}.{extension}", data);
 
                 // Move to next entry block
                 brInput.BaseStream.Seek(0x18 + 0x08 + (i - 3 + 1) * 0x0C, SeekOrigin.Begin); // 0x18 = first three segments, 0x08 = header for this segment
@@ -298,14 +326,14 @@ namespace ReFrontier
 
             // Clean up
             logOutput.Close();
-            if (!createLog) File.Delete($"{outputDir}\\{Path.GetFileNameWithoutExtension(input)}.log");
+            if (!createLog) File.Delete($"{outputDir}/{Path.GetFileNameWithoutExtension(input)}.log");
             if (cleanUp) File.Delete(input);
         }
 
         public static void PrintFTXT(string input, BinaryReader brInput)
         {
             FileInfo fileInfo = new(input);
-            string outputPath = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(input)}.txt";
+            string outputPath = $"{fileInfo.DirectoryName}/{Path.GetFileNameWithoutExtension(input)}.txt";
             if (File.Exists(outputPath)) File.Delete(outputPath);
             StreamWriter txtOutput = new(outputPath, true, Encoding.GetEncoding("shift-jis"));
 

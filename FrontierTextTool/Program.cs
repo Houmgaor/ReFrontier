@@ -41,13 +41,13 @@ namespace FrontierTextTool
         // Update MHFUP_00.DAT
         static void UpdateList(string updEntry)
         {
-            string file = updEntry.Split(',')[3].Split('\\')[1];
-            string[] lines = File.ReadAllLines("src\\MHFUP_00.DAT");
+            string file = updEntry.Split(',')[3].Split('/')[1];
+            string[] lines = File.ReadAllLines("src/MHFUP_00.DAT");
             for (int i = 0; i < lines.Length; i++)
             {
                 if (lines[i].Contains(file)) lines[i] = updEntry.Replace("output", "dat");
             }
-            File.WriteAllLines("src\\MHFUP_00.DAT", lines);
+            File.WriteAllLines("src/MHFUP_00.DAT", lines);
         }
 
         // Insert CAT file to csv
@@ -90,7 +90,7 @@ namespace FrontierTextTool
             Console.WriteLine();
 
             // Using this approach because csvHelper would always escape some strings which might mess up in-game when copy-pasting where required
-            string fileName = "csv\\" + Path.GetFileName(csvFile);
+            string fileName = "csv/" + Path.GetFileName(csvFile);
             //string fileName = "test.csv";
             if (File.Exists(fileName)) File.Delete(fileName);
             StreamWriter txtOutput = new(fileName, true, Encoding.GetEncoding("shift-jis"));
@@ -99,7 +99,7 @@ namespace FrontierTextTool
             txtOutput.Close();
 
             if (!Directory.Exists("backup")) Directory.CreateDirectory("backup");
-            File.Move(catFile, $"backup\\{Path.GetFileNameWithoutExtension(catFile)}_{DateTime.Now:yyyyMMdd_HHmm}.txt");
+            File.Move(catFile, $"backup/{Path.GetFileNameWithoutExtension(catFile)}_{DateTime.Now:yyyyMMdd_HHmm}.txt");
         }
 
         // Clean pollution caused by Trados or other CAT
@@ -208,7 +208,7 @@ namespace FrontierTextTool
 
             // Output file
             Directory.CreateDirectory("output");
-            string outputFile = $"output\\{Path.GetFileName(inputFile)}";
+            string outputFile = $"output/{Path.GetFileName(inputFile)}";
             File.WriteAllBytes(outputFile, outputArray);
 
             // Pack with jpk type 0 and encrypt file with ecd
@@ -313,7 +313,7 @@ namespace FrontierTextTool
             Console.WriteLine();
 
             // Using this approach because csvHelper would always escape some strings which might mess up in-game when copy-pasting where required
-            string fileName = "csv\\" + Path.GetFileName(oldCsv);
+            string fileName = "csv/" + Path.GetFileName(oldCsv);
             if (File.Exists(fileName)) File.Delete(fileName);
             StreamWriter txtOutput = new(fileName, true, Encoding.GetEncoding("shift-jis"));
             txtOutput.WriteLine("Offset\tHash\tjString\teString");

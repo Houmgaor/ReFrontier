@@ -29,7 +29,8 @@ namespace ReFrontier
             // Assign arguments
             if (args.Length < 1)
             {
-                Helpers.Print("Usage: ReFrontier <file> (options)\n" +
+                Helpers.Print(
+                    "Usage: ReFrontier <file> (options)\n" +
                     "\nUnpacking Options:\n" +
                     "-log: Write log file (required for repacking)\n" +
                     "-cleanUp: Delete simple archives after unpacking\n" +
@@ -45,7 +46,8 @@ namespace ReFrontier
                     "-encrypt: Encrypt input file with ecd algorithm\n" +
                     "\nGeneral Options:\n" +
                     "-close: Close window after finishing process",
-                    false);
+                    false
+                );
                 Console.Read();
                 return;
             }
@@ -97,7 +99,7 @@ namespace ReFrontier
                             Match match = Regex.Matches(string.Join(" ", args, 1, args.Length - 1), pattern)[0];
                             ushort type = ushort.Parse(match.Groups[1].Value);
                             int level = int.Parse(match.Groups[2].Value) * 100;
-                            Pack.JPKEncode(type, input, $"output\\{Path.GetFileName(input)}", level);
+                            Pack.JPKEncode(type, input, $"output/{Path.GetFileName(input)}", level);
                         }
                         catch
                         {
@@ -120,7 +122,10 @@ namespace ReFrontier
            if (!autoClose) Console.Read();
         }
 
-        // Process a file
+        /// <summary>
+        /// Process a file
+        /// </summary>
+        /// <param name="input">File path</param>
         static void ProcessFile(string input)
         {
             Helpers.Print($"Processing {input}", false);
@@ -146,7 +151,9 @@ namespace ReFrontier
             else if (fileMagic == 0x4F4D4F4D)
             {
                 Console.WriteLine("MOMO Header detected.");
-                Unpack.UnpackSimpleArchive(input, brInput, 8, createLog, cleanUp, autoStage);
+                Unpack.UnpackSimpleArchive(
+                    input, brInput, 8, createLog, cleanUp, autoStage
+                );
             }
             // ECD Header
             else if (fileMagic == 0x1A646365)
@@ -210,18 +217,19 @@ namespace ReFrontier
                 brInput.BaseStream.Seek(0, SeekOrigin.Begin);
                 try {
                     Unpack.UnpackSimpleArchive(input, brInput, 4, createLog, cleanUp, autoStage); 
-                } catch { }                
+                } catch { }
             }
 
+            Console.WriteLine("==============================");
             if (fileMagic == 0x1A646365 && !decryptOnly) {
-                Console.WriteLine("==============================");
                 ProcessFile(input);
-                return;
             }
-            else Console.WriteLine("==============================");
         }
 
-        // Process file(s) on multiple levels
+        /// <summary>
+        /// Process file(s) on multiple levels
+        /// </summary>
+        /// <param name="inputFiles">Files to process</param>
         static void ProcessMultipleLevels(string[] inputFiles)
         {
             // CurrentLevel        

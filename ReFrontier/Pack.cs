@@ -10,11 +10,13 @@ namespace ReFrontier
     {
         public static void ProcessPackInput(string input)
         {
-            string logFile = $"{input}\\{input.Remove(0, input.LastIndexOf('\\')+1)}.log";
+            string logFile = $"{input}/{input.Remove(0, input.LastIndexOf('/')+1)}.log";
             if (!File.Exists(logFile))
             {
                 logFile = $"{input}.log";
-                if (!File.Exists(logFile)) Console.WriteLine("ERROR: Log file does not exist."); return;
+                if (!File.Exists(logFile))
+                    Console.WriteLine("ERROR: Log file does not exist.");
+                    return;
             }
             string[] logContent = File.ReadAllLines(logFile);
 
@@ -27,30 +29,26 @@ namespace ReFrontier
 
                 // Entries
                 List<string> listFileNames = [];
-                //List<int> listFileOffsets = new List<int>();
-                //List<int> listFileSizes = new List<int>();
-                //List<int> listFileMagics = new List<int>();
 
                 for (int i = 3; i < logContent.Length; i++)
                 {
                     string[] columns = logContent[i].Split(',');
                     listFileNames.Add(columns[0]);
-                    //listFileOffsets.Add(int.Parse(columns[1]));
-                    //listFileSizes.Add(int.Parse(columns[2]));
-                    //listFileMagics.Add(int.Parse(columns[3]));
                 }
 
                 Directory.CreateDirectory("output");
-                fileName = $"output\\{fileName}";
+                fileName = $"output/{fileName}";
                 using (BinaryWriter bwOutput = new(File.Open(fileName, FileMode.Create)))
                 {
                     bwOutput.Write(count);
                     int offset = 0x04 + count * 0x08;
                     for (int i = 0; i < count; i++)
                     {
-                        Console.WriteLine($"{input}\\{listFileNames[i]}");
+                        Console.WriteLine($"{input}/{listFileNames[i]}");
                         byte[] fileData = [];
-                        if (listFileNames[i] != "null") { fileData = File.ReadAllBytes($"{input}\\{listFileNames[i]}"); }
+                        if (listFileNames[i] != "null") {
+                            fileData = File.ReadAllBytes($"{input}/{listFileNames[i]}");
+                        }
                         bwOutput.BaseStream.Seek(0x04 + i * 0x08, SeekOrigin.Begin);
                         bwOutput.Write(offset);
                         bwOutput.Write(fileData.Length);
@@ -86,7 +84,7 @@ namespace ReFrontier
                 MemoryStream entryNamesBlock = new();
 
                 Directory.CreateDirectory("output");
-                fileName = $"output\\{fileName}";
+                fileName = $"output/{fileName}";
                 using BinaryWriter bwOutput = new(File.Open(fileName, FileMode.Create));
                 // Header
                 bwOutput.Write((int)23160941);    // MHA magic
@@ -101,8 +99,8 @@ namespace ReFrontier
                 int stringOffset = 0;
                 for (int i = 0; i < count; i++)
                 {
-                    Console.WriteLine($"{input}\\{listFileNames[i]}");
-                    byte[] fileData = File.ReadAllBytes($"{input}\\{listFileNames[i]}");
+                    Console.WriteLine($"{input}/{listFileNames[i]}");
+                    byte[] fileData = File.ReadAllBytes($"{input}/{listFileNames[i]}");
                     bwOutput.Write(fileData);
 
                     entryMetaBlock.Write(BitConverter.GetBytes(stringOffset), 0, 4);
@@ -158,7 +156,7 @@ namespace ReFrontier
                 Console.WriteLine($"Stage Container with {listFileNames.Count} entries.");
 
                 Directory.CreateDirectory("output");
-                fileName = $"output\\{fileName}";
+                fileName = $"output/{fileName}";
                 using BinaryWriter bwOutput = new(File.Open(fileName, FileMode.Create));
                 // Write temp dir
                 // + 8 = rest count and unk header int
@@ -177,8 +175,8 @@ namespace ReFrontier
 
                     if (listFileNames[i] != "null")
                     {
-                        Console.WriteLine($"{input}\\{listFileNames[i]}");
-                        fileData = File.ReadAllBytes($"{input}\\{listFileNames[i]}");
+                        Console.WriteLine($"{input}/{listFileNames[i]}");
+                        fileData = File.ReadAllBytes($"{input}/{listFileNames[i]}");
                         bwOutput.Write(offset);
                         bwOutput.Write(fileData.Length);
                         bwOutput.BaseStream.Seek(offset, SeekOrigin.Begin);
@@ -211,8 +209,8 @@ namespace ReFrontier
 
                     if (listFileNames[i] != "null")
                     {
-                        Console.WriteLine($"{input}\\{listFileNames[i]}");
-                        fileData = File.ReadAllBytes($"{input}\\{listFileNames[i]}");
+                        Console.WriteLine($"{input}/{listFileNames[i]}");
+                        fileData = File.ReadAllBytes($"{input}/{listFileNames[i]}");
                         bwOutput.Write(offset);
                         bwOutput.Write(fileData.Length);
                         bwOutput.Write(int.Parse(logContent[6 + i - 3].Split(',')[3]));
@@ -272,7 +270,10 @@ namespace ReFrontier
                 sta = DateTime.Now;
                 encoder.ProcessOnEncode(buffer, fsot, level, null);
                 fin = DateTime.Now;
-                Helpers.Print($"File compressed using type {type} (level {level / 100}): {fsot.Length} bytes ({1 - (decimal)fsot.Length / insize:P} saved) in {fin - sta:%m\\:ss\\.ff}", false);
+                Helpers.Print(
+                    $"File compressed using type {type} (level {level / 100}): {fsot.Length} bytes ({1 - (decimal)fsot.Length / insize:P} saved) in {fin - sta:%m\\:ss\\.ff}",
+                    false
+                );
                 fsot.Close();
             }
             else

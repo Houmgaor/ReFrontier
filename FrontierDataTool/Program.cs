@@ -549,13 +549,13 @@ namespace FrontierDataTool
                     entry.unk18 = brInput.ReadByte();
                     entry.unk19 = brInput.ReadByte();
                     entry.unk20 = brInput.ReadByte();
-                    int questType = brInput.ReadInt32(); entry.mainGoalType = Enum.GetName(typeof(Structs.QuestTypes), questType); if (entry.mainGoalType == null) { entry.mainGoalType = questType.ToString("X8"); }
+                    int questType = brInput.ReadInt32(); entry.mainGoalType = Enum.GetName(typeof(Structs.QuestTypes), questType); entry.mainGoalType ??= questType.ToString("X8");
                     entry.mainGoalTarget = brInput.ReadInt16();
                     entry.mainGoalCount = brInput.ReadInt16();
-                    questType = brInput.ReadInt32(); entry.subAGoalType = Enum.GetName(typeof(Structs.QuestTypes), questType); if (entry.subAGoalType == null) { entry.subAGoalType = questType.ToString("X8"); }
+                    questType = brInput.ReadInt32(); entry.subAGoalType = Enum.GetName(typeof(Structs.QuestTypes), questType); entry.subAGoalType ??= questType.ToString("X8");
                     entry.subAGoalTarget = brInput.ReadInt16();
                     entry.subAGoalCount = brInput.ReadInt16();
-                    questType = brInput.ReadInt32(); entry.subBGoalType = Enum.GetName(typeof(Structs.QuestTypes), questType); if (entry.subBGoalType == null) { entry.subBGoalType = questType.ToString("X8"); }
+                    questType = brInput.ReadInt32(); entry.subBGoalType = Enum.GetName(typeof(Structs.QuestTypes), questType); entry.subBGoalType ??= questType.ToString("X8");
                     entry.subBGoalTarget = brInput.ReadInt16();
                     entry.subBGoalCount = brInput.ReadInt16();
 

@@ -101,3 +101,10 @@ Some more useful tools and projects:
 - [Blender plugin for 3D models](https://github.com/Houmgaor/Monster-Hunter-Frontier-Importer).
 - [MHFrontier Server](https://github.com/ZeruLight/Erupe).
 - [var-username/Monster-Hunter-Frontier-Patterns](https://github.com/var-username/Monster-Hunter-Frontier-Patterns) for binary files template.
+
+## In this fork (Houmgaor/)
+
+- Compatibility with Linux/Mac.
+- Removed outdated/unused libraries.
+- User documentation.
+- Linting.
