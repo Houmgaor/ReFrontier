@@ -236,7 +236,8 @@ namespace FrontierTextTool
 
             // Create dictionary with offset replacements
             Dictionary<int, int> offsetDict = [];
-            for (int i = 0; i < eStringsCount; i++) 
+            for (int i = 0; i < eStringsCount; i++)
+                // Key: previous offset, new value: fileLength + sum of all new offsets
                 offsetDict.Add(
                     (int)eStringsOffsets[i],
                     fileBytes.Length + eStringLengths.Take(i).Sum()
@@ -307,8 +308,14 @@ namespace FrontierTextTool
             // Pack with jpk type 0 and encrypt file with ecd
             Pack.JPKEncode(0, outputFile, outputFile, 15);
             byte[] buffer = File.ReadAllBytes(outputFile);
+            if (File.Exists($"{outputFile}.meta")) {
+                throw new FileNotFoundException(
+                    $"META file {outputFile}.meta does not exist, did you use '-log' during decrypting to generate it?"
+                );
+            }
             byte[] bufferMeta = File.ReadAllBytes($"{outputFile}.meta");
-            buffer = Crypto.EncEcd(buffer, bufferMeta);
+            buffer = Crypto.EncodeEcd(buffer, bufferMeta);
+            Console.WriteLine($"Writing file to {outputFile}.");
             File.WriteAllBytes(outputFile, buffer);
 
             // Update list

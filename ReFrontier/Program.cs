@@ -53,18 +53,48 @@ namespace ReFrontier
             }
 
             string input = args[0];
-            if (args.Any("-log".Contains)) { createLog = true; repack = false; }
-            if (args.Any("-nonRecursive".Contains)) { recursive = false; repack = false; }
-            if (args.Any("-pack".Contains)) repack = true;
-            if (args.Any("-decryptOnly".Contains)) { decryptOnly = true; repack = false; }
-            if (args.Any("-noDecryption".Contains)) { noDecryption = true; repack = false; }
-            if (args.Any("-encrypt".Contains)) { encrypt = true; repack = false; }
-            if (args.Any("-close)".Contains)) autoClose = true;
-            if (args.Any("-cleanUp)".Contains)) cleanUp = true;
-            if (args.Any("-compress)".Contains)) { compress = true; repack = false; }
-            if (args.Any("-ignoreJPK".Contains)) { ignoreJPK = true; repack = false; }
-            if (args.Any("-stageContainer".Contains)) { stageContainer = true; repack = false; }
-            if (args.Any("-autoStage".Contains)) { autoStage = true; repack = false; }
+            if (args.Any("-log".Contains)) { 
+                createLog = true;
+                repack = false;
+            }
+            if (args.Any("-nonRecursive".Contains)) {
+                recursive = false;
+                repack = false;
+            }
+            if (args.Any("-pack".Contains))
+                repack = true;
+            if (args.Any("-decryptOnly".Contains)) {
+                decryptOnly = true;
+                repack = false;
+            }
+            if (args.Any("-noDecryption".Contains)) {
+                noDecryption = true;
+                repack = false;
+            }
+            if (args.Any("-encrypt".Contains)) {
+                encrypt = true;
+                repack = false;
+            }
+            if (args.Any("-close)".Contains)) 
+                autoClose = true;
+            if (args.Any("-cleanUp)".Contains))
+                cleanUp = true;
+            if (args.Any("-compress)".Contains)) {
+                compress = true;
+                repack = false;
+            }
+            if (args.Any("-ignoreJPK".Contains)) {
+                ignoreJPK = true;
+                repack = false;
+            }
+            if (args.Any("-stageContainer".Contains)) {
+                stageContainer = true;
+                repack = false;
+            }
+            if (args.Any("-autoStage".Contains)) {
+                autoStage = true;
+                repack = false;
+            }
 
             // Check file
             if (File.Exists(input) || Directory.Exists(input))
@@ -75,12 +105,21 @@ namespace ReFrontier
                 {
                     if (!repack && !encrypt)
                     {
-                        string[] inputFiles = Directory.GetFiles(input, "*.*", SearchOption.AllDirectories);
+                        string[] inputFiles = Directory.GetFiles(
+                            input, "*.*", SearchOption.AllDirectories
+                        );
                         ProcessMultipleLevels(inputFiles);
                     }
-                    else if (repack) Pack.ProcessPackInput(input);
-                    else if (compress) Console.WriteLine("A directory was specified while in compression mode. Stopping.");
-                    else if (encrypt) Console.WriteLine("A directory was specified while in encryption mode. Stopping.");
+                    else if (repack)
+                        Pack.ProcessPackInput(input);
+                    else if (compress)
+                        Console.WriteLine(
+                            "A directory was specified while in compression mode. Stopping."
+                        );
+                    else if (encrypt)
+                        Console.WriteLine(
+                            "A directory was specified while in encryption mode. Stopping."
+                        );
                 }
                 // Single file
                 else
@@ -90,36 +129,58 @@ namespace ReFrontier
                         string[] inputFiles = [input];
                         ProcessMultipleLevels(inputFiles);
                     }
-                    else if (repack) Console.WriteLine("A single file was specified while in repacking mode. Stopping.");
+                    else if (repack) 
+                        Console.WriteLine(
+                            "A single file was specified while in repacking mode. Stopping."
+                        );
                     else if (compress) 
                     {
                         string pattern = @"-compress (\d+),(\d+)";
                         try
                         {
-                            Match match = Regex.Matches(string.Join(" ", args, 1, args.Length - 1), pattern)[0];
+                            Match match = Regex.Matches(
+                                string.Join(" ", args, 1, args.Length - 1),
+                                pattern
+                            )[0];
                             ushort type = ushort.Parse(match.Groups[1].Value);
                             int level = int.Parse(match.Groups[2].Value) * 100;
-                            Pack.JPKEncode(type, input, $"output/{Path.GetFileName(input)}", level);
+                            Pack.JPKEncode(
+                                type, input, $"output/{Path.GetFileName(input)}", level
+                            );
                         }
-                        catch
+                        catch (Exception e)
                         {
-                            Console.WriteLine("ERROR: Check compress input. Example: -compress 3,50");
+                            Console.WriteLine(
+                                "ERROR: Check compress input. Example: -compress 3,50" +
+                                e
+                            );
                         }
                     }
                     else if (encrypt)
                     {
                         byte[] buffer = File.ReadAllBytes(input);
+                        if (!File.Exists($"{input}.meta")) {
+                            throw new FileNotFoundException(
+                                $"META file {input}.meta does not exist, " +
+                                $"cannot encryt {input}." +
+                                "Make sure to decryt the initial file with the -log option, " +
+                                "and to place the generate meta file in the same folder as the file " +
+                                "to encypt."
+                            );
+                        }
                         byte[] bufferMeta = File.ReadAllBytes($"{input}.meta");
-                        buffer = Crypto.EncEcd(buffer, bufferMeta);
+                        buffer = Crypto.EncodeEcd(buffer, bufferMeta);
                         File.WriteAllBytes(input, buffer);
-                        Helpers.Print("File encrypted.", false);
+                        Helpers.Print($"File encrypted to {input}.", false);
                         Helpers.GetUpdateEntry(input);
                     }
                 }
                 Console.WriteLine("Done.");
             }
-            else Console.WriteLine("ERROR: Input file does not exist.");
-           if (!autoClose) Console.Read();
+            else
+                Console.WriteLine("ERROR: Input file does not exist.");
+            if (!autoClose)
+                Console.Read();
         }
 
         /// <summary>
@@ -145,7 +206,9 @@ namespace ReFrontier
                 brInput.BaseStream.Seek(0, SeekOrigin.Begin);
                 try {
                     Unpack.UnpackStageContainer(input, brInput, createLog, cleanUp); 
-                } catch { }
+                } catch (Exception e) {
+                    Console.WriteLine(e);
+                }
             }
             // MOMO Header: snp, snd
             else if (fileMagic == 0x4F4D4F4D)
@@ -159,32 +222,33 @@ namespace ReFrontier
             else if (fileMagic == 0x1A646365)
             {
                 Console.WriteLine("ECD Header detected.");
-                if (noDecryption == false)
-                {
-                    byte[] buffer = File.ReadAllBytes(input);
-                    Crypto.DecEcd(buffer);
-
-                    byte[] ecdHeader = new byte[0x10];
-                    Array.Copy(buffer, 0, ecdHeader, 0, 0x10);
-                    byte[] bufferStripped = new byte[buffer.Length - 0x10];
-                    Array.Copy(buffer, 0x10, bufferStripped, 0, buffer.Length - 0x10);
-
-                    File.WriteAllBytes(input, bufferStripped);
-                    if (createLog) File.WriteAllBytes($"{input}.meta", ecdHeader);
-                    Console.WriteLine("File decrypted.");
-                }
-                else
+                if (noDecryption) 
                 {
                     Helpers.Print("Not decrypting due to flag.", false);
                     return;
                 }
+                byte[] buffer = File.ReadAllBytes(input);
+                Crypto.DecodeEcd(buffer);
+
+                byte[] ecdHeader = new byte[0x10];
+                Array.Copy(buffer, 0, ecdHeader, 0, 0x10);
+                byte[] bufferStripped = new byte[buffer.Length - 0x10];
+                Array.Copy(buffer, 0x10, bufferStripped, 0, buffer.Length - 0x10);
+
+                File.WriteAllBytes(input, bufferStripped);
+                string logInfo = "";
+                if (createLog) {
+                    File.WriteAllBytes($"{input}.meta", ecdHeader);
+                    logInfo = ", log file written at [filepath].meta";
+                }
+                Console.WriteLine($"File decrypted to {input}{logInfo}.");
             }
             // EXF Header
             else if (fileMagic == 0x1A667865)
             {
                 Console.WriteLine("EXF Header detected.");
                 byte[] buffer = File.ReadAllBytes(input);
-                Crypto.DecExf(buffer);
+                Crypto.DecodeExf(buffer);
                 byte[] bufferStripped = new byte[buffer.Length - 0x10];
                 Array.Copy(buffer, 0x10, bufferStripped, 0, buffer.Length - 0x10);
                 File.WriteAllBytes(input, bufferStripped);
@@ -216,8 +280,12 @@ namespace ReFrontier
             {
                 brInput.BaseStream.Seek(0, SeekOrigin.Begin);
                 try {
-                    Unpack.UnpackSimpleArchive(input, brInput, 4, createLog, cleanUp, autoStage); 
-                } catch { }
+                    Unpack.UnpackSimpleArchive(
+                        input, brInput, 4, createLog, cleanUp, autoStage
+                    );
+                } catch (Exception e) {
+                    Console.WriteLine(e);
+                }
             }
 
             Console.WriteLine("==============================");
@@ -238,7 +306,8 @@ namespace ReFrontier
                 ProcessFile(inputFile);
 
                 // Disable stage processing files unpacked from parent
-                if (stageContainer == true) stageContainer = false;
+                if (stageContainer == true)
+                    stageContainer = false;
 
                 FileInfo fileInfo = new(inputFile);
                 string[] patterns = ["*.bin", "*.jkr", "*.ftxt", "*.snd"];

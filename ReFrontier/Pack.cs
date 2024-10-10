@@ -239,7 +239,7 @@ namespace ReFrontier
         /// <param name="atype">JPK type, between 0 and 4</param>
         /// <param name="inPath">Input file path.</param>
         /// <param name="otPath">Output file path.</param>
-        /// <param name="level">Compression level between 0 and 100.</param>
+        /// <param name="level">Compression level between 0 and 10000.</param>
         public static void JPKEncode(ushort atype, string inPath, string otPath, int level)
         {
             Directory.CreateDirectory("output");
@@ -248,6 +248,9 @@ namespace ReFrontier
             byte[] buffer = File.ReadAllBytes(inPath);
             int insize = buffer.Length;
             if (File.Exists(otPath)) File.Delete(otPath);
+            Console.WriteLine(
+                $"Starting file compression, type {atype}, level {level / 100} to {otPath}"
+            );
             FileStream fsot = File.Create(otPath);
             BinaryWriter br = new(fsot);
             uint u32 = 0x1A524B4A;

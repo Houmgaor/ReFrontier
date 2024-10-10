@@ -36,9 +36,12 @@ namespace ReFrontier
                     completeSize += entrySize;
                 }
             }
-            catch
+            catch (Exception e)
             {
-                Console.WriteLine("Caught file-based error during simple container check.");
+                Console.WriteLine(
+                    "Caught file-based error during simple container check. " +
+                    e
+                );
             }
 
             // Very fragile check for stage container

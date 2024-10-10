@@ -12,13 +12,13 @@ namespace LibReFrontier
         /// <summary>
         /// Read null-terminated string
         /// </summary>
-        /// <param name="brInput"></param>
-        /// <param name="encoding"></param>
-        /// <returns></returns>
+        /// <param name="brInput">Reader to read from, we stop at the first null termination.</param>
+        /// <param name="encoding">Encoding to use.</param>
+        /// <returns>The decoded string found.</returns>
         public static string ReadNullterminatedString(BinaryReader brInput, Encoding encoding)
         {
             var charByteList = new List<byte>();
-            string str = "";
+            string str;
             if (brInput.BaseStream.Position == brInput.BaseStream.Length)
             {
                 byte[] charByteArray = [.. charByteList];
@@ -48,9 +48,10 @@ namespace LibReFrontier
             )
             {
                 return searchPatterns.AsParallel()
-                       .SelectMany(searchPattern =>
-                              Directory.EnumerateFiles(path, searchPattern, searchOption))
-                              .ToArray();
+                       .SelectMany(searchPattern => 
+                       Directory.EnumerateFiles(path, searchPattern, searchOption)
+                        )
+                        .ToArray();
             }
         }
 
