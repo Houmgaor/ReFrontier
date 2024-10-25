@@ -4,6 +4,9 @@ using System.Linq;
 
 namespace ReFrontier.jpk
 {
+    /// <summary>
+    /// LZ77 encoding but with an extra layer.
+    /// </summary>
     class JPKEncodeHFI : JPKEncodeLz
     {
         private static readonly short m_hfTableLen = 0x1fe;
@@ -13,6 +16,11 @@ namespace ReFrontier.jpk
 
         private int m_filled = 0;
         private int m_depth = 0;
+
+
+        private byte m_bits = 0;
+        private int m_bitcount = 0;
+        
         private void GetPaths(int strt, int lev, int pth)
         {
             int maxlev = 30;
@@ -58,8 +66,6 @@ namespace ReFrontier.jpk
             FlushWrite(outStream);
         }
 
-        private byte m_bits = 0;
-        private int m_bitcount = 0;
         private void WriteBit(Stream s, byte b)
         {
             if (m_bitcount == 8)

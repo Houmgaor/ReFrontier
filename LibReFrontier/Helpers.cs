@@ -18,7 +18,7 @@ namespace LibReFrontier
         public static string ReadNullterminatedString(BinaryReader brInput, Encoding encoding)
         {
             var charByteList = new List<byte>();
-            string str = "";
+            string str;
             if (brInput.BaseStream.Position == brInput.BaseStream.Length)
             {
                 byte[] charByteArray = [.. charByteList];

@@ -101,8 +101,9 @@ namespace ReFrontier
                             int level = int.Parse(match.Groups[2].Value) * 100;
                             Pack.JPKEncode(type, input, $"output/{Path.GetFileName(input)}", level);
                         }
-                        catch
+                        catch (Exception error)
                         {
+                            Console.WriteLine(error);
                             Console.WriteLine("ERROR: Check compress input. Example: -compress 3,50");
                         }
                     }
@@ -118,8 +119,10 @@ namespace ReFrontier
                 }
                 Console.WriteLine("Done.");
             }
-            else Console.WriteLine("ERROR: Input file does not exist.");
-           if (!autoClose) Console.Read();
+            else
+                Console.WriteLine("ERROR: Input file does not exist.");
+            if (!autoClose)
+                Console.Read();
         }
 
         /// <summary>
@@ -145,7 +148,9 @@ namespace ReFrontier
                 brInput.BaseStream.Seek(0, SeekOrigin.Begin);
                 try {
                     Unpack.UnpackStageContainer(input, brInput, createLog, cleanUp); 
-                } catch { }
+                } catch (Exception error) {
+                    Console.WriteLine(error);
+                }
             }
             // MOMO Header: snp, snd
             else if (fileMagic == 0x4F4D4F4D)
@@ -159,25 +164,22 @@ namespace ReFrontier
             else if (fileMagic == 0x1A646365)
             {
                 Console.WriteLine("ECD Header detected.");
-                if (noDecryption == false)
-                {
-                    byte[] buffer = File.ReadAllBytes(input);
-                    Crypto.DecEcd(buffer);
-
-                    byte[] ecdHeader = new byte[0x10];
-                    Array.Copy(buffer, 0, ecdHeader, 0, 0x10);
-                    byte[] bufferStripped = new byte[buffer.Length - 0x10];
-                    Array.Copy(buffer, 0x10, bufferStripped, 0, buffer.Length - 0x10);
-
-                    File.WriteAllBytes(input, bufferStripped);
-                    if (createLog) File.WriteAllBytes($"{input}.meta", ecdHeader);
-                    Console.WriteLine("File decrypted.");
-                }
-                else
-                {
+                if (!noDecryption) {
                     Helpers.Print("Not decrypting due to flag.", false);
                     return;
                 }
+                byte[] buffer = File.ReadAllBytes(input);
+                Crypto.DecEcd(buffer);
+
+                byte[] ecdHeader = new byte[0x10];
+                Array.Copy(buffer, 0, ecdHeader, 0, 0x10);
+                byte[] bufferStripped = new byte[buffer.Length - 0x10];
+                Array.Copy(buffer, 0x10, bufferStripped, 0, buffer.Length - 0x10);
+
+                File.WriteAllBytes(input, bufferStripped);
+                if (createLog) File.WriteAllBytes($"{input}.meta", ecdHeader);
+                Console.WriteLine("File decrypted.");
+
             }
             // EXF Header
             else if (fileMagic == 0x1A667865)
@@ -217,7 +219,9 @@ namespace ReFrontier
                 brInput.BaseStream.Seek(0, SeekOrigin.Begin);
                 try {
                     Unpack.UnpackSimpleArchive(input, brInput, 4, createLog, cleanUp, autoStage); 
-                } catch { }
+                } catch (Exception error) {
+                    Console.WriteLine(error);
+                }
             }
 
             Console.WriteLine("==============================");
@@ -242,7 +246,6 @@ namespace ReFrontier
 
                 FileInfo fileInfo = new(inputFile);
                 string[] patterns = ["*.bin", "*.jkr", "*.ftxt", "*.snd"];
-                ;
                 string directory = Path.Join(
                     fileInfo.DirectoryName, 
                     Path.GetFileNameWithoutExtension(inputFile)
