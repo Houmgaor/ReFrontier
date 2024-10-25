@@ -232,10 +232,6 @@ namespace ReFrontier
                 Array.Copy(buffer, 0, ecdHeader, 0, 0x10);
                 byte[] bufferStripped = new byte[buffer.Length - 0x10];
                 Array.Copy(buffer, 0x10, bufferStripped, 0, buffer.Length - 0x10);
-                byte[] ecdHeader = new byte[0x10];
-                Array.Copy(buffer, 0, ecdHeader, 0, 0x10);
-                byte[] bufferStripped = new byte[buffer.Length - 0x10];
-                Array.Copy(buffer, 0x10, bufferStripped, 0, buffer.Length - 0x10);
 
                 File.WriteAllBytes(input, bufferStripped);
                 string logInfo = "";

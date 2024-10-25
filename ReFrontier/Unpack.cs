@@ -50,7 +50,7 @@ namespace ReFrontier
             long checkZero = brInput.ReadInt64();
             if (checkUnk < 9999 && checkZero == 0)
             {
-                if (autoStage == true)
+                if (autoStage)
                 {
                     brInput.BaseStream.Seek(0, SeekOrigin.Begin);
                     UnpackStageContainer(input, brInput, createLog, cleanUp);

@@ -1,7 +1,9 @@
 # Enemy list
+
 As of update "Z Zenith". Order is identical to MH2 as far as monsters are present there.
 
 ## Tags
+
 |Letter|Meaning|
 |:---:|:----|
 |b|Hard Core (HC) / Extreme Individual Ver.|
@@ -10,7 +12,8 @@ As of update "Z Zenith". Order is identical to MH2 as far as monsters are presen
 |e|Zenith Ver.|
 
 ## Enemy IDs
-```
+
+```text
 em001 = Rathian
 em002 = Fatalis
 em003 = Kelbi
@@ -187,7 +190,8 @@ em176 = King Shakalaka
 ```
 
 ## Remarks
-```
+
+```text
 em101_c = Gogomoa April Fools Ver
 em155_c = Four Heavenly King Deviljho
 ```
