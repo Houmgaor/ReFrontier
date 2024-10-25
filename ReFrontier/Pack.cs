@@ -261,14 +261,11 @@ namespace ReFrontier
             u32 = 0x10;
             br.Write(u32);
             br.Write(insize);
-            IJPKEncode encoder = null;
+            IJPKEncode encoder;
             switch (type)
             {
                 case 0:
                     encoder = new JPKEncodeRW();
-                    break;
-                case 2:
-                    //encoder = new JPKEncodeHFIRW();
                     break;
                 case 3:
                     encoder = new JPKEncodeLz();
@@ -276,26 +273,25 @@ namespace ReFrontier
                 case 4:
                     encoder = new JPKEncodeHFI();
                     break;
+                default:
+                    // For level 2 encoding use: encoder = new JPKEncodeHFIRW();
+
+                    Console.WriteLine("Unsupported/invalid type: " + type);
+                    fsot.Close();
+                    File.Delete(otPath);
+                    return;
             }
 
-            if (encoder != null)
-            {
-                DateTime sta, fin;
-                sta = DateTime.Now;
-                encoder.ProcessOnEncode(buffer, fsot, level, null);
-                fin = DateTime.Now;
-                Helpers.Print(
-                    $"File compressed using type {type} (level {level / 100}): {fsot.Length} bytes ({1 - (decimal)fsot.Length / insize:P} saved) in {fin - sta:%m\\:ss\\.ff}",
-                    false
-                );
-                fsot.Close();
-            }
-            else
-            {
-                Console.WriteLine("Unsupported/invalid type: " + type);
-                fsot.Close();
-                File.Delete(otPath);
-            }
+            DateTime sta, fin;
+            sta = DateTime.Now;
+            encoder.ProcessOnEncode(buffer, fsot, level, null);
+            fin = DateTime.Now;
+            Helpers.Print(
+                $"File compressed using type {type} (level {level / 100}): " + 
+                $"{fsot.Length} bytes ({1 - (decimal)fsot.Length / insize:P} saved) in {fin - sta:%m\\:ss\\.ff}",
+                false
+            );
+            fsot.Close();
         }
     }
 }

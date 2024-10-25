@@ -3,6 +3,9 @@ using System.IO;
 
 namespace ReFrontier.jpk
 {
+    /// <summary>
+    /// Variant of the LZ77 compression algorithm.
+    /// </summary>
     class JPKEncodeLz : IJPKEncode
     {
         private byte m_flag;
@@ -14,6 +17,13 @@ namespace ReFrontier.jpk
         Stream m_outstream;
         readonly byte[] m_towrite = new byte[1000];
         int m_itowrite;
+
+        /// <summary>
+        /// Searche for repeated sequences in the input data and returns their length.
+        /// </summary>
+        /// <param name="ind">Input data.</param>
+        /// <param name="ofs">Offsets value</param>
+        /// <returns>Length of the repeated sequence</returns>
         private unsafe int FindRep(int ind, out uint ofs)
         {
             int nlen = Math.Min(m_level, m_inp.Length - ind);
@@ -74,6 +84,14 @@ namespace ReFrontier.jpk
                 SetFlag((byte)((b >> i) & 1));
             }
         }
+
+        /// <summary>
+        /// Compress the file on the fly.
+        /// </summary>
+        /// <param name="inBuffer">Input bytes.</param>
+        /// <param name="outStream">Stream to write to.</param>
+        /// <param name="level">Compression level. Level will be truncated between 6 and 8191.</param>
+        /// <param name="progress">Progress bar object.</param>
         public virtual void ProcessOnEncode(byte[] inBuffer, Stream outStream, int level = 1000, ShowProgress progress = null)
         {
             long perc;
@@ -83,7 +101,9 @@ namespace ReFrontier.jpk
             m_itowrite = 0;
             m_outstream = outStream;
             m_inp = inBuffer;
+            // Tuncate level between 6 and 280
             m_level = level < 6 ? 6 : level > 280 ? 280 : level;
+            // Level between 50 and 0x1fff (8191)
             m_maxdist = level < 50 ? 50 : level > 0x1fff ? 0x1fff : level;
             long perc0 = percbord;
             progress?.Invoke(percbord);

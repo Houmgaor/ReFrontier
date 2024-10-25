@@ -148,12 +148,10 @@ namespace ReFrontier
                                 type, input, $"output/{Path.GetFileName(input)}", level
                             );
                         }
-                        catch (Exception e)
+                        catch (Exception error)
                         {
-                            Console.WriteLine(
-                                "ERROR: Check compress input. Example: -compress 3,50" +
-                                e
-                            );
+                            Console.WriteLine(error);
+                            Console.WriteLine("ERROR: Check compress input. Example: -compress 3,50");
                         }
                     }
                     else if (encrypt)
@@ -206,8 +204,8 @@ namespace ReFrontier
                 brInput.BaseStream.Seek(0, SeekOrigin.Begin);
                 try {
                     Unpack.UnpackStageContainer(input, brInput, createLog, cleanUp); 
-                } catch (Exception e) {
-                    Console.WriteLine(e);
+                } catch (Exception error) {
+                    Console.WriteLine(error);
                 }
             }
             // MOMO Header: snp, snd
@@ -230,6 +228,10 @@ namespace ReFrontier
                 byte[] buffer = File.ReadAllBytes(input);
                 Crypto.DecodeEcd(buffer);
 
+                byte[] ecdHeader = new byte[0x10];
+                Array.Copy(buffer, 0, ecdHeader, 0, 0x10);
+                byte[] bufferStripped = new byte[buffer.Length - 0x10];
+                Array.Copy(buffer, 0x10, bufferStripped, 0, buffer.Length - 0x10);
                 byte[] ecdHeader = new byte[0x10];
                 Array.Copy(buffer, 0, ecdHeader, 0, 0x10);
                 byte[] bufferStripped = new byte[buffer.Length - 0x10];
@@ -311,7 +313,6 @@ namespace ReFrontier
 
                 FileInfo fileInfo = new(inputFile);
                 string[] patterns = ["*.bin", "*.jkr", "*.ftxt", "*.snd"];
-                ;
                 string directory = Path.Join(
                     fileInfo.DirectoryName, 
                     Path.GetFileNameWithoutExtension(inputFile)

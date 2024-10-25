@@ -46,9 +46,10 @@ ReFrontier does decryption (ECD → JPK) then decompression by default.
 You simply need to drag and drop the path of the file or folders of ReFrontier you want to decrypt.
 It can also depack folders.
 
-Decompressing a file generates a new file with the same name, for instance mhfdat.bin.
+Decompressing a file *replaces* the old file by its new format, don't forget to backup important data.
 
 If you want to reuse the file in the game, don't forget to add ``-log`` to generate a .meta file.
+If you file is named "mhfdat.bin", the meta file will be mhfdat.bin.meta.
 
 ## Data edition
 
@@ -78,6 +79,8 @@ File compressed using type 4 (level 100): 6045761 bytes (77,15 % saved) in 2:05.
 Vanilla file from COG with type 4       : 5363764 bytes (79,72 % saved)
 ```
 
+The output will be a file, or a folder with the same name in the `output/` directory.
+
 ## Encrypt
 
 To a encrypt a *compressed* file use:
@@ -86,6 +89,7 @@ To a encrypt a *compressed* file use:
 ./ReFrontier.exe mhfdat.bin -encrypt
 ```
 
+It will implicitely look for mhfdat.bin.meta file in the same folder, see the [decryption](#decryptdecompress) section.
 The file can now be used in Frontier.
 
 ## Disclaimer
