@@ -1,7 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text.RegularExpressions;
+
 using LibReFrontier;
 
 namespace ReFrontier
@@ -21,164 +22,256 @@ namespace ReFrontier
         static bool stageContainer = false;
         static bool autoStage = false;
 
-        //[STAThread]
+        /// <summary>
+        /// Simple arguments parser.
+        /// </summary>
+        /// <param name="args">Input arguments from the CLI</param>
+        /// <returns>Dictionary of arguments. Arguments with no value have a null value assigned.</returns>
+        static Dictionary<string, string> ParseArguments(string[] args)
+        {
+            var arguments = new Dictionary<string, string>();
+            foreach (var arg in args)
+            {
+                string[] parts = arg.Split('=');
+                if (parts.Length == 2)
+                {
+                    arguments[parts[0]] = parts[1];
+                }
+                else
+                {
+                    arguments[arg] = null;
+                }
+            }
+            return arguments;
+        }
+
+
+        /// <summary>
+        /// Main interface to start the program.
+        /// </summary>
+        /// <param name="args">Input arguments from the CLI.</param>
+        /// <exception cref="Exception">For wrong compression format.</exception>
         static void Main(string[] args)
         {
-            Helpers.Print("ReFrontier by MHVuze", false);
+            var parsedArgs = ParseArguments(args); 
+            Helpers.Print(
+                "ReFrontier by MHVuze - " + 
+                "A tool for editing Monster Hunter Frontier files", 
+                false
+            );
+            var argKeys = parsedArgs.Keys;
 
-            // Assign arguments
-            if (args.Length < 1)
+            // Display help
+            if (args.Length < 1 || argKeys.Contains("--help"))
             {
                 Helpers.Print(
-                    "Usage: ReFrontier <file> (options)\n" +
-                    "\nUnpacking Options:\n" +
-                    "-log: Write log file (required for repacking)\n" +
-                    "-cleanUp: Delete simple archives after unpacking\n" +
-                    "-stageContainer: Unpack file as stage-specific container\n" +
-                    "-autoStage: Automatically attempt to unpack containers that might be stage-specific\n" +
-                    "-nonRecursive: Do not unpack recursively\n" +
-                    "-decryptOnly: Decrypt ecd files without unpacking\n" +
-                    "-noDecryption: Don't decrypt ecd files, no unpacking\n" +
-                    "-ignoreJPK: Do not decompress JPK files\n" +
-                    "\nPacking Options:\n" +
-                    "-pack: Repack directory (requires log file)\n" +
-                    "-compress [type],[level]: Pack file with jpk [type] at compression [level]\n" +
-                    "-encrypt: Encrypt input file with ecd algorithm\n" +
-                    "\nGeneral Options:\n" +
-                    "-close: Close window after finishing process",
+                    "Usage: ReFrontier <file> [options]\n" +
+                    "\nUnpacking Options\n" +
+                    "===================\n\n" + 
+                    "--log: Write log file (required for crypting back)\n" +
+                    "--cleanUp: Delete simple archives after unpacking\n" +
+                    "--stageContainer: Unpack file as stage-specific container\n" +
+                    "--autoStage: Automatically attempt to unpack containers that might be stage-specific\n" +
+                    "--nonRecursive: Do not unpack recursively\n" +
+                    "--decryptOnly: Decrypt ECD files without unpacking\n" +
+                    "--noDecryption: Don't decrypt ECD files, no unpacking\n" +
+                    "--ignoreJPK: Do not decompress JPK files\n" +
+                    "\nPacking Options\n" +
+                    "=================\n\n" + 
+                    "--pack: Repack directory (requires log file)\n" +
+                    "--compress=[type],[level]: Pack file with JPK [type] (int) at compression [level]\n" +
+                    "--encrypt: Encrypt input file with ECD algorithm\n" +
+                    "\nGeneral Options\n" +
+                    "=================\n\n" + 
+                    "--close: Close window after finishing process\n" +
+                    "--help: Print this window and leave.\n\n" +
+                    "You can use all arguments with a single dash \"-\" " +
+                    "as in the original ReFrontier, but this is deprecated.",
                     false
                 );
                 Console.Read();
                 return;
             }
+            
 
-            string input = args[0];
-            if (args.Any("-log".Contains)) { 
+            // Assign arguments
+            if (argKeys.Contains("--log") || argKeys.Contains("-log"))
+            { 
                 createLog = true;
                 repack = false;
             }
-            if (args.Any("-nonRecursive".Contains)) {
+            if (argKeys.Contains("--nonRecursive") || argKeys.Contains("-nonRecursive"))
+            {
                 recursive = false;
                 repack = false;
             }
-            if (args.Any("-pack".Contains))
+            if (argKeys.Contains("--pack") || argKeys.Contains("-pack"))
                 repack = true;
-            if (args.Any("-decryptOnly".Contains)) {
+            if (argKeys.Contains("--decryptOnly") || argKeys.Contains("-decryptOnly"))
+            {
                 decryptOnly = true;
                 repack = false;
             }
-            if (args.Any("-noDecryption".Contains)) {
+            if (argKeys.Contains("--noDecryption") || argKeys.Contains("-noDecryption"))
+            {
                 noDecryption = true;
                 repack = false;
             }
-            if (args.Any("-encrypt".Contains)) {
+            if (argKeys.Contains("--encrypt") || argKeys.Contains("-encrypt"))
+            {
                 encrypt = true;
                 repack = false;
             }
-            if (args.Any("-close)".Contains)) 
+            if (argKeys.Contains("--close") || argKeys.Contains("-close")) 
                 autoClose = true;
-            if (args.Any("-cleanUp)".Contains))
+            if (argKeys.Contains("--cleanUp") || argKeys.Contains("-cleanUp"))
                 cleanUp = true;
-            if (args.Any("-compress)".Contains)) {
+            int[] compressArgs = null;
+            if (argKeys.Contains("--compress") || argKeys.Contains("-compress"))
+            {
                 compress = true;
                 repack = false;
+                if (argKeys.Contains("--compress"))
+                {
+                    var matches = parsedArgs["--compress"].Split(",");
+                    if (matches.Length != 2)
+                    {
+                        throw new ArgumentException(
+                            "Check the input of compress! Received: " +
+                            parsedArgs["--compress"] + ". " +
+                            "Cannot split as compression [type],[level]. " +
+                            "Example: --compress=3,50"
+                        );
+                    }
+                    compressArgs = [
+                        int.Parse(matches[0]),
+                        int.Parse(matches[1]) * 100
+                    ];
+                }
+                else
+                {
+                    string pattern = @"-compress (\d),(\d+)";
+                    var matches = Regex.Matches(
+                        string.Join(" ", args, 1, args.Length - 1),
+                        pattern
+                    );
+                    if (matches.Count == 0)
+                    {
+                        throw new ArgumentException(
+                            "Check compress input. Example: --compress=3,50"
+                        );
+                    }
+                    var match = matches[0];
+                    compressArgs = [
+                        int.Parse(match.Groups[1].Value),
+                        int.Parse(match.Groups[2].Value) * 100
+                    ];
+                }
+                if (compressArgs == null) {
+                    throw new Exception("Check compression level and type!");
+                }
             }
-            if (args.Any("-ignoreJPK".Contains)) {
+            if (argKeys.Contains("--ignoreJPK") || argKeys.Contains("-ignoreJPK"))
+            {
                 ignoreJPK = true;
                 repack = false;
             }
-            if (args.Any("-stageContainer".Contains)) {
+            if (argKeys.Contains("--stageContainer") || argKeys.Contains("-stageContainer"))
+            {
                 stageContainer = true;
                 repack = false;
             }
-            if (args.Any("-autoStage".Contains)) {
+            if (argKeys.Contains("--autoStage") || argKeys.Contains("-autoStage"))
+            {
                 autoStage = true;
                 repack = false;
             }
 
-            // Check file
+            // Start input processing
+            string input = args[0];
             if (File.Exists(input) || Directory.Exists(input))
             {
-                FileAttributes inputAttr = File.GetAttributes(input);
-                // Directories
-                if (inputAttr.HasFlag(FileAttributes.Directory))
-                {
-                    if (!repack && !encrypt)
-                    {
-                        string[] inputFiles = Directory.GetFiles(
-                            input, "*.*", SearchOption.AllDirectories
-                        );
-                        ProcessMultipleLevels(inputFiles);
-                    }
-                    else if (repack)
-                        Pack.ProcessPackInput(input);
-                    else if (compress)
-                        Console.WriteLine(
-                            "A directory was specified while in compression mode. Stopping."
-                        );
-                    else if (encrypt)
-                        Console.WriteLine(
-                            "A directory was specified while in encryption mode. Stopping."
-                        );
-                }
-                // Single file
-                else
-                {
-                    if (!repack && !encrypt && !compress)
-                    {
-                        string[] inputFiles = [input];
-                        ProcessMultipleLevels(inputFiles);
-                    }
-                    else if (repack) 
-                        Console.WriteLine(
-                            "A single file was specified while in repacking mode. Stopping."
-                        );
-                    else if (compress) 
-                    {
-                        string pattern = @"-compress (\d+),(\d+)";
-                        try
-                        {
-                            Match match = Regex.Matches(
-                                string.Join(" ", args, 1, args.Length - 1),
-                                pattern
-                            )[0];
-                            ushort type = ushort.Parse(match.Groups[1].Value);
-                            int level = int.Parse(match.Groups[2].Value) * 100;
-                            Pack.JPKEncode(
-                                type, input, $"output/{Path.GetFileName(input)}", level
-                            );
-                        }
-                        catch (Exception error)
-                        {
-                            Console.WriteLine(error);
-                            Console.WriteLine("ERROR: Check compress input. Example: -compress 3,50");
-                        }
-                    }
-                    else if (encrypt)
-                    {
-                        byte[] buffer = File.ReadAllBytes(input);
-                        if (!File.Exists($"{input}.meta")) {
-                            throw new FileNotFoundException(
-                                $"META file {input}.meta does not exist, " +
-                                $"cannot encryt {input}." +
-                                "Make sure to decryt the initial file with the -log option, " +
-                                "and to place the generate meta file in the same folder as the file " +
-                                "to encypt."
-                            );
-                        }
-                        byte[] bufferMeta = File.ReadAllBytes($"{input}.meta");
-                        buffer = Crypto.EncodeEcd(buffer, bufferMeta);
-                        File.WriteAllBytes(input, buffer);
-                        Helpers.Print($"File encrypted to {input}.", false);
-                        Helpers.GetUpdateEntry(input);
-                    }
-                }
+                StartProcessing(input, compressArgs);
                 Console.WriteLine("Done.");
             }
-            else
-                Console.WriteLine("ERROR: Input file does not exist.");
+            else {
+                throw new FileNotFoundException("Input file does not exist.");
+            }
             if (!autoClose)
                 Console.Read();
+        }
+
+        /// <summary>
+        /// Start the input processing.
+        /// </summary>
+        /// <param name="input">File or directory path.</param>
+        /// <param name="compressArgs">Compression type and level, in this order</param>
+        /// <exception cref="FileNotFoundException">Raises if META file for encryption is missing.</exception>
+        static void StartProcessing(string input, int[] compressArgs = null)
+        {
+
+            FileAttributes inputAttr = File.GetAttributes(input);
+            // Directories
+            if (inputAttr.HasFlag(FileAttributes.Directory))
+            {
+                if (!repack && !encrypt)
+                {
+                    string[] inputFiles = Directory.GetFiles(
+                        input, "*.*", SearchOption.AllDirectories
+                    );
+                    ProcessMultipleLevels(inputFiles);
+                }
+                else if (repack)
+                    Pack.ProcessPackInput(input);
+                else if (compress)
+                    Console.WriteLine(
+                        "A directory was specified while in compression mode. Stopping."
+                    );
+                else if (encrypt)
+                    Console.WriteLine(
+                        "A directory was specified while in encryption mode. Stopping."
+                    );
+            }
+            // Single file
+            else
+            {
+                if (!repack && !encrypt && !compress)
+                {
+                    string[] inputFiles = [input];
+                    ProcessMultipleLevels(inputFiles);
+                }
+                else if (repack) 
+                    Console.WriteLine(
+                        "A single file was specified while in repacking mode. Stopping."
+                    );
+                else if (compress) 
+                {
+                    Pack.JPKEncode(
+                            (ushort)compressArgs[0],
+                            input,
+                            $"output/{Path.GetFileName(input)}",
+                            compressArgs[1]
+                    );
+                }
+                else if (encrypt)
+                {
+                    byte[] buffer = File.ReadAllBytes(input);
+                    if (!File.Exists($"{input}.meta")) {
+                        throw new FileNotFoundException(
+                            $"META file {input}.meta does not exist, " +
+                            $"cannot encryt {input}." +
+                            "Make sure to decryt the initial file with the -log option, " +
+                            "and to place the generate meta file in the same folder as the file " +
+                            "to encypt."
+                        );
+                    }
+                    byte[] bufferMeta = File.ReadAllBytes($"{input}.meta");
+                    buffer = Crypto.EncodeEcd(buffer, bufferMeta);
+                    File.WriteAllBytes(input, buffer);
+                    Helpers.Print($"File encrypted to {input}.", false);
+                    Helpers.GetUpdateEntry(input);
+                }
+            }
         }
 
         /// <summary>
