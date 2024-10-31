@@ -32,9 +32,33 @@ If you don't see it, run ``dotnet build`` to compile ReFrontier once again.
 
 Now, you can either drag-an-drop files/folder onto this executable, or open a terminal at the location of the executable file.
 
+For a simple use case:
+
+1. Copy "mhfdat.bin" (or any file) from the `dat/` folder of MHFrontier.
+2. Decrypt and decompress the file with
+
+    ```shell
+    ./ReFrontier.exe output/mhfdat.bin --log
+    ```
+
+3. Edit to you convenience.
+4. Encrypt back
+
+    ```shell
+    ./ReFrontier.exe output/mhfdat.bin --encrypt
+    ```
+
+5. Compress
+
+    ```shell
+    ./ReFrontier.exe output/mhfdat.bin --compress=4,80
+    ```
+
+6. Replace mhfdat.bin by the new file.
+
 To get help, use:
 
-```commandline
+```shell
 ./ReFrontier.exe --help
 ```
 
@@ -119,7 +143,7 @@ Vanilla file from COG with type 4       : 5363764 bytes (79,72 % saved)
 
 ### Encrypt
 
-To a encrypt a *compressed* file use ``---encrypt``.
+To a encrypt a *compressed* file use ``--encrypt``.
 It encrypts the input file with the ECD algorithm.
 
 ```shell

@@ -1,8 +1,9 @@
-﻿using LibReFrontier;
-using ReFrontier.jpk;
-using System;
+﻿using System;
 using System.IO;
 using System.Text;
+
+using LibReFrontier;
+using ReFrontier.jpk;
 
 namespace ReFrontier
 {
@@ -89,7 +90,8 @@ namespace ReFrontier
                 if (entrySize == 0)
                 {
                     Console.WriteLine($"Offset: 0x{entryOffset:X8}, Size: 0x{entrySize:X8} (SKIPPED)");
-                    if (createLog) logOutput.WriteLine($"null,{entryOffset},{entrySize},0");
+                    if (createLog)
+                        logOutput.WriteLine($"null,{entryOffset},{entrySize},0");
                     continue;
                 }
 
@@ -107,7 +109,8 @@ namespace ReFrontier
 
                 // Print info
                 Console.WriteLine($"Offset: 0x{entryOffset:X8}, Size: 0x{entrySize:X8} ({extension})");
-                if (createLog) logOutput.WriteLine($"{i + 1:D4}_{entryOffset:X8}.{extension},{entryOffset},{entrySize},{headerInt}");
+                if (createLog)
+                    logOutput.WriteLine($"{i + 1:D4}_{entryOffset:X8}.{extension},{entryOffset},{entrySize},{headerInt}");
 
                 // Extract file
                 File.WriteAllBytes($"{outputDir}/{i + 1:D4}_{entryOffset:X8}.{extension}", entryData);
@@ -187,6 +190,7 @@ namespace ReFrontier
             byte[] buffer = File.ReadAllBytes(input);
             MemoryStream ms = new(buffer);
             BinaryReader br = new(ms);
+            // Check for JKR header
             if (br.ReadUInt32() == 0x1A524B4A)
             {
                 IJPKDecode decoder = null;
@@ -210,7 +214,7 @@ namespace ReFrontier
                 }
                 if (decoder != null)
                 {
-                    // Decompres file
+                    // Decompress file
                     int startOffset = br.ReadInt32();
                     int outSize = br.ReadInt32();
                     byte[] outBuffer = new byte[outSize];

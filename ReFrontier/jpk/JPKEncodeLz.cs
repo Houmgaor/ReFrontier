@@ -58,7 +58,7 @@ namespace ReFrontier.jpk
                 return len;
             }
         }
-        private void Flushflag(bool final)
+        private void FlushFlag(bool final)
         {
             if (!final || m_itowrite > 0)
                 WriteByte(m_outstream, m_flag);
@@ -73,7 +73,7 @@ namespace ReFrontier.jpk
             if (m_shiftIndex < 0)
             {
                 m_shiftIndex = 7;
-                Flushflag(false);
+                FlushFlag(false);
             }
             m_flag |= (byte)(b << m_shiftIndex);
         }
@@ -161,7 +161,7 @@ namespace ReFrontier.jpk
                     }
                 }
             }
-            Flushflag(true);
+            FlushFlag(true);
             progress?.Invoke(100);
         }
         public virtual void WriteByte(Stream s, byte b)
