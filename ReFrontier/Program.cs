@@ -247,10 +247,10 @@ namespace ReFrontier
                 else if (compress) 
                 {
                     Pack.JPKEncode(
-                            (ushort)compressArgs[0],
-                            input,
-                            $"output/{Path.GetFileName(input)}",
-                            compressArgs[1]
+                        (ushort)compressArgs[0],
+                        input,
+                        $"output/{Path.GetFileName(input)}",
+                        compressArgs[1]
                     );
                 }
                 else if (encrypt)

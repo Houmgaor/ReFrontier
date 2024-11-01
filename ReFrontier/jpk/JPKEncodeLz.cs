@@ -11,7 +11,7 @@ namespace ReFrontier.jpk
         private byte m_flag;
         private int m_shiftIndex;
         private int m_ind;
-        private byte[] m_inp;
+        private byte[] m_inputBuffer;
         private int m_level = 280;
         private int m_maxdist = 0x300;//0x1fff;
         Stream m_outstream;
@@ -19,45 +19,48 @@ namespace ReFrontier.jpk
         int m_itowrite;
 
         /// <summary>
-        /// Searche for repeated sequences in the input data and returns their length.
+        /// Search for repeated sequences in the input data and returns their length.
         /// </summary>
-        /// <param name="ind">Input data.</param>
-        /// <param name="ofs">Offsets value</param>
+        /// <param name="inputData">Input data.</param>
+        /// <param name="offset">Offset value</param>
         /// <returns>Length of the repeated sequence</returns>
-        private unsafe int FindRep(int ind, out uint ofs)
+        private unsafe int FindRepetitions(int inputData, out uint offset)
         {
-            int nlen = Math.Min(m_level, m_inp.Length - ind);
-            ofs = 0;
-            if (ind == 0 || nlen < 3)
+            int nLength = Math.Min(m_level, m_inputBuffer.Length - inputData);
+            offset = 0;
+            if (inputData == 0 || nLength < 3)
             {
                 return 0;
             }
-            int ista = ind < m_maxdist ? 0 : ind - m_maxdist;
-            fixed (byte* pinp = m_inp)
+            int ista = inputData < m_maxdist ? 0 : inputData - m_maxdist;
+            fixed (byte* pinp = m_inputBuffer)
             {
-                byte* psta = pinp + ista;
-                byte* pcur = pinp + ind;
+                byte* startPointer = pinp + ista;
+                byte* currentPointer = pinp + inputData;
                 int len = 0;
-                while (psta < pcur)
+                while (startPointer < currentPointer)
                 {
                     int lenw = 0;
-                    byte* pfin = psta + nlen;
+                    byte* endPointer = startPointer + nLength;
 
-                    for (byte* pb = psta, pb2 = pcur; pb < pfin; pb++, pb2++, lenw++)
+                    for (byte* pb = startPointer, pb2 = currentPointer; pb < endPointer; pb++, pb2++, lenw++)
                     {
-                        if (*pb != *pb2) break;
+                        if (*pb != *pb2)
+                            break;
                     }
                     if (lenw > len && lenw >= 3)
                     {
                         len = lenw;
-                        ofs = (uint)(pcur - psta - 1);
-                        if (len >= nlen) break;
+                        offset = (uint)(currentPointer - startPointer - 1);
+                        if (len >= nLength)
+                            break;
                     }
-                    psta++;
+                    startPointer++;
                 }
                 return len;
             }
         }
+
         private void FlushFlag(bool final)
         {
             if (!final || m_itowrite > 0)
@@ -67,6 +70,7 @@ namespace ReFrontier.jpk
                 WriteByte(m_outstream, m_towrite[i]);
             m_itowrite = 0;
         }
+
         private void SetFlag(byte b)
         {
             m_shiftIndex--;
@@ -77,6 +81,7 @@ namespace ReFrontier.jpk
             }
             m_flag |= (byte)(b << m_shiftIndex);
         }
+
         private void SetFlagsL(byte b, int cnt)
         {
             for (int i = cnt - 1; i >= 0; i--)
@@ -100,7 +105,7 @@ namespace ReFrontier.jpk
             m_shiftIndex = 8;
             m_itowrite = 0;
             m_outstream = outStream;
-            m_inp = inBuffer;
+            m_inputBuffer = inBuffer;
             // Tuncate level between 6 and 280
             m_level = level < 6 ? 6 : level > 280 ? 280 : level;
             // Level between 50 and 0x1fff (8191)
@@ -116,7 +121,7 @@ namespace ReFrontier.jpk
                     perc0 = perc;
                     progress?.Invoke(perc);
                 }
-                int len = FindRep(m_ind, out uint ofs);
+                int len = FindRepetitions(m_ind, out uint ofs);
                 
                 if (len == 0)
                 {
@@ -139,7 +144,8 @@ namespace ReFrontier.jpk
                         SetFlag(1);
                         ushort u16 = (ushort)ofs;
                         byte hi, lo;
-                        if (len <= 9) u16 |= (ushort)((len - 2) << 13);
+                        if (len <= 9)
+                            u16 |= (ushort)((len - 2) << 13);
                         hi = (byte)(u16 >> 8);
                         lo = (byte)(u16 & 0xff);
                         m_towrite[m_itowrite++] = hi;
@@ -164,9 +170,15 @@ namespace ReFrontier.jpk
             FlushFlag(true);
             progress?.Invoke(100);
         }
-        public virtual void WriteByte(Stream s, byte b)
+
+        /// <summary>
+        /// Write a single byte directly.
+        /// </summary>
+        /// <param name="stream">Stream to write to</param>
+        /// <param name="inputByte">byte to write</param>
+        public virtual void WriteByte(Stream stream, byte inputByte)
         {
-            s.WriteByte(b);
+            stream.WriteByte(inputByte);
         }
     }
 }
