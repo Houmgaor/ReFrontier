@@ -10,65 +10,85 @@ namespace ReFrontier.jpk
     {
         private byte m_flag;
         private int m_shiftIndex;
-        private int m_ind;
-        private byte[] m_inputBuffer;
-        private int m_level = 280;
-        private int m_maxdist = 0x300;//0x1fff;
-        Stream m_outstream;
-        readonly byte[] m_towrite = new byte[1000];
-        int m_itowrite;
+        /// <summary>
+        /// Index in m_inputBuffer
+        /// </summary>
+        private int m_index;
 
         /// <summary>
-        /// Search for repeated sequences in the input data and returns their length.
+        /// Buffer of data to compress.
         /// </summary>
-        /// <param name="inputData">Input data.</param>
+        private byte[] m_inputBuffer;
+
+        /// <summary>
+        /// Compression level, between 280 and 8191 (0x1fff)
+        /// </summary>
+        private int m_compressionLevel = 280;
+
+        /// <summary>
+        /// Maximum index distance in which to find repetitions.
+        /// 
+        /// Max value is 0x1fff
+        /// </summary>
+        private readonly int m_maxIndexDist = 0x300;
+
+        Stream m_outStream;
+        readonly byte[] m_toWrite = new byte[1000];
+        /// <summary>
+        /// Index in <code>m_towrite</code>
+        /// </summary>
+        int m_indexToWrite;
+
+        /// <summary>
+        /// Search for the longest repeated sequence in the input data and returns its length.
+        /// </summary>
+        /// <param name="inputDataIndex">Index in the input data buffer.</param>
         /// <param name="offset">Offset value</param>
-        /// <returns>Length of the repeated sequence</returns>
-        private unsafe int FindRepetitions(int inputData, out uint offset)
+        /// <returns>Length of the longest repeated sequence.</returns>
+        private unsafe int LongestRepetition(int inputDataIndex, out uint offset)
         {
-            int nLength = Math.Min(m_level, m_inputBuffer.Length - inputData);
+            int nLength = Math.Min(m_compressionLevel, m_inputBuffer.Length - inputDataIndex);
             offset = 0;
-            if (inputData == 0 || nLength < 3)
+            if (inputDataIndex == 0 || nLength < 3)
             {
                 return 0;
             }
-            int ista = inputData < m_maxdist ? 0 : inputData - m_maxdist;
-            fixed (byte* pinp = m_inputBuffer)
+            int inputStart = Math.Max(0, inputDataIndex - m_maxIndexDist);
+            fixed (byte* inputBufferPointer = m_inputBuffer)
             {
-                byte* startPointer = pinp + ista;
-                byte* currentPointer = pinp + inputData;
-                int len = 0;
-                while (startPointer < currentPointer)
+                byte* currentPointer = inputBufferPointer + inputDataIndex;
+                int maxLength = 0;
+                for (byte* startPointer = inputBufferPointer + inputStart; startPointer < currentPointer; startPointer++)
                 {
-                    int lenw = 0;
+                    int currentLength = 0;
                     byte* endPointer = startPointer + nLength;
 
-                    for (byte* pb = startPointer, pb2 = currentPointer; pb < endPointer; pb++, pb2++, lenw++)
+                    for (byte* pb = startPointer, pb2 = currentPointer; pb < endPointer; pb++, pb2++)
                     {
                         if (*pb != *pb2)
                             break;
+                        currentLength++;
                     }
-                    if (lenw > len && lenw >= 3)
+                    if (currentLength > maxLength && currentLength >= 3)
                     {
-                        len = lenw;
+                        maxLength = currentLength;
                         offset = (uint)(currentPointer - startPointer - 1);
-                        if (len >= nLength)
+                        if (maxLength >= nLength)
                             break;
                     }
-                    startPointer++;
                 }
-                return len;
+                return maxLength;
             }
         }
 
         private void FlushFlag(bool final)
         {
-            if (!final || m_itowrite > 0)
-                WriteByte(m_outstream, m_flag);
+            if (!final || m_indexToWrite > 0)
+                WriteByte(m_outStream, m_flag);
             m_flag = 0;
-            for (int i = 0; i < m_itowrite; i++)
-                WriteByte(m_outstream, m_towrite[i]);
-            m_itowrite = 0;
+            for (int i = 0; i < m_indexToWrite; i++)
+                WriteByte(m_outStream, m_toWrite[i]);
+            m_indexToWrite = 0;
         }
 
         private void SetFlag(byte b)
@@ -93,7 +113,7 @@ namespace ReFrontier.jpk
         /// <summary>
         /// Compress the file on the fly.
         /// </summary>
-        /// <param name="inBuffer">Input bytes.</param>
+        /// <param name="inBuffer">Input bytes buffer.</param>
         /// <param name="outStream">Stream to write to.</param>
         /// <param name="level">Compression level. Level will be truncated between 6 and 8191.</param>
         /// <param name="progress">Progress bar object.</param>
@@ -103,65 +123,65 @@ namespace ReFrontier.jpk
             long percbord = 0;
             progress?.Invoke(0);
             m_shiftIndex = 8;
-            m_itowrite = 0;
-            m_outstream = outStream;
+            m_indexToWrite = 0;
+            m_outStream = outStream;
             m_inputBuffer = inBuffer;
             // Tuncate level between 6 and 280
-            m_level = level < 6 ? 6 : level > 280 ? 280 : level;
+            m_compressionLevel = Math.Min(Math.Max(level, 6), 280);
             // Level between 50 and 0x1fff (8191)
-            m_maxdist = level < 50 ? 50 : level > 0x1fff ? 0x1fff : level;
+            m_compressionLevel = Math.Min(Math.Max(level, 50), 0x1fff);
             long perc0 = percbord;
             progress?.Invoke(percbord);
-            m_ind = 0;
-            while (m_ind < inBuffer.Length)
+            m_index = 0;
+            while (m_index < inBuffer.Length)
             {
-                perc = percbord + (100 - percbord) * m_ind / inBuffer.Length;
+                perc = percbord + (100 - percbord) * m_index / inBuffer.Length;
                 if (perc > perc0)
                 {
                     perc0 = perc;
                     progress?.Invoke(perc);
                 }
-                int len = FindRepetitions(m_ind, out uint ofs);
+                int maxLength = LongestRepetition(m_index, out uint offset);
                 
-                if (len == 0)
+                if (maxLength == 0)
                 {
                     SetFlag(0);
-                    m_towrite[m_itowrite++] = inBuffer[m_ind];
-                    m_ind++;
+                    m_toWrite[m_indexToWrite++] = inBuffer[m_index];
+                    m_index++;
                 }
                 else
                 {
                     SetFlag(1);
-                    if (len <= 6 && ofs <= 0xff)
+                    if (maxLength <= 6 && offset <= 0xff)
                     {
                         SetFlag(0);
-                        SetFlagsL((byte)(len - 3), 2);
-                        m_towrite[m_itowrite++] = (byte)ofs;
-                        m_ind += len;
+                        SetFlagsL((byte)(maxLength - 3), 2);
+                        m_toWrite[m_indexToWrite++] = (byte)offset;
+                        m_index += maxLength;
                     }
                     else
                     {
                         SetFlag(1);
-                        ushort u16 = (ushort)ofs;
+                        ushort u16 = (ushort)offset;
                         byte hi, lo;
-                        if (len <= 9)
-                            u16 |= (ushort)((len - 2) << 13);
+                        if (maxLength <= 9)
+                            u16 |= (ushort)((maxLength - 2) << 13);
                         hi = (byte)(u16 >> 8);
                         lo = (byte)(u16 & 0xff);
-                        m_towrite[m_itowrite++] = hi;
-                        m_towrite[m_itowrite++] = lo;
-                        m_ind += len;
-                        if (len > 9)
+                        m_toWrite[m_indexToWrite++] = hi;
+                        m_toWrite[m_indexToWrite++] = lo;
+                        m_index += maxLength;
+                        if (maxLength > 9)
                         {
-                            if (len <= 25)
+                            if (maxLength <= 25)
                             {
                                 SetFlag(0);
-                                SetFlagsL((byte)(len - 10), 4);
+                                SetFlagsL((byte)(maxLength - 10), 4);
                             }
                             else
                             {
                                 SetFlag(1);
-                                m_towrite[m_itowrite++] = (byte)(len - 0x1a);
+                                m_toWrite[m_indexToWrite++] = (byte)(maxLength - 0x1a);
                             }
                         }
                     }
