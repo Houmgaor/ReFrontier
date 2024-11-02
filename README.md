@@ -10,10 +10,11 @@ This fork is 100% compatible with mhvuze/ReFrontier.
 Yet it brings many improvements.
 
 - Compatibility with Linux/Mac.
+- Interface standardization.
 - Removed outdated/unused libraries.
+- Removed memory-unsafe code.
 - User documentation.
 - Linting.
-- Interface standardization.
 
 ## Install
 

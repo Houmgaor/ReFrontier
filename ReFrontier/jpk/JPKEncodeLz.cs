@@ -58,7 +58,7 @@ namespace ReFrontier.jpk
         /// <param name="inputDataIndex">Index in the input data buffer.</param>
         /// <param name="offset">Position of the sequence in the input.</param>
         /// <returns>Length of the longest repeated sequence.</returns>
-        private unsafe int LongestRepetition(int inputDataIndex, out uint offset)
+        private int LongestRepetition(int inputDataIndex, out uint offset)
         {
             // Limit length compression level, truncate if the length is above remaining data length
             int lengthThreshold = Math.Min(m_compressionLevel, m_inputBuffer.Length - inputDataIndex);
@@ -69,37 +69,37 @@ namespace ReFrontier.jpk
             }
             // Start position to find a repeated element, minimum is 0 
             int inputStart = Math.Max(inputDataIndex - m_maxIndexDist, 0);
-            fixed (byte* inputBufferPointer = m_inputBuffer)
+            
+            // Translation of <cref>inputDataIndex</cref> in pointers
+            // fixed (byte* inputBufferPointer = m_inputBuffer)
+            int maxLength = 0;
+            // <cref>startPointer</cref> is "left" pointer to search for a sequence
+            for (int startPointer = inputStart; startPointer < inputDataIndex; startPointer++)
             {
-                // Translation of <cref>inputDataIndex</cref> in pointers
-                byte* currentDataPointer = inputBufferPointer + inputDataIndex;
-                int maxLength = 0;
-                // <cref>startPointer</cref> is "left" pointer to search for a sequence
-                for (byte* startPointer = inputBufferPointer + inputStart; startPointer < currentDataPointer; startPointer++)
-                {
-                    int currentLength = 0;
-                    byte* endPointer = startPointer + lengthThreshold;
+                int currentLength = 0;
+                int endPointer = startPointer + lengthThreshold;
 
-                    // Accumulate while <cref>*leftPointer</cref> and <cref>*rightPointer</cref> are equal
-                    for (byte* leftPointer = startPointer, rightPointer = currentDataPointer; leftPointer < endPointer; leftPointer++, rightPointer++)
-                    {
-                        if (*leftPointer != *rightPointer)
-                            break;
-                        currentLength++;
-                    }
-                    // Check if the length is longer than the previous one
-                    if (currentLength > maxLength && currentLength >= 3)
-                    {
-                        maxLength = currentLength;
-                        offset = (uint)(currentDataPointer - startPointer - 1);
-                        // Stop the algorithm if above the length limit
-                        if (maxLength >= lengthThreshold)
-                            break;
-                    }
+                // Accumulate while <cref>*leftPointer</cref> and <cref>*rightPointer</cref> are equal
+                for (int leftPointer = startPointer, rightPointer = inputDataIndex; leftPointer < endPointer; leftPointer++, rightPointer++)
+                {
+                    if (m_inputBuffer[leftPointer] != m_inputBuffer[rightPointer])
+                        break;
+                    currentLength++;
                 }
-                return maxLength;
+                // Check if the length is longer than the previous one
+                if (currentLength > maxLength && currentLength >= 3)
+                {
+                    maxLength = currentLength;
+                    offset = (uint)(inputDataIndex - startPointer - 1);
+                    // Stop the algorithm if above the length limit
+                    if (maxLength >= lengthThreshold)
+                        break;
+                }
             }
+            return maxLength;
+
         }
+
 
         /// <summary>
         /// Write data and flag to the stream.
