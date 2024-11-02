@@ -11,6 +11,7 @@ Yet it brings many improvements.
 
 - Compatibility with Linux/Mac.
 - Interface standardization.
+- 5x times faster compression.
 - Removed outdated/unused libraries.
 - Removed memory-unsafe code.
 - User documentation.

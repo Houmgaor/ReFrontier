@@ -71,33 +71,30 @@ namespace ReFrontier.jpk
             int inputStart = Math.Max(inputDataIndex - m_maxIndexDist, 0);
             
             // Translation of <cref>inputDataIndex</cref> in pointers
-            // fixed (byte* inputBufferPointer = m_inputBuffer)
             int maxLength = 0;
-            // <cref>startPointer</cref> is "left" pointer to search for a sequence
-            for (int startPointer = inputStart; startPointer < inputDataIndex; startPointer++)
+            // Start identical sequence search
+            for (int leftIterator = inputStart; leftIterator < inputDataIndex; leftIterator++)
             {
                 int currentLength = 0;
-                int endPointer = startPointer + lengthThreshold;
 
-                // Accumulate while <cref>*leftPointer</cref> and <cref>*rightPointer</cref> are equal
-                for (int leftPointer = startPointer, rightPointer = inputDataIndex; leftPointer < endPointer; leftPointer++, rightPointer++)
+                for (int i = 0; i < lengthThreshold; i++)
                 {
-                    if (m_inputBuffer[leftPointer] != m_inputBuffer[rightPointer])
+                    if (m_inputBuffer[leftIterator + i] != m_inputBuffer[inputDataIndex + i])
                         break;
                     currentLength++;
                 }
+
                 // Check if the length is longer than the previous one
                 if (currentLength > maxLength && currentLength >= 3)
                 {
                     maxLength = currentLength;
-                    offset = (uint)(inputDataIndex - startPointer - 1);
+                    offset = (uint)(inputDataIndex - leftIterator - 1);
                     // Stop the algorithm if above the length limit
                     if (maxLength >= lengthThreshold)
                         break;
                 }
             }
             return maxLength;
-
         }
 
 
