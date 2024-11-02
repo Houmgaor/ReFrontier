@@ -35,7 +35,7 @@ namespace ReFrontier.jpk
         /// 
         /// Max value is 0x1fff
         /// </summary>
-        private readonly int m_maxIndexDist = 0x300;
+        private int m_maxIndexDist = 0x300;
 
         /// <summary>
         /// Stream to write data to.
@@ -162,8 +162,8 @@ namespace ReFrontier.jpk
             m_inputBuffer = inBuffer;
             // Tuncate level between 6 and 280
             m_compressionLevel = Math.Min(Math.Max(level, 6), 280);
-            // Level between 50 and 0x1fff (8191)
-            m_compressionLevel = Math.Min(Math.Max(level, 50), 0x1fff);
+            // Compression distance between 50 and 0x1fff (8191)
+            m_maxIndexDist = Math.Min(Math.Max(level, 50), 0x1fff);
             long perc0 = percbord;
             progress?.Invoke(percbord);
             m_bufferIndex = 0;

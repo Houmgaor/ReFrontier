@@ -9,11 +9,11 @@
     <Product>ReFrontier</Product>
     <Copyright>Copyright ©  2016</Copyright>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
+
   <ItemGroup>
-    <PackageReference Include="Microsoft.CSharp" Version="4.*" />
+    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\LibReFrontier\LibReFrontier.csproj" />
   </ItemGroup>

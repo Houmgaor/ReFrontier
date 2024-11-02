@@ -11,7 +11,7 @@ Yet it brings many improvements.
 
 - Compatibility with Linux/Mac.
 - Interface standardization.
-- 5x times faster compression.
+- 4x times faster.
 - Removed outdated/unused libraries.
 - Removed memory-unsafe code.
 - User documentation.
@@ -24,7 +24,7 @@ Download this repository and compile it. You need .NET.
 ```commandline
 git clone https://github.com/Houmgaor/ReFrontier.git
 cd ReFrontier
-dotnet build
+dotnet build -c release
 ```
 
 ## Usage
