@@ -143,10 +143,7 @@ namespace ReFrontier
                             "Example: --compress=3,50"
                         );
                     }
-                    compressArgs = [
-                        int.Parse(matches[0]),
-                        int.Parse(matches[1]) * 100
-                    ];
+                    compressArgs = [int.Parse(matches[0]), int.Parse(matches[1])];
                 }
                 else
                 {
@@ -164,7 +161,7 @@ namespace ReFrontier
                     var match = matches[0];
                     compressArgs = [
                         int.Parse(match.Groups[1].Value),
-                        int.Parse(match.Groups[2].Value) * 100
+                        int.Parse(match.Groups[2].Value)
                     ];
                 }
                 if (compressArgs == null) {
@@ -250,7 +247,7 @@ namespace ReFrontier
                         (ushort)compressArgs[0],
                         input,
                         $"output/{Path.GetFileName(input)}",
-                        compressArgs[1]
+                        compressArgs[1] * 100
                     );
                 }
                 else if (encrypt)

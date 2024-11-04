@@ -24,12 +24,12 @@ Download this repository and compile it. You need .NET.
 ```commandline
 git clone https://github.com/Houmgaor/ReFrontier.git
 cd ReFrontier
-dotnet build -c release
+dotnet build -c Release
 ```
 
 ## Usage
 
-You should find the executable "ReFrontier.exe" in `Refrontier/bin/Debug` (or similar path).
+You should find the executable "ReFrontier.exe" in `./Refrontier/bin/Release/net8.0/` (or similar path).
 If you don't see it, run ``dotnet build`` to compile ReFrontier once again.
 
 Now, you can either drag-an-drop files/folder onto this executable, or open a terminal at the location of the executable file.
@@ -40,6 +40,7 @@ For a simple use case:
 2. Decrypt and decompress the file with
 
     ```shell
+    # The executable may be ./Refrontier/bin/Release/net8.0/ReFrontier.exe
     ./ReFrontier.exe output/mhfdat.bin --log
     ```
 
@@ -47,13 +48,13 @@ For a simple use case:
 4. Encrypt back
 
     ```shell
-    ./ReFrontier.exe output/mhfdat.bin --encrypt
+    ./ReFrontier.exe output/mhfdat.bin --compress=4,80
     ```
 
 5. Compress
 
     ```shell
-    ./ReFrontier.exe output/mhfdat.bin --compress=4,80
+    ./ReFrontier.exe output/mhfdat.bin --encrypt
     ```
 
 6. Replace mhfdat.bin by the new file.
@@ -116,7 +117,7 @@ This project also includes FrontierTextText and FrontierDataTools to extract tex
 
 ### Compress
 
-To compress it again JPK type 4, with maximal (100%) compression use:
+To compress it again JPK type 4, with maximal (100) compression use:
 
 ```shell
 ./ReFrontier.exe mhfdat.bin --compress=4,100

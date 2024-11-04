@@ -19,13 +19,13 @@ namespace ReFrontier.jpk
         /// <param name="offset">Offset position to the left.</param>
         /// <param name="length">Number of bytes to write.</param>
         /// <param name="index">Initial position.</param>
-        private static void JpkCopyLz(byte[] buffer, int offset, int length, ref int index)
+        private static int JpkCopyLz(byte[] buffer, int offset, int length, int index)
         {
-            for (int i = 0; i < length; i++)
+            for (int i = index; i < length - index; i++)
             {
-                buffer[index] = buffer[index - offset - 1];
-                index++;
+                buffer[i] = buffer[i - offset - 1];
             }
+            return length;
         }
 
         private byte JpkBitLz(Stream s)
@@ -62,7 +62,7 @@ namespace ReFrontier.jpk
                     // Case 0
                     length = (byte)((JpkBitLz(inStream) << 1) | JpkBitLz(inStream));
                     offset = ReadByte(inStream);
-                    JpkCopyLz(outBuffer, offset, length + 3, ref outIndex);
+                    outIndex += JpkCopyLz(outBuffer, offset, length + 3, outIndex);
                     continue;
                 }
 
@@ -73,7 +73,7 @@ namespace ReFrontier.jpk
                 if (length != 0)
                 {
                     // Case 1, use length directly 
-                    JpkCopyLz(outBuffer, offset, length + 2, ref outIndex);
+                    outIndex += JpkCopyLz(outBuffer, offset, length + 2, outIndex);
                     continue;
                 }
 
@@ -81,7 +81,7 @@ namespace ReFrontier.jpk
                 {
                     // Case 2, compute bytes to copy length
                     length = (byte)((JpkBitLz(inStream) << 3) | (JpkBitLz(inStream) << 2) | (JpkBitLz(inStream) << 1) | JpkBitLz(inStream));
-                    JpkCopyLz(outBuffer, offset, length + 2 + 8, ref outIndex);
+                    outIndex += JpkCopyLz(outBuffer, offset, length + 2 + 8, outIndex);
                     continue;
                 }
 
@@ -94,7 +94,7 @@ namespace ReFrontier.jpk
                     continue;
                 }
                 // Case 4
-                JpkCopyLz(outBuffer, offset, temp + 0x1a, ref outIndex);
+                outIndex += JpkCopyLz(outBuffer, offset, temp + 0x1a, outIndex);
             }
         }
 

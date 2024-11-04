@@ -59,7 +59,8 @@ namespace ReFrontier.jpk
             FillTable();
             BinaryWriter br = new(outStream);
             br.Write(m_hfTableLen);
-            for (int i = 0; i < m_hfTableLen; i++) br.Write(m_hfTable[i]);
+            for (int i = 0; i < m_hfTableLen; i++)
+                br.Write(m_hfTable[i]);
             base.ProcessOnEncode(inBuffer, outStream, level, progress);
             FlushWrite(outStream);
         }
