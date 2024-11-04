@@ -3,70 +3,76 @@ using System;
 
 namespace LibReFrontier
 {
-    // With major help from enler
+    /// <summary>
+    /// Cryptographic features.
+    /// 
+    /// With major help from enler.
+    /// </summary>
     public class Crypto
     {
+        /// <summary>
+        /// ECD encoder keys array.
+        /// 
+        /// Data from address 0x10292DCC
+        /// </summary>
+        static readonly byte[] rndBufEcd = [
+            0x4A, 0x4B, 0x52, 0x2E, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x0D,
+            0xCD, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x0D, 0xCD, 0x00, 0x00,
+            0x00, 0x01, 0x00, 0x01, 0x0D, 0xCD, 0x00, 0x00, 0x00, 0x01, 0x00, 
+            0x19, 0x66, 0x0D, 0x00, 0x00, 0x00, 0x03, 0x7D, 0x2B, 0x89, 0xDD, 
+            0x00, 0x00, 0x00, 0x01
+        ];
+
+        // from addr 0x1025F4E0
+        static readonly byte[] rndBufExf = [
+            0x4A, 0x4B, 0x52, 0x2E, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x0D,
+            0xCD, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x0D, 0xCD, 0x00, 0x00,
+            0x00, 0x01, 0x00, 0x01, 0x0D, 0xCD, 0x00, 0x00, 0x00, 0x01, 0x02,
+            0xE9, 0x0E, 0xDD, 0x00, 0x00, 0x00, 0x03
+        ];
+
+        /// <summary>
+        /// Load 4 consecutive bytes in the buffer as an integer.
+        /// </summary>
+        /// <param name="buffer">Data buffer to read from.</param>
+        /// <param name="offset">First byte index to read</param>
+        /// <returns>First four bytes as an integer.</returns>
         static uint LoadUInt32BE(byte[] buffer, int offset)
         {
             uint value = (uint)((buffer[offset] << 24) | (buffer[offset + 1] << 16) | (buffer[offset + 2] << 8) | buffer[offset + 3]);
             return value;
         }
 
-        // from addr 0x10292DCC
-        static readonly byte[] rndBufEcd = [
-            0x4A, 0x4B, 0x52, 0x2E, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x0D,
-            0xCD, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x0D, 0xCD, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x0D, 0xCD,
-            0x00, 0x00, 0x00, 0x01, 0x00, 0x19, 0x66, 0x0D, 0x00, 0x00, 0x00, 0x03, 0x7D, 0x2B, 0x89, 0xDD, 0x00,
-            0x00, 0x00, 0x01
-        ];
-
-        // from addr 0x1025F4E0
-        static readonly byte[] rndBufExf = [
-            0x4A, 0x4B, 0x52, 0x2E, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x0D,
-            0xCD, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x0D, 0xCD, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x0D, 0xCD,
-            0x00, 0x00, 0x00, 0x01, 0x02, 0xE9, 0x0E, 0xDD, 0x00, 0x00, 0x00, 0x03
-        ];
-
-        static uint GetRndEcd(int index, ref uint rnd)
+        /// <summary>
+        /// Get the encoding pseudo-random key. 
+        /// </summary>
+        /// <param name="ecdKey">Key to use for rnd generation</param>
+        /// <param name="rnd">Current ecd value.</param>
+        /// <returns>Encoding random key.</returns>
+        static uint GetRndEcd(int ecdKey, ref uint rnd)
         {
-            rnd = rnd * LoadUInt32BE(rndBufEcd, 8 * index) + LoadUInt32BE(rndBufEcd, 8 * index + 4);
+            rnd = rnd * LoadUInt32BE(rndBufEcd, 8 * ecdKey) + LoadUInt32BE(rndBufEcd, 8 * ecdKey + 4);
             return rnd;
         }
 
-        static byte[] CreateXorkeyExf(byte[] header)
-        {
-            byte[] keyBuffer = new byte[16];
-            int index = BitConverter.ToUInt16(header, 4);
-            uint tempVal = BitConverter.ToUInt32(header, 0xc);
-            uint value = BitConverter.ToUInt32(header, 0xc);
-            for (int i = 0; i < 4; i++)
-            {
-                tempVal = tempVal * LoadUInt32BE(rndBufExf, index * 8) + LoadUInt32BE(rndBufExf, index * 8 + 4);
-                uint key = tempVal ^ value;
-                byte[] tempKey = BitConverter.GetBytes(key);
-                Array.Copy(tempKey, 0, keyBuffer, i * 4, 4);
-            }
-            return keyBuffer;
-        }
-
         /// <summary>
-        /// Decode an ECD encoded file.
+        /// Decode an ECD encoded file, output is written in place.
         /// </summary>
-        /// <param name="buffer">Input file buffer.</param>
+        /// <param name="buffer">Input file buffer to decode (in place).</param>
         public static void DecodeEcd(byte[] buffer)
         {
-            uint fsize = BitConverter.ToUInt32(buffer, 8);
+            int ecdKey = BitConverter.ToUInt16(buffer, 4);
+            uint payloadSize = BitConverter.ToUInt32(buffer, 8);
             uint crc32 = BitConverter.ToUInt32(buffer, 12);
-            int index = BitConverter.ToUInt16(buffer, 4);
             uint rnd = (crc32 << 16) | (crc32 >> 16) | 1;
 
-            uint xorpad = GetRndEcd(index, ref rnd);
+            uint xorpad = GetRndEcd(ecdKey, ref rnd);
 
             byte r8 = (byte)xorpad;
 
-            for (int i = 0; i < fsize; i++)
+            for (int i = 0; i < payloadSize; i++)
             {
-                xorpad = GetRndEcd(index, ref rnd);
+                xorpad = GetRndEcd(ecdKey, ref rnd);
 
                 byte data = buffer[0x10 + i];
                 uint r11 = (uint)(data ^ r8);
@@ -89,35 +95,33 @@ namespace LibReFrontier
         /// Encode a file as ECD.
         /// </summary>
         /// <param name="buffer">The input file as a bytes buffer.</param>
-        /// <param name="bufferMeta">Meta file associated with the input.</param>
-        /// <returns></returns>
+        /// <param name="bufferMeta">Meta file content associated with the input.</param>
+        /// <returns>Encoded file content.</returns>
         public static byte[] EncodeEcd(byte[] buffer, byte[] bufferMeta)
         {
             // Update meta data
-            int fsize = buffer.Length;
+            int payloadSize = buffer.Length;
             uint crc32w = Crc32Algorithm.Compute(buffer);
             int index = BitConverter.ToUInt16(bufferMeta, 4);
 
             // Write meta data
-            byte[] buf = new byte[16 + fsize];
-            byte[] bufnum;
-            Array.Copy(bufferMeta, buf, bufferMeta.Length);
-            bufnum = BitConverter.GetBytes(fsize);
-            Array.Copy(bufnum, 0, buf, 8, 4);
-            bufnum = BitConverter.GetBytes(crc32w);
-            Array.Copy(bufnum, 0, buf, 12, 4);
+            byte[] outputBuffer = new byte[16 + payloadSize];
+            Array.Copy(bufferMeta, outputBuffer, bufferMeta.Length);
+            Array.Copy(BitConverter.GetBytes(payloadSize), 0, outputBuffer, 8, 4);
+            Array.Copy(BitConverter.GetBytes(crc32w), 0, outputBuffer, 12, 4);
 
             // Fill data with nullspace
+            // TODO: remove entirely?
             int i;
-            for (i = 16 + fsize; i < buf.Length; i++)
-                buf[i] = 0;
+            for (i = 16 + payloadSize; i < outputBuffer.Length; i++)
+                outputBuffer[i] = 0;
 
             // Encrypt data
             uint rnd = (crc32w << 16) | (crc32w >> 16) | 1;
             uint xorpad = GetRndEcd(index, ref rnd);
             byte r8 = (byte)xorpad;
 
-            for (i = 0; i < fsize; i++)
+            for (i = 0; i < payloadSize; i++)
             {
                 xorpad = GetRndEcd(index, ref rnd);
                 byte data = buffer[i];
@@ -140,10 +144,26 @@ namespace LibReFrontier
 
                 byte rr = (byte)((dig2 & 0xF) | ((dig1 & 0xF) << 4));
                 rr = (byte)(rr ^ r8);
-                buf[16 + i] = rr;
+                outputBuffer[16 + i] = rr;
                 r8 = data;
             }
-            return buf;
+            return outputBuffer;
+        }
+
+        static byte[] CreateXorkeyExf(byte[] header)
+        {
+            byte[] keyBuffer = new byte[16];
+            int index = BitConverter.ToUInt16(header, 4);
+            uint tempVal = BitConverter.ToUInt32(header, 0xc);
+            uint value = BitConverter.ToUInt32(header, 0xc);
+            for (int i = 0; i < 4; i++)
+            {
+                tempVal = tempVal * LoadUInt32BE(rndBufExf, index * 8) + LoadUInt32BE(rndBufExf, index * 8 + 4);
+                uint key = tempVal ^ value;
+                byte[] tempKey = BitConverter.GetBytes(key);
+                Array.Copy(tempKey, 0, keyBuffer, i * 4, 4);
+            }
+            return keyBuffer;
         }
 
         public static void DecodeExf(byte[] buffer)

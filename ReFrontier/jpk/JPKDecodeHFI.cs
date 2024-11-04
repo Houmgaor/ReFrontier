@@ -2,6 +2,10 @@
 
 namespace ReFrontier.jpk
 {
+    /// <summary>
+    /// Decode a JPK the same as JPKDecodeLz,
+    /// but provides a new inteface for byte reading.
+    /// </summary>
     class JPKDecodeHFI : JPKDecodeLz
     {
         private byte m_flagHF = 0;
@@ -10,6 +14,11 @@ namespace ReFrontier.jpk
         private int m_hfDataOffset = 0;
         private int m_hfTableLen = 0;
 
+        /// <summary>
+        /// Decompress data the same as JPKDecodeLz, but sets input properties.
+        /// </summary>
+        /// <param name="inStream">Stream to read from.</param>
+        /// <param name="outBuffer">Outpute buffer.</param>
         public override void ProcessOnDecode(Stream inStream, byte[] outBuffer)
         {
             BinaryReader br = new(inStream);
@@ -19,7 +28,12 @@ namespace ReFrontier.jpk
             base.ProcessOnDecode(inStream, outBuffer);
         }
 
-        public override byte ReadByte(Stream s) //implements jpkget_hf
+        /// <summary>
+        /// Read a byte implementing JpkGetHf
+        /// </summary>
+        /// <param name="s">Stream to read from</param>
+        /// <returns>Read byte.</returns>
+        public override byte ReadByte(Stream s)
         {
             int data = m_hfTableLen;
             BinaryReader br = new(s);

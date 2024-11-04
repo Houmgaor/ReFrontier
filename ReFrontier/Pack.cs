@@ -234,7 +234,7 @@ namespace ReFrontier
         }
 
         /// <summary>
-        /// Encode a file with JPK format
+        /// Compress a JPK file to a JKR type
         /// </summary>
         /// <param name="atype">JPK type, between 0 and 4</param>
         /// <param name="inPath">Input file path.</param>
@@ -244,25 +244,23 @@ namespace ReFrontier
         {
             Directory.CreateDirectory("output");
 
-            ushort type = atype;
             byte[] buffer = File.ReadAllBytes(inPath);
             int insize = buffer.Length;
-            if (File.Exists(otPath)) File.Delete(otPath);
+            if (File.Exists(otPath))
+                File.Delete(otPath);
             Console.WriteLine(
                 $"Starting file compression, type {atype}, level {level / 100} to {otPath}"
             );
             FileStream fsot = File.Create(otPath);
             BinaryWriter br = new(fsot);
-            uint u32 = 0x1A524B4A;
-            ushort u16 = 0x108;
-            br.Write(u32);
-            br.Write(u16);
-            br.Write(type);
-            u32 = 0x10;
-            br.Write(u32);
+            // JKR header
+            br.Write((uint) 0x1A524B4A);
+            br.Write((ushort) 0x108);
+            br.Write(atype);
+            br.Write((uint) 0x10);
             br.Write(insize);
             IJPKEncode encoder;
-            switch (type)
+            switch (atype)
             {
                 case 0:
                     encoder = new JPKEncodeRW();
@@ -276,19 +274,19 @@ namespace ReFrontier
                 default:
                     // For level 2 encoding use: encoder = new JPKEncodeHFIRW();
 
-                    Console.WriteLine("Unsupported/invalid type: " + type);
+                    Console.WriteLine("Unsupported/invalid type: " + atype);
                     fsot.Close();
                     File.Delete(otPath);
                     return;
             }
 
-            DateTime sta, fin;
-            sta = DateTime.Now;
+            DateTime start, finnish;
+            start = DateTime.Now;
             encoder.ProcessOnEncode(buffer, fsot, level, null);
-            fin = DateTime.Now;
+            finnish = DateTime.Now;
             Helpers.Print(
-                $"File compressed using type {type} (level {level / 100}): " + 
-                $"{fsot.Length} bytes ({1 - (decimal)fsot.Length / insize:P} saved) in {fin - sta:%m\\:ss\\.ff}",
+                $"File compressed using type {atype} (level {level / 100}): " + 
+                $"{fsot.Length} bytes ({1 - (decimal)fsot.Length / insize:P} saved) in {finnish - start:%m\\:ss\\.ff}",
                 false
             );
             fsot.Close();

@@ -1,8 +1,9 @@
-﻿using LibReFrontier;
-using ReFrontier.jpk;
-using System;
+﻿using System;
 using System.IO;
 using System.Text;
+
+using LibReFrontier;
+using ReFrontier.jpk;
 
 namespace ReFrontier
 {
@@ -89,7 +90,8 @@ namespace ReFrontier
                 if (entrySize == 0)
                 {
                     Console.WriteLine($"Offset: 0x{entryOffset:X8}, Size: 0x{entrySize:X8} (SKIPPED)");
-                    if (createLog) logOutput.WriteLine($"null,{entryOffset},{entrySize},0");
+                    if (createLog)
+                        logOutput.WriteLine($"null,{entryOffset},{entrySize},0");
                     continue;
                 }
 
@@ -107,7 +109,8 @@ namespace ReFrontier
 
                 // Print info
                 Console.WriteLine($"Offset: 0x{entryOffset:X8}, Size: 0x{entrySize:X8} ({extension})");
-                if (createLog) logOutput.WriteLine($"{i + 1:D4}_{entryOffset:X8}.{extension},{entryOffset},{entrySize},{headerInt}");
+                if (createLog)
+                    logOutput.WriteLine($"{i + 1:D4}_{entryOffset:X8}.{extension},{entryOffset},{entrySize},{headerInt}");
 
                 // Extract file
                 File.WriteAllBytes($"{outputDir}/{i + 1:D4}_{entryOffset:X8}.{extension}", entryData);
@@ -162,7 +165,8 @@ namespace ReFrontier
                 // Get name
                 brInput.BaseStream.Seek(pointerEntryNamesBlock + stringOffset, SeekOrigin.Begin);
                 string entryName = Helpers.ReadNullterminatedString(brInput, Encoding.UTF8);
-                if (createLog) logOutput.WriteLine(entryName + "," + fileId);
+                if (createLog)
+                    logOutput.WriteLine(entryName + "," + fileId);
 
                 // Extract file
                 brInput.BaseStream.Seek(entryOffset, SeekOrigin.Begin);
@@ -175,61 +179,53 @@ namespace ReFrontier
             }
 
             logOutput.Close();
-            if (!createLog) File.Delete($"{outputDir}/{Path.GetFileNameWithoutExtension(input)}.log");
+            if (!createLog)
+                File.Delete($"{outputDir}/{Path.GetFileNameWithoutExtension(input)}.log");
         }
 
         /// <summary>
         /// Unpack a JPK file.
         /// </summary>
-        /// <param name="input">File path.</param>
+        /// <param name="input">Input file path.</param>
         public static void UnpackJPK(string input)
         {
             byte[] buffer = File.ReadAllBytes(input);
             MemoryStream ms = new(buffer);
             BinaryReader br = new(ms);
+            // Check for JKR header
             if (br.ReadUInt32() == 0x1A524B4A)
             {
-                IJPKDecode decoder = null;
                 ms.Seek(0x2, SeekOrigin.Current);
                 int type = br.ReadUInt16();
                 Console.WriteLine($"JPK Type: {type}");
-                switch (type)
+                IJPKDecode decoder = type switch
                 {
-                    case 0:
-                        decoder = new JPKDecodeRW();
-                        break;
-                    case 2:
-                        decoder = new JPKDecodeHFIRW();
-                        break;
-                    case 3:
-                        decoder = new JPKDecodeLz();
-                        break;
-                    case 4:
-                        decoder = new JPKDecodeHFI();
-                        break;
-                }
-                if (decoder != null)
-                {
-                    // Decompres file
-                    int startOffset = br.ReadInt32();
-                    int outSize = br.ReadInt32();
-                    byte[] outBuffer = new byte[outSize];
-                    ms.Seek(startOffset, SeekOrigin.Begin);
-                    decoder.ProcessOnDecode(ms, outBuffer);
+                    0 => new JPKDecodeRW(),
+                    2 => new JPKDecodeHFIRW(),
+                    3 => new JPKDecodeLz(),
+                    4 => new JPKDecodeHFI(),
+                    _ => throw new NotImplementedException($"JPK type {type} is not supported."),
+                };
 
-                    // Get extension
-                    byte[] header = new byte[4];
-                    Array.Copy(outBuffer, header, 4);
-                    uint headerInt = BitConverter.ToUInt32(header, 0);                    
-                    string extension = Enum.GetName(typeof(Helpers.Extensions), headerInt);
-                    extension ??= Helpers.CheckForMagic(headerInt, outBuffer);
-                    extension ??= "bin";
+                // Decompress file
+                int startOffset = br.ReadInt32();
+                int outSize = br.ReadInt32();
+                byte[] outBuffer = new byte[outSize];
+                ms.Seek(startOffset, SeekOrigin.Begin);
+                decoder.ProcessOnDecode(ms, outBuffer);
 
-                    FileInfo fileInfo = new(input);
-                    string output = $"{fileInfo.DirectoryName}/{Path.GetFileNameWithoutExtension(input)}.{extension}";
-                    File.Delete(input);
-                    File.WriteAllBytes(output, outBuffer);
-                }
+                // Get extension
+                byte[] header = new byte[4];
+                Array.Copy(outBuffer, header, 4);
+                uint headerInt = BitConverter.ToUInt32(header, 0);                    
+                string extension = Enum.GetName(typeof(Helpers.Extensions), headerInt);
+                extension ??= Helpers.CheckForMagic(headerInt, outBuffer);
+                extension ??= "bin";
+
+                FileInfo fileInfo = new(input);
+                string output = $"{fileInfo.DirectoryName}/{Path.GetFileNameWithoutExtension(input)}.{extension}";
+                File.Delete(input);
+                File.WriteAllBytes(output, outBuffer);
             }
             br.Close();
             ms.Close();

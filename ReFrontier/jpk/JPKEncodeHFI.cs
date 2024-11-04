@@ -14,7 +14,6 @@ namespace ReFrontier.jpk
         private readonly short[] m_Paths = new short[0x100];
         private readonly short[] m_Lengths = new short[0x100];
 
-        private int m_filled = 0;
         private int m_depth = 0;
 
 
@@ -34,7 +33,6 @@ namespace ReFrontier.jpk
                 {
                     m_Paths[val] = (short)pth;
                     m_Lengths[val] = (short)lev;
-                    m_filled++;
                     return;
                 }
                 strt = val;
@@ -61,7 +59,8 @@ namespace ReFrontier.jpk
             FillTable();
             BinaryWriter br = new(outStream);
             br.Write(m_hfTableLen);
-            for (int i = 0; i < m_hfTableLen; i++) br.Write(m_hfTable[i]);
+            for (int i = 0; i < m_hfTableLen; i++)
+                br.Write(m_hfTable[i]);
             base.ProcessOnEncode(inBuffer, outStream, level, progress);
             FlushWrite(outStream);
         }
