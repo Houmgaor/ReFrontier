@@ -33,12 +33,17 @@ jobs:
       run: dotnet publish -c Release -o publish
     
     - name: Zip artifact
-      run: zip -r release.zip publish
+      shell: bash
+      run: 
+        if [ ${{ matrix.os }} == "windows-latest" ];
+        then 7z a -tzip release-${{ matrix.os }}.zip "./publish/*";
+        else zip -r release-${{ matrix.os }}.zip publish;
+        fi;
     
     - name: Upload Release Asset
       uses: softprops/action-gh-release@v1
       with:
-        files: release.zip
+        files: release-${{ matrix.os }}.zip
       env:
         GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
 
