@@ -33,10 +33,9 @@ jobs:
     
     - name: Zip artifact
       run:
-        if [ "${{ matrix.os }}" == "windows-latest" ]; then
-          7z a -tzip release.zip "./publish/*"
-        else
-          tar czvf release.tar.gz publish
+        if [[ "${{ matrix.os }}" == "windows-latest" ]];
+        then 7z a -tzip release.zip "./publish/*";
+        else tar czvf release.tar.gz publish;
         fi
     
     - name: Upload Release Asset
