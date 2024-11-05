@@ -12,10 +12,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '8.0.x'
     
@@ -30,7 +30,7 @@ jobs:
     
     # Build in "publish" folder
     - name: Publish
-      run: dotnet publish -c Release
+      run: dotnet publish -c Release -o publish
     
     - name: Zip artifact
       run: zip -r release.zip publish
