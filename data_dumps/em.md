@@ -1,8 +1,13 @@
 # Enemy list
 
-As of update "Z Zenith". Order is identical to MH2 as far as monsters are present there.
+Details on the enemies list, up-to-date for Z Zenith.
+The order is identical to MH2 as far as monsters are present there.
 
-## Tags
+Each enemy monster is designated as "emXXX", with an eventual suffix.
+
+## Suffixes
+
+ID suffixes that may appear.
 
 |Letter|Meaning|
 |:---:|:----|
@@ -13,185 +18,189 @@ As of update "Z Zenith". Order is identical to MH2 as far as monsters are presen
 
 ## Enemy IDs
 
-```text
-em001 = Rathian
-em002 = Fatalis
-em003 = Kelbi
-em004 = Mosswine
-em005 = Bullfango
-em006 = Yian Kut-Ku
-em007 = Lao-Shan Lung
-em008 = Cephadrome
-em009 = Felyne
-em010 = Veggie Elder
-em011 = Rathalos
-em012 = Aptonoth
-em013 = Genprey
-em014 = Diablos
-em015 = Khezu
-em016 = Velociprey
-em017 = Gravios
-em018 = ニグルマ (Felyne?)
-em019 = Vespoid
-em020 = Gypceros
-em021 = Plesioth
-em022 = Basarios
-em023 = Melynx
-em024 = Hornetaur
-em025 = Apceros
-em026 = Monoblos
-em027 = Velocidrome
-em028 = Gendrome
-em029 = イワ (Rocks?)
-em030 = Ioprey
-em031 = Iodrome
-em032 = コモス (Poogie?)
-em033 = Kirin
-em034 = Cephalos
-em035 = Giaprey / Giadrome
-em036 = Crimson Fatalis
-em037 = Pink Rathian
-em038 = Blue Yian Kut-Ku
-em039 = Purple Gypceros
-em040 = Yian Garuga
-em041 = Silver Rathalos
-em042 = Gold Rathian
-em043 = Black Diablos
-em044 = White Monoblos
-em045 = Red Khezu
-em046 = Green Plesioth
-em047 = Black Gravios
-em048 = Daimyo Hermitaur
-em049 = Azure Rathalos
-em050 = Ashen Lao-Shan Lung
-em051 = Blangonga
-em052 = Congalala
-em053 = Rajang
-em054 = Kushala Daora
-em055 = Shen Gaoren
-em056 = Great Thunderbug
-em057 = Shakalaka
-em058 = Yama Tsukami
-em059 = Chameleos
-em060 = Rusted Kushala Daora
-em061 = Blango
-em062 = Conga
-em063 = Remobra
-em064 = Lunastra
-em065 = Teostra
-em066 = Hermitaur
-em067 = Shogun Ceanataur
-em068 = Bulldrome
-em069 = Anteka
-em070 = Popo
-em071 = White Fatalis
-em072 = Yama Tsukami
-em073 = Ceanataur
-em074 = Hypnocatrice
-em075 = Lavasioth
-em076 = Tigrex
-em077 = Akantor
-em078 = Breeding Season Hypnocatrice
-em079 = Lavasioth Subspecies
-em080 = Espinas
-em081 = Espinas Subspecies
-em082 = Hypnocatrice Rare Species
-em083 = Akura Vashimu
-em084 = Akura Jebia
-em085 = Berukyurosu
-em086 = Cactus
-em087 = Gorge Objects
-em088 = Gorge Rocks
-em089 = Pariapuria
-em090 = Espinas Rare Species
-em091 = Kamu Orugaron
-em092 = Nono Orugaron
-em093 = Laviente
-em094 = Dyuragaua
-em095 = Doragyurosu
-em096 = Gurenzeburu
-em097 = Burukku
-em098 = Erupe
-em099 = Rukodiora
-em100 = Rathian Unknown Species
-em101 = Gogomoa
-em102 = Kokomoa
-em103 = Taikun Zamuza
-em104 = Abiorugu
-em105 = Kuarusepusu
-em106 = Odibatorasu
-em107 = Disufiroa
-em108 = Rebidiora
-em109 = Anorupatisu
-em110 = Hyujikiki
-em111 = Midogaron
-em112 = Giaorugu
-em113 = Mi Ru
-em114 = Farunokku
-em115 = Pokaradon
-em116 = Shantien
-em117 = Pokara
-em118 = ??? (Dummy)
-em119 = Goruganosu
-em120 = Aruganosu
-em121 = Baruragaru
-em122 = Zerureusu
-em123 = Lolo Gougarf & Ray Gougarf
-em124 = Uruki
-em125 = Forokururu
-em126 = Meraginasu
-em127 = Diorekkusu
-em128 = Garuba Daora
-em129 = Inagami
-em130 = Varusaburosu
-em131 = Poborubarumu
-em132 = Duremudira
-em134 = ??? (Felyne)
-em135 = ??? (NPC in blue clothing)
-em137 = ??? (Water lily)
-em138 = ??? (Multiple Veggie Elder-like people)
-em139 = Gureadomosu
-em140 = Harudomerugu
-em141 = Toridcless
-em142 = Gasurabazura
-em143 = Kusubami
-em144 = Yama Kurai
-em145 = ??? Dure Orange
-em146 = Zinogre
-em147 = Deviljho
-em148 = Brachydios
-em149 = Berserk Laviente
-em150 = Toa Tesukatora
-em151 = Barioth
-em152 = Uragaan
-em153 = Stygian Zinogre
-em154 = Guanzorumu
-em155 = Deviljho
-em157 = Egyurasu
-em158 = Voljang
-em159 = Nargacuga
-em160 = Keoaruboru
-em161 = Zenaserisu
-em162 = Gore Magala
-em163 = Blinking Nargacuga
-em164 = Shagaru Magala
-em165 = Amatsu
-em166 = Eruzerion
-em167 = Arrogant Duremudira
-em168 = ??? (Rocks)
-em169 = Seregios
-em170 = Bogabadorumu
-em171 = ??? (Blue Barrel)
-em172 = Angry Bogabadorumu
-em173 = ??? (Uruki with costumes)
-em174 = ??? Pink Crystal Rathian
-em175 = Rappy (PSO2 Collab)
-em176 = King Shakalaka
-```
+Base monster IDs.
 
-## Remarks
+| ID  | Monster |
+| --- |--- |
+| 001 | Rathian |
+| 002 | Fatalis |
+| 003 | Kelbi |
+| 004 | Mosswine |
+| 005 | Bullfango |
+| 006 | Yian Kut-Ku |
+| 007 | Lao-Shan Lung |
+| 008 | Cephadrome |
+| 009 | Felyne |
+| 010 | Veggie Elder |
+| 011 | Rathalos |
+| 012 | Aptonoth |
+| 013 | Genprey |
+| 014 | Diablos |
+| 015 | Khezu |
+| 016 | Velociprey |
+| 017 | Gravios |
+| 018 | ニグルマ (Felyne?) |
+| 019 | Vespoid |
+| 020 | Gypceros |
+| 021 | Plesioth |
+| 022 | Basarios |
+| 023 | Melynx |
+| 024 | Hornetaur |
+| 025 | Apceros |
+| 026 | Monoblos |
+| 027 | Velocidrome |
+| 028 | Gendrome |
+| 029 | イワ (Rocks?) |
+| 030 | Ioprey |
+| 031 | Iodrome |
+| 032 | コモス (Poogie?) |
+| 033 | Kirin |
+| 034 | Cephalos |
+| 035 | Giaprey / Giadrome |
+| 036 | Crimson Fatalis |
+| 037 | Pink Rathian |
+| 038 | Blue Yian Kut-Ku |
+| 039 | Purple Gypceros |
+| 040 | Yian Garuga |
+| 041 | Silver Rathalos |
+| 042 | Gold Rathian |
+| 043 | Black Diablos |
+| 044 | White Monoblos |
+| 045 | Red Khezu |
+| 046 | Green Plesioth |
+| 047 | Black Gravios |
+| 048 | Daimyo Hermitaur |
+| 049 | Azure Rathalos |
+| 050 | Ashen Lao-Shan Lung |
+| 051 | Blangonga |
+| 052 | Congalala |
+| 053 | Rajang |
+| 054 | Kushala Daora |
+| 055 | Shen Gaoren |
+| 056 | Great Thunderbug |
+| 057 | Shakalaka |
+| 058 | Yama Tsukami |
+| 059 | Chameleos |
+| 060 | Rusted Kushala Daora |
+| 061 | Blango |
+| 062 | Conga |
+| 063 | Remobra |
+| 064 | Lunastra |
+| 065 | Teostra |
+| 066 | Hermitaur |
+| 067 | Shogun Ceanataur |
+| 068 | Bulldrome |
+| 069 | Anteka |
+| 070 | Popo |
+| 071 | White Fatalis |
+| 072 | Yama Tsukami |
+| 073 | Ceanataur |
+| 074 | Hypnocatrice |
+| 075 | Lavasioth |
+| 076 | Tigrex |
+| 077 | Akantor |
+| 078 | Breeding Season Hypnocatrice |
+| 079 | Lavasioth Subspecies |
+| 080 | Espinas |
+| 081 | Espinas Subspecies |
+| 082 | Hypnocatrice Rare Species |
+| 083 | Akura Vashimu |
+| 084 | Akura Jebia |
+| 085 | Berukyurosu |
+| 086 | Cactus |
+| 087 | Gorge Objects |
+| 088 | Gorge Rocks |
+| 089 | Pariapuria |
+| 090 | Espinas Rare Species |
+| 091 | Kamu Orugaron |
+| 092 | Nono Orugaron |
+| 093 | Laviente |
+| 094 | Dyuragaua |
+| 095 | Doragyurosu |
+| 096 | Gurenzeburu |
+| 097 | Burukku |
+| 098 | Erupe |
+| 099 | Rukodiora |
+| 100 | Rathian Unknown Species |
+| 101 | Gogomoa |
+| 102 | Kokomoa |
+| 103 | Taikun Zamuza |
+| 104 | Abiorugu |
+| 105 | Kuarusepusu |
+| 106 | Odibatorasu |
+| 107 | Disufiroa |
+| 108 | Rebidiora |
+| 109 | Anorupatisu |
+| 110 | Hyujikiki |
+| 111 | Midogaron |
+| 112 | Giaorugu |
+| 113 | Mi Ru |
+| 114 | Farunokku |
+| 115 | Pokaradon |
+| 116 | Shantien |
+| 117 | Pokara |
+| 118 | ??? (Dummy) |
+| 119 | Goruganosu |
+| 120 | Aruganosu |
+| 121 | Baruragaru |
+| 122 | Zerureusu |
+| 123 | Lolo Gougarf & Ray Gougarf |
+| 124 | Uruki |
+| 125 | Forokururu |
+| 126 | Meraginasu |
+| 127 | Diorekkusu |
+| 128 | Garuba Daora |
+| 129 | Inagami |
+| 130 | Varusaburosu |
+| 131 | Poborubarumu |
+| 132 | Duremudira |
+| 134 | ??? (Felyne) |
+| 135 | ??? (NPC in blue clothing) |
+| 137 | ??? (Water lily) |
+| 138 | ??? (Multiple Veggie Elder-like people) |
+| 139 | Gureadomosu |
+| 140 | Harudomerugu |
+| 141 | Toridcless |
+| 142 | Gasurabazura |
+| 143 | Kusubami |
+| 144 | Yama Kurai |
+| 145 | ??? Dure Orange |
+| 146 | Zinogre |
+| 147 | Deviljho |
+| 148 | Brachydios |
+| 149 | Berserk Laviente |
+| 150 | Toa Tesukatora |
+| 151 | Barioth |
+| 152 | Uragaan |
+| 153 | Stygian Zinogre |
+| 154 | Guanzorumu |
+| 155 | Deviljho |
+| 157 | Egyurasu |
+| 158 | Voljang |
+| 159 | Nargacuga |
+| 160 | Keoaruboru |
+| 161 | Zenaserisu |
+| 162 | Gore Magala |
+| 163 | Blinking Nargacuga |
+| 164 | Shagaru Magala |
+| 165 | Amatsu |
+| 166 | Eruzerion |
+| 167 | Arrogant Duremudira |
+| 168 | ??? (Rocks) |
+| 169 | Seregios |
+| 170 | Bogabadorumu |
+| 171 | ??? (Blue Barrel) |
+| 172 | Angry Bogabadorumu |
+| 173 | ??? (Uruki with costumes) |
+| 174 | ??? Pink Crystal Rathian |
+| 175 | Rappy (PSO2 Collab) |
+| 176 | King Shakalaka |
 
-```text
-em101_c = Gogomoa April Fools Ver
-em155_c = Four Heavenly King Deviljho
-```
+### Special monsters
+
+Some monster IDs have a prefix.
+
+|  ID   | Monster |
+|  ---  |--- |
+| 101_c | Gogomoa April Fools Version |
+| 155_c | Four Heavenly King Deviljho |
