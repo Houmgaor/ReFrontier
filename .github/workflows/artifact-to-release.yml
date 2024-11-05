@@ -47,5 +47,5 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
 
     - name: Delete publish folder
-          rm -r publish
+      run: rm -r publish
         
