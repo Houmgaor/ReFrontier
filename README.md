@@ -10,29 +10,24 @@ This fork is 100% compatible with mhvuze/ReFrontier.
 Yet it brings many improvements.
 
 - Compatibility with Linux/Mac.
-- Interface standardization.
 - 4x times faster.
-- Removed outdated/unused libraries.
-- Removed memory-unsafe code.
+- Interface standardization.
+- Removes outdated/unused libraries.
+- Removes memory-unsafe code.
 - User documentation.
 - Linting.
 
 ## Install
 
-Download this repository and compile it. You need .NET.
+Grab the [lastest release](https://github.com/Houmgaor/ReFrontier/releases) and download the file corresponding to your OS.
+Unzip the folder, you will find ReFrontier.exe inside (simply ReFrontier on linux/mac).
 
-```commandline
-git clone https://github.com/Houmgaor/ReFrontier.git
-cd ReFrontier
-dotnet build -c Release
-```
+You can also [build from source](#build) for latest version.
 
 ## Usage
 
-You should find the executable "ReFrontier.exe" in `./Refrontier/bin/Release/net8.0/` (or similar path).
-If you don't see it, run ``dotnet build`` to compile ReFrontier once again.
-
-Now, you can either drag-an-drop files/folder onto this executable, or open a terminal at the location of the executable file.
+You can either drag-an-drop files/folder onto the ReFrontier executable,
+or open a terminal at its location.
 
 For a simple use case:
 
@@ -40,11 +35,10 @@ For a simple use case:
 2. Decrypt and decompress the file with
 
     ```shell
-    # The executable may be ./Refrontier/bin/Release/net8.0/ReFrontier.exe
     ./ReFrontier.exe output/mhfdat.bin --log
     ```
 
-3. Edit to you convenience.
+3. Edit to you convenience (view tools in [see also](#see-also)).
 4. Encrypt back
 
     ```shell
@@ -156,10 +150,25 @@ It encrypts the input file with the ECD algorithm.
 It will implicitely look for mhfdat.bin.meta file in the same folder, see the [decryption](#decrypt) section.
 The file can now be used in Frontier.
 
+## Build
+
+You need .NET to build this project.
+
+```commandline
+git clone https://github.com/Houmgaor/ReFrontier.git
+cd ReFrontier
+# Use --configuration Release for faster execution
+dotnet build
+```
+
+You should find the executable "ReFrontier.exe" in `./Refrontier/bin/Release/net8.0/` (or similar path).
+
 ## See also
 
 Some more useful tools and projects:
 
-- [Blender plugin for 3D models](https://github.com/Houmgaor/Monster-Hunter-Frontier-Importer).
-- [MHFrontier Server](https://github.com/ZeruLight/Erupe).
 - [var-username/Monster-Hunter-Frontier-Patterns](https://github.com/var-username/Monster-Hunter-Frontier-Patterns) for binary files template.
+- [FrontierTextHandler](https://github.com/Houmgaor/FrontierTextHandler) for text data edition.
+- [Blender addon](https://github.com/Houmgaor/MHFrontier-Blender-Addon) to import 3D models.
+
+To run a server: [MHFrontier Server](https://github.com/ZeruLight/Erupe).
