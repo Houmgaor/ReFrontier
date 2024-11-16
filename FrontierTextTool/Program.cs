@@ -13,6 +13,8 @@ namespace FrontierTextTool
     {
         static bool verbose = false;
         static bool autoClose = false;
+        static bool trueOffsets = false;
+        static bool nullstrings = false;
 
         //[STAThread]
         /// <summary>
@@ -28,10 +30,16 @@ namespace FrontierTextTool
 
             if (args.Any("-verbose".Contains)) verbose = true;
             if (args.Any("-close".Contains)) autoClose = true;
+            if (args.Any("-trueoffsets)".Contains)) trueOffsets = true;
+            if (args.Any("-nullstrings)".Contains)) nullstrings = true;
 
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
+
             switch (args[0]) {
+                case "fulldump":
+                    DumpAndHash(args[1], 0, 0);
+                    break;
                 case "dump":
                     DumpAndHash(args[1], Convert.ToInt32(args[2]), Convert.ToInt32(args[3]));
                     break;
@@ -262,17 +270,27 @@ namespace FrontierTextTool
             }
 
             // Replace offsets in binary file
-            for (int p = 0; p < fileBytes.Length; p += 4)
-            {
-                if (p + 4 > fileBytes.Length)
-                    continue;
-                int cur = BitConverter.ToInt32(fileBytes, p);
-                if (offsetDict.ContainsKey(cur) && p > 10000)
+            if (trueOffsets) {
+                for (int i = 0; i < offsetDict.Count; i++)
                 {
-                    offsetDict.TryGetValue(cur, out int replacement);
+                    int replacement = offsetDict.ElementAt(i).Value;
                     byte[] newPointer = BitConverter.GetBytes(replacement);
-                    for (int w = 0; w < 4; w++)
-                        fileBytes[p + w] = newPointer[w];
+                    int test = offsetDict.ElementAt(i).Key;
+                    for (int w = 0; w < 4; w++) fileBytes[offsetDict.ElementAt(i).Key + w] = newPointer[w];
+                }
+            } else {
+                for (int p = 0; p < fileBytes.Length; p += 4)
+                {
+                    if (p + 4 > fileBytes.Length)
+                        continue;
+                    int cur = BitConverter.ToInt32(fileBytes, p);
+                    if (offsetDict.ContainsKey(cur) && p > 10000)
+                    {
+                        offsetDict.TryGetValue(cur, out int replacement);
+                        byte[] newPointer = BitConverter.GetBytes(replacement);
+                        for (int w = 0; w < 4; w++)
+                            fileBytes[p + w] = newPointer[w];
+                    }
                 }
             }
 
@@ -340,6 +358,8 @@ namespace FrontierTextTool
             MemoryStream msInput = new(buffer);
             BinaryReader brInput = new(msInput);
 
+            endOffset = endOffset == 0 ? (int)brInput.BaseStream.Length : endOffset;
+
             Console.WriteLine(
                 $"Strings at: 0x{startOffset:X8} - 0x{endOffset:X8}. Size 0x{endOffset - startOffset:X8}"
             );
@@ -350,19 +370,40 @@ namespace FrontierTextTool
             txtOutput.WriteLine("Offset\tHash\tjString\teString");
 
             brInput.BaseStream.Seek(startOffset, SeekOrigin.Begin);
-            while (brInput.BaseStream.Position < endOffset)
+            while (brInput.BaseStream.Position+4 <= endOffset)
             {
                 long off = brInput.BaseStream.Position;
-                string str = Helpers.ReadNullterminatedString(
-                    brInput, 
-                    Encoding.GetEncoding("shift-jis")
-                ).
-                Replace("\t", "<TAB>"). // Replace tab
-                Replace("\r\n", "<CLINE>"). // Replace carriage return
-                Replace("\n", "<NLINE>"); // Replace new line
-                txtOutput.WriteLine(
-                    $"{off}\t{Helpers.GetCrc32(Encoding.GetEncoding("shift-jis").GetBytes(str))}\t{str}\t"
-                );
+                long tmpPos = brInput.BaseStream.Position;
+
+                if (trueOffsets)
+                {
+                    uint strPos = brInput.ReadUInt32();
+                    if (strPos == 0 || strPos > brInput.BaseStream.Length) continue;
+                    tmpPos = brInput.BaseStream.Position;
+                    if (nullstrings)
+                    {
+                        brInput.BaseStream.Seek(strPos-1, SeekOrigin.Begin);
+                        if (brInput.ReadByte() != 0)
+                        {
+                            brInput.BaseStream.Seek(tmpPos, SeekOrigin.Begin);
+                            continue;
+                        }
+                    }
+                    brInput.BaseStream.Seek(strPos, SeekOrigin.Begin);
+
+                }
+
+                string str = Helpers.ReadNullterminatedString(brInput, Encoding.GetEncoding("shift-jis")).
+                    Replace("\t", "<TAB>"). // Replace tab
+                    Replace("\r\n", "<CLINE>"). // Replace carriage return
+                    Replace("\n", "<NLINE>"); // Replace new line
+                
+                if (trueOffsets)
+                {
+                    brInput.BaseStream.Seek(tmpPos, SeekOrigin.Begin);
+                }
+                if (str == "") continue;
+                txtOutput.WriteLine($"{off}\t{Helpers.GetCrc32(Encoding.GetEncoding("shift-jis").GetBytes(str))}\t{str}\t");
             }
             txtOutput.Close();
         }
