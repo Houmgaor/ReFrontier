@@ -1,10 +1,10 @@
-﻿using CsvHelper;
-using LibReFrontier;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using CsvHelper;
+using LibReFrontier;
 
 namespace FrontierDataTool
 {
@@ -13,11 +13,7 @@ namespace FrontierDataTool
         // Define offset pointers
         // --- mhfdat.bin ---
         // Strings
-        static readonly int soStringHead = 0x64; 
-        static readonly int soStringBody = 0x68; 
-        static readonly int soStringArm = 0x6C; 
-        static readonly int soStringWaist = 0x70; 
-        static readonly int soStringLeg = 0x74;
+        static readonly int soStringHead = 0x64, soStringBody = 0x68, soStringArm = 0x6C, soStringWaist = 0x70, soStringLeg = 0x74;
 
         static readonly int eoStringHead = 0x60; 
         static readonly int eoStringBody = 0x64; 
@@ -25,11 +21,9 @@ namespace FrontierDataTool
         static readonly int eoStringWaist = 0x6C; 
         static readonly int eoStringLeg = 0x70;
 
-        static readonly int soStringRanged = 0x84; 
-        static readonly int soStringMelee = 0x88;
+        static readonly int soStringRanged = 0x84, soStringMelee = 0x88;
 
-        // static readonly int eoStringRanged = 0x88; 
-        // static readonly int eoStringMelee = 0x174;
+        // static readonly int eoStringRanged = 0x88, eoStringMelee = 0x174;
         
         static readonly int soStringItem = 0x100; 
         static readonly int soStringItemDesc = 0x12C;
@@ -45,19 +39,20 @@ namespace FrontierDataTool
 
         static readonly int eoHead = 0xE8; 
         static readonly int eoBody = 0x50; 
-        static readonly int eoArm = 0x54; static 
-        readonly int eoWaist = 0x58; 
+        static readonly int eoArm = 0x54; 
+        static readonly int eoWaist = 0x58; 
         static readonly int eoLeg = 0x5C;
 
         // Weapons
-        static readonly int soRanged = 0x80; static readonly int soMelee = 0x7C;
-        static readonly int eoRanged = 0x7C; static readonly int eoMelee = 0x90;
+        static readonly int soRanged = 0x80, soMelee = 0x7C;
+        static readonly int eoRanged = 0x7C, eoMelee = 0x90;
 
 
         // --- mhfpac.bin ---
         // Strings
-        static readonly int soStringSkillPt = 0xA20; static readonly int soStringSkillActivate = 0xA1C; static readonly int soStringZSkill = 0xFBC; static readonly int soStringSkillDesc = 0xb8;
-        static readonly int eoStringSkillPt = 0xA1C; static readonly int eoStringSkillActivate = 0xBC0; static readonly int eoStringZSkill = 0xFB0; static readonly int eoStringSkillDesc = 0xc0;
+        static readonly int soStringSkillPt = 0xA20, soStringSkillActivate = 0xA1C, soStringZSkill = 0xFBC, soStringSkillDesc = 0xb8;
+
+        static readonly int eoStringSkillPt = 0xA1C, eoStringSkillActivate = 0xBC0, eoStringZSkill = 0xFB0, eoStringSkillDesc = 0xc0;
 
         // --- mhfinf.pac ---
         public static List<KeyValuePair<int, int>> offsetInfQuestData =
@@ -96,14 +91,6 @@ namespace FrontierDataTool
             new KeyValuePair<int, int>(soStringLeg, eoStringLeg)
         ];
 
-        public class StringDatabase
-        {
-            public uint Offset { get; set; }
-            public uint Hash { get; set; }
-            public string jString { get; set; }
-            public string eString { get; set; }
-        }
-
         public static string[] elementIds = ["なし", "火", "水", "雷", "龍", "氷", "炎", "光", "雷極", "天翔", "熾凍", "黒焔", "奏", "闇", "紅魔", "風", "響", "灼零", "皇鳴"];
         public static string[] ailmentIds = ["なし", "毒", "麻痺", "睡眠", "爆破"];
         public static string[] wClassIds = ["大剣", "ヘビィボウガン", "ハンマー", "ランス", "片手剣", "ライトボウガン", "双剣", "太刀", "狩猟笛", "ガンランス", "弓", "穿龍棍", "スラッシュアックスＦ", "マグネットスパイク"];
@@ -112,14 +99,27 @@ namespace FrontierDataTool
 
         static void Main(string[] args)
         {
-            if (args.Length < 2) { Console.WriteLine("Too few arguments."); return; }
+            if (args.Length < 2) {
+                Console.WriteLine("Too few arguments.");
+                return;
+            }
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-            if (args[0] == "dump") DumpData(args[1], args[2], args[3], args[4]);         // suffix, mhfpac.bin, mhfdat.bin, mhfinf.bin
-            if (args[0] == "modshop") ModShop(args[1]);                                 // mhfdat.bin
-            Console.WriteLine("Done"); Console.Read();
+            if (args[0] == "dump")
+                DumpData(args[1], args[2], args[3], args[4]);  // suffix, mhfpac.bin, mhfdat.bin, mhfinf.bin
+            if (args[0] == "modshop")
+                ModShop(args[1]);                              // mhfdat.bin
+            Console.WriteLine("Done");
+            Console.Read();
         }
 
-        // Dump data and strings
+        /// <summary>
+        /// Dump data and strings
+        /// </summary>
+        /// <param name="suffix">Output suffix</param>
+        /// <param name="mhfpac">Path to mhfpac</param>
+        /// <param name="mhfdat">Path to mhfdat</param>
+        /// <param name="mhfinf">Path to mhfinf</param>
         static void DumpData(string suffix, string mhfpac, string mhfdat, string mhfinf)
         {
             #region SkillSystem
@@ -638,7 +638,11 @@ namespace FrontierDataTool
             #endregion
         }
 
-        // Add all-items shop to file, change item prices, change armor prices
+        
+        /// <summary>
+        /// Add all-items shop to file, change item prices, change armor prices
+        /// </summary>
+        /// <param name="file">Input file path.</param>
         static void ModShop(string file)
         {
             MemoryStream msInput = new(File.ReadAllBytes(file));

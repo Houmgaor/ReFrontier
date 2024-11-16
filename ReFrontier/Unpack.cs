@@ -337,8 +337,15 @@ namespace ReFrontier
             if (cleanUp) File.Delete(input);
         }
 
+        /// <summary>
+        /// Write output to txt file.
+        /// </summary>
+        /// <param name="input">Input ftxt file, usually has MHF header.</param>
+        /// <param name="brInput">Binary reader to the file.</param>
         public static void PrintFTXT(string input, BinaryReader brInput)
         {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
             FileInfo fileInfo = new(input);
             string outputPath = $"{fileInfo.DirectoryName}/{Path.GetFileNameWithoutExtension(input)}.txt";
             if (File.Exists(outputPath)) File.Delete(outputPath);

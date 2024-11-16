@@ -27,7 +27,9 @@ namespace FrontierTextTool
             }
 
             if (args.Any("-verbose".Contains)) verbose = true;
-            if (args.Any("-close)".Contains)) autoClose = true;
+            if (args.Any("-close".Contains)) autoClose = true;
+
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
             switch (args[0]) {
                 case "dump":
