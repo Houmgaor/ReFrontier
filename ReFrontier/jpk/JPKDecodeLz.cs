@@ -18,10 +18,10 @@ namespace ReFrontier.jpk
         /// <param name="buffer">Buffer to rewrite</param>
         /// <param name="offset">Offset position to the left.</param>
         /// <param name="length">Number of bytes to write.</param>
-        /// <param name="index">Initial position.</param>
+        /// <param name="index">Initial position to start copying bytes.</param>
         private static int JpkCopyLz(byte[] buffer, int offset, int length, int index)
         {
-            for (int i = index; i < length - index; i++)
+            for (int i = index; i < length + index; i++)
             {
                 buffer[i] = buffer[i - offset - 1];
             }
