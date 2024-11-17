@@ -377,6 +377,7 @@ namespace ReFrontier
             }
 
             Console.WriteLine("==============================");
+            // Decompress file if it was an ECD (encypted)
             if (fileMagic == 0x1A646365 && !decryptOnly) {
                 ProcessFile(input);
             }
@@ -388,6 +389,7 @@ namespace ReFrontier
         /// <param name="inputFiles">Files to process</param>
         static void ProcessMultipleLevels(string[] inputFiles)
         {
+            string[] patterns = ["*.bin", "*.jkr", "*.ftxt", "*.snd"];
             // CurrentLevel        
             foreach (string inputFile in inputFiles)
             {
@@ -398,19 +400,20 @@ namespace ReFrontier
                     stageContainer = false;
 
                 FileInfo fileInfo = new(inputFile);
-                string[] patterns = ["*.bin", "*.jkr", "*.ftxt", "*.snd"];
                 string directory = Path.Join(
                     fileInfo.DirectoryName, 
                     Path.GetFileNameWithoutExtension(inputFile)
                 );
 
-                if (Directory.Exists(directory) && recursive)
+                if (!Directory.Exists(directory) || !recursive)
                 {
-                    //Process All Successive Levels
-                    ProcessMultipleLevels(
-                        Helpers.MyDirectory.GetFiles(directory, patterns, SearchOption.TopDirectoryOnly)
-                    );
+                    continue;
                 }
+
+                //Process All Successive Levels
+                ProcessMultipleLevels(
+                    Helpers.MyDirectory.GetFiles(directory, patterns, SearchOption.TopDirectoryOnly)
+                );
             }
         }
     }

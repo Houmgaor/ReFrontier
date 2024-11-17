@@ -60,32 +60,34 @@ namespace ReFrontier.jpk
         /// <returns>Length of the longest repeated sequence.</returns>
         private int LongestRepetition(int inputDataIndex, out uint offset)
         {
+            const int minLength = 3;
+
             // Limit length compression level, truncate if the length is above remaining data length
             int lengthThreshold = Math.Min(m_compressionLevel, m_inputBuffer.Length - inputDataIndex);
             offset = 0;
-            if (inputDataIndex == 0 || lengthThreshold < 3)
+            if (inputDataIndex == 0 || lengthThreshold < minLength)
             {
                 return 0;
             }
             // Start position to find a repeated element, minimum is 0 
             int inputStart = Math.Max(inputDataIndex - m_maxIndexDist, 0);
             
-            // Translation of <cref>inputDataIndex</cref> in pointers
             int maxLength = 0;
-            // Start identical sequence search
+            
             for (int leftIterator = inputStart; leftIterator < inputDataIndex; leftIterator++)
             {
                 int currentLength = 0;
-
-                for (int i = 0; i < lengthThreshold; i++)
+                            
+                while (
+                    currentLength < lengthThreshold && 
+                    m_inputBuffer[leftIterator + currentLength] == m_inputBuffer[inputDataIndex + currentLength]
+                )
                 {
-                    if (m_inputBuffer[leftIterator + i] != m_inputBuffer[inputDataIndex + i])
-                        break;
                     currentLength++;
                 }
 
                 // Check if the length is longer than the previous one
-                if (currentLength > maxLength && currentLength >= 3)
+                if (currentLength > maxLength && currentLength >= minLength)
                 {
                     maxLength = currentLength;
                     offset = (uint)(inputDataIndex - leftIterator - 1);
