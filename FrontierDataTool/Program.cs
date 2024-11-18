@@ -8,6 +8,7 @@ using System.Text;
 using CsvHelper;
 using CsvHelper.Configuration;
 
+using FrontierDataTool.structs;
 using LibReFrontier;
 
 namespace FrontierDataTool
@@ -124,11 +125,18 @@ namespace FrontierDataTool
             switch (args[0]) {
                 case "dump":
                     if (args.Length < 5) {
-                        throw new ArgumentException("You must provide 5 positional arguments with 'dump'.");
+                        throw new ArgumentException(
+                            "You must provide 5 positional arguments with 'dump':\n" + 
+                            "dump [suffix] [mhfpac.bin] [mhfdat.bin] [mhfinf.bin]"
+                        );
                     } 
                     DumpData(args[1], args[2], args[3], args[4]);  // suffix, mhfpac.bin, mhfdat.bin, mhfinf.bin
                     break;
                 case "modshop":
+                    if (args.Length < 2) {
+                        throw new ArgumentException(
+                            "You must provide the path to mhfdat.bin as a positional argument");
+                    } 
                     // mhfdat.bin
                     ModShop(args[1]);
                     break;
@@ -297,7 +305,7 @@ namespace FrontierDataTool
             }
             Console.WriteLine($"Total armor count: {totalCount}");
 
-            Structs.ArmorDataEntry[] armorEntries = new Structs.ArmorDataEntry[totalCount];
+            ArmorDataEntry[] armorEntries = new ArmorDataEntry[totalCount];
             int currentCount = 0;
             for (int i = 0; i < 5; i++)
             {
@@ -313,7 +321,7 @@ namespace FrontierDataTool
 
                 for (int j = 0; j < entryCount; j++)
                 {
-                    Structs.ArmorDataEntry entry = new()
+                    ArmorDataEntry entry = new()
                     {
                         EquipClass = aClassIds[i],
                         ModelIdMale = brInput.ReadInt16(),
@@ -423,10 +431,10 @@ namespace FrontierDataTool
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
             Console.WriteLine($"Melee count: {entryCountMelee}");
 
-            Structs.MeleeWeaponEntry[] meleeEntries = new Structs.MeleeWeaponEntry[entryCountMelee];
+            MeleeWeaponEntry[] meleeEntries = new MeleeWeaponEntry[entryCountMelee];
             for (int i = 0; i < entryCountMelee; i++)
             {
-                Structs.MeleeWeaponEntry entry = new()
+                MeleeWeaponEntry entry = new()
                 {
                     ModelId = brInput.ReadInt16()
                 };
@@ -494,10 +502,10 @@ namespace FrontierDataTool
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
             Console.WriteLine($"Ranged count: {entryCountRanged}");
 
-            Structs.RangedWeaponEntry[] rangedEntries = new Structs.RangedWeaponEntry[entryCountRanged];
+            RangedWeaponEntry[] rangedEntries = new RangedWeaponEntry[entryCountRanged];
             for (int i = 0; i < entryCountRanged; i++)
             {
-                Structs.RangedWeaponEntry entry = new()
+                RangedWeaponEntry entry = new()
                 {
                     ModelId = brInput.ReadInt16()
                 };
@@ -590,7 +598,7 @@ namespace FrontierDataTool
             totalCount = 0;
             for (int j = 0; j < offsetInfQuestData.Count; j++)
                 totalCount += offsetInfQuestData[j].Value;
-            Structs.QuestData[] quests = new Structs.QuestData[totalCount];
+            QuestData[] quests = new QuestData[totalCount];
 
             currentCount = 0;
             for (int j = 0; j < offsetInfQuestData.Count; j++)
@@ -598,7 +606,7 @@ namespace FrontierDataTool
                 brInput.BaseStream.Seek(offsetInfQuestData[j].Key, SeekOrigin.Begin);                
                 for (int i = 0; i < offsetInfQuestData[j].Value; i++)
                 {
-                    Structs.QuestData entry = new()
+                    QuestData entry = new()
                     {
                         Unk1 = brInput.ReadByte(),
                         Unk2 = brInput.ReadByte(),
@@ -629,19 +637,19 @@ namespace FrontierDataTool
                         Unk20 = brInput.ReadByte()
                     };
                     int questType = brInput.ReadInt32();
-                    entry.MainGoalType = Enum.GetName(typeof(Structs.QuestTypes), questType);
+                    entry.MainGoalType = Enum.GetName(typeof(QuestTypes), questType);
                     entry.MainGoalType ??= questType.ToString("X8");
 
                     entry.MainGoalTarget = brInput.ReadInt16();
                     entry.MainGoalCount = brInput.ReadInt16();
                     questType = brInput.ReadInt32();
-                    entry.SubAGoalType = Enum.GetName(typeof(Structs.QuestTypes), questType);
+                    entry.SubAGoalType = Enum.GetName(typeof(QuestTypes), questType);
                     entry.SubAGoalType ??= questType.ToString("X8");
 
                     entry.SubAGoalTarget = brInput.ReadInt16();
                     entry.SubAGoalCount = brInput.ReadInt16();
                     questType = brInput.ReadInt32();
-                    entry.SubBGoalType = Enum.GetName(typeof(Structs.QuestTypes), questType);
+                    entry.SubBGoalType = Enum.GetName(typeof(QuestTypes), questType);
                     entry.SubBGoalType ??= questType.ToString("X8");
 
                     entry.SubBGoalTarget = brInput.ReadInt16();
