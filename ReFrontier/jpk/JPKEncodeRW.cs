@@ -2,7 +2,7 @@
 
 namespace ReFrontier.jpk
 {
-    class JPKEncodeRW : IJPKEncode
+    internal class JPKEncodeRW : IJPKEncode
     {
         public void ProcessOnEncode(byte[] inBuffer, Stream outStream, int level = 16, ShowProgress progress = null)
         {

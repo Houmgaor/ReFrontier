@@ -3,7 +3,8 @@
 namespace ReFrontier.jpk
 {
   public delegate void ShowProgress(long perc);
-  interface IJPKEncode
+
+    internal interface IJPKEncode
   {
     void WriteByte(Stream s, byte b);
 

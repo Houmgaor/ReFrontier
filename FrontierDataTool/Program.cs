@@ -13,49 +13,49 @@ using LibReFrontier;
 
 namespace FrontierDataTool
 {
-    class Program
+    internal class Program
     {
         // Define offset pointers
 
         // --- mhfdat.bin ---
         // Strings
         // Start offset armor strings
-        static readonly int soStringHead = 0x64, soStringBody = 0x68, soStringArm = 0x6C, soStringWaist = 0x70, soStringLeg = 0x74;
+        private static readonly int soStringHead = 0x64, soStringBody = 0x68, soStringArm = 0x6C, soStringWaist = 0x70, soStringLeg = 0x74;
 
         // End offsets armor strings
-        static readonly int eoStringHead = 0x60, eoStringBody = 0x64, eoStringArm = 0x68, eoStringWaist = 0x6C, eoStringLeg = 0x70;
+        private static readonly int eoStringHead = 0x60, eoStringBody = 0x64, eoStringArm = 0x68, eoStringWaist = 0x6C, eoStringLeg = 0x70;
 
         // Start offsets weapons string
-        static readonly int soStringRanged = 0x84, soStringMelee = 0x88;
+        private static readonly int soStringRanged = 0x84, soStringMelee = 0x88;
 
         // End offsets weapons strings
         // static readonly int eoStringRanged = 0x88, eoStringMelee = 0x174;
-        
+
         // Start offsets items names, descriptions
-        static readonly int soStringItem = 0x100, soStringItemDesc = 0x12C;
+        private static readonly int soStringItem = 0x100, soStringItemDesc = 0x12C;
 
         // End offsets items names, descriptions
-        static readonly int eoStringItem = 0xFC, eoStringItemDesc = 0x100;
+        private static readonly int eoStringItem = 0xFC, eoStringItemDesc = 0x100;
 
         // Armor
         // Start offsets armors data
-        static readonly int soHead = 0x50, soBody = 0x54, soArm = 0x58, soWaist = 0x5C, soLeg = 0x60;
+        private static readonly int soHead = 0x50, soBody = 0x54, soArm = 0x58, soWaist = 0x5C, soLeg = 0x60;
 
         // End offsets armors data
-        static readonly int eoHead = 0xE8, eoBody = 0x50, eoArm = 0x54, eoWaist = 0x58, eoLeg = 0x5C;
+        private static readonly int eoHead = 0xE8, eoBody = 0x50, eoArm = 0x54, eoWaist = 0x58, eoLeg = 0x5C;
 
         // Weapons
         // Start offsets weapons data
-        static readonly int soRanged = 0x80, soMelee = 0x7C;
+        private static readonly int soRanged = 0x80, soMelee = 0x7C;
+
         // End offsets weapons data
-        static readonly int eoRanged = 0x7C, eoMelee = 0x90;
+        private static readonly int eoRanged = 0x7C, eoMelee = 0x90;
 
 
         // --- mhfpac.bin ---
         // Strings
-        static readonly int soStringSkillPt = 0xA20, soStringSkillActivate = 0xA1C, soStringZSkill = 0xFBC, soStringSkillDesc = 0xb8;
-
-        static readonly int eoStringSkillPt = 0xA1C, eoStringSkillActivate = 0xBC0, eoStringZSkill = 0xFB0, eoStringSkillDesc = 0xc0;
+        private static readonly int soStringSkillPt = 0xA20, soStringSkillActivate = 0xA1C, soStringZSkill = 0xFBC, soStringSkillDesc = 0xb8;
+        private static readonly int eoStringSkillPt = 0xA1C, eoStringSkillActivate = 0xBC0, eoStringZSkill = 0xFB0, eoStringSkillDesc = 0xc0;
 
         // --- mhfinf.pac ---
         /// <summary>
@@ -115,7 +115,7 @@ namespace FrontierDataTool
         /// </summary>
         /// <param name="args">Input argument from console.</param>
         /// <exception cref="ArgumentException">For wring arguments entered.</exception>
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             if (args.Length < 2) {
                 throw new ArgumentException($"{args.Length} arguments provided, 2 required.");
@@ -156,7 +156,7 @@ namespace FrontierDataTool
         /// <param name="mhfpac">Path to mhfpac</param>
         /// <param name="mhfdat">Path to mhfdat</param>
         /// <param name="mhfinf">Path to mhfinf</param>
-        static void DumpData(string suffix, string mhfpac, string mhfdat, string mhfinf)
+        private static void DumpData(string suffix, string mhfpac, string mhfdat, string mhfinf)
         {
             #region SkillSystem
             // Get and dump skill system dictionary
@@ -686,12 +686,12 @@ namespace FrontierDataTool
             #endregion
         }
 
-        
+
         /// <summary>
         /// Add all-items shop to file, change item prices, change armor prices
         /// </summary>
         /// <param name="file">Input file path, usually mhfdat.bin.</param>
-        static void ModShop(string file)
+        private static void ModShop(string file)
         {
             MemoryStream msInput = new(File.ReadAllBytes(file));
             BinaryReader brInput = new(msInput);
@@ -798,7 +798,7 @@ namespace FrontierDataTool
         /// </summary>
         /// <param name="brInput">Input binary reader.</param>
         /// <returns>String found.</returns>
-        static string StringFromPointer(BinaryReader brInput)
+        private static string StringFromPointer(BinaryReader brInput)
         {
             int off = brInput.ReadInt32();
             long pos = brInput.BaseStream.Position;
@@ -808,7 +808,7 @@ namespace FrontierDataTool
             return str;
         }
 
-        static string GetModelIdData(int id)
+        private static string GetModelIdData(int id)
         {
             string str;
             if (id >= 0 && id < 1000) str = $"we{id:D3}";

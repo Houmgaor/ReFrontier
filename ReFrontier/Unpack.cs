@@ -7,7 +7,7 @@ using ReFrontier.jpk;
 
 namespace ReFrontier
 {
-    class Unpack
+    internal class Unpack
     {
         public static void UnpackSimpleArchive(
             string input, BinaryReader brInput, int magicSize, bool createLog, 

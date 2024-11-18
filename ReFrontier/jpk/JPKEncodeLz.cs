@@ -6,7 +6,7 @@ namespace ReFrontier.jpk
     /// <summary>
     /// Variant of the LZ77 compression algorithm.
     /// </summary>
-    class JPKEncodeLz : IJPKEncode
+    internal class JPKEncodeLz : IJPKEncode
     {
         private byte m_flag;
 
@@ -40,17 +40,17 @@ namespace ReFrontier.jpk
         /// <summary>
         /// Stream to write data to.
         /// </summary>
-        Stream m_outStream;
+        private Stream m_outStream;
 
         /// <summary>
         /// Temporary buffer of data to write to 
         /// </summary>
-        readonly byte[] m_toWrite = new byte[1000];
+        private readonly byte[] m_toWrite = new byte[1000];
 
         /// <summary>
         /// Index in <cref>m_toWrite</cref>
         /// </summary>
-        int m_indexToWrite;
+        private int m_indexToWrite;
 
         /// <summary>
         /// Search for the longest repeated sequence in the input data and returns its length.

@@ -6,7 +6,7 @@ namespace ReFrontier.jpk
     /// <summary>
     /// Base class for LZ decompression.
     /// </summary>
-    class JPKDecodeLz : IJPKDecode
+    internal class JPKDecodeLz : IJPKDecode
     {
         private int m_shiftIndex = 0;
         private byte m_flag = 0;

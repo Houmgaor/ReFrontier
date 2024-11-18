@@ -6,7 +6,7 @@ namespace ReFrontier.jpk
     /// Decode a JPK the same as JPKDecodeLz,
     /// but provides a new inteface for byte reading.
     /// </summary>
-    class JPKDecodeHFI : JPKDecodeLz
+    internal class JPKDecodeHFI : JPKDecodeLz
     {
         private byte m_flagHF = 0;
         private int m_flagShift = 0;

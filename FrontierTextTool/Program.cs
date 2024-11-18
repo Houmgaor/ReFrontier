@@ -16,18 +16,18 @@ namespace FrontierTextTool
     /// <summary>
     /// Utility program for text data edition.
     /// </summary>
-    class Program
+    internal class Program
     {
-        static bool verbose = false;
-        static bool autoClose = false;
-        static bool trueOffsets = false;
-        static bool nullstrings = false;
+        private static bool _verbose = false;
+        private static bool _autoClose = false;
+        private static bool _trueOffsets = false;
+        private static bool _nullStrings = false;
 
         /// <summary>
         /// Main CLI for text edition.
         /// </summary>
         /// <param name="args">Arguments passed</param>
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             var parsedArgs = ArgumentsParser.ParseArguments(args);
             if (parsedArgs.Count < 2) {
@@ -36,14 +36,10 @@ namespace FrontierTextTool
 
             var keyArgs = parsedArgs.Keys;
 
-            if (keyArgs.Contains("--verbose") || keyArgs.Contains("-verbose"))
-                verbose = true;
-            if (keyArgs.Contains("--close") || keyArgs.Contains("-close"))
-                autoClose = true;
-            if (keyArgs.Contains("--trueoffsets") || keyArgs.Contains("-trueoffsets"))
-                trueOffsets = true;
-            if (keyArgs.Contains("--nullstrings") || keyArgs.Contains("-nullstrings"))
-                nullstrings = true;
+            _verbose = keyArgs.Contains("--verbose") || keyArgs.Contains("-verbose");
+            _autoClose = keyArgs.Contains("--close") || keyArgs.Contains("-close");
+            _trueOffsets = keyArgs.Contains("--trueoffsets") || keyArgs.Contains("-trueoffsets");
+            _nullStrings = keyArgs.Contains("--nullstrings") || keyArgs.Contains("-nullstrings");
 
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
@@ -71,7 +67,7 @@ namespace FrontierTextTool
                     throw new ArgumentException($"{args[0]} is not a valid argument.");
             }
 
-            if (!autoClose) {
+            if (!_autoClose) {
                 Console.WriteLine("Done");
                 Console.Read();
             }
@@ -104,7 +100,7 @@ namespace FrontierTextTool
         /// Update MHFUP_00.DAT.
         /// </summary>
         /// <param name="updEntry">Updated elements in specific format.</param>
-        static void UpdateList(string updEntry)
+        private static void UpdateList(string updEntry)
         {
             string file = updEntry.Split(',')[3].Split('/')[1];
             string[] lines = File.ReadAllLines("src/MHFUP_00.DAT");
@@ -121,7 +117,7 @@ namespace FrontierTextTool
         /// </summary>
         /// <param name="catFile">CAT file to insert</param>
         /// <param name="csvFile">Destination file</param>
-        static void InsertCatFile(string catFile, string csvFile)
+        private static void InsertCatFile(string catFile, string csvFile)
         {
             Console.WriteLine($"Processing {catFile}...");
             CleanTrados(catFile);
@@ -187,7 +183,7 @@ namespace FrontierTextTool
         /// Clean pollution caused by Trados or other CAT
         /// </summary>
         /// <param name="file">Input file path.</param>
-        static void CleanTrados(string file)
+        private static void CleanTrados(string file)
         {
             string text = File.ReadAllText(file, Encoding.UTF8);
             text = text.Replace(": ~", ":~");
@@ -210,7 +206,7 @@ namespace FrontierTextTool
         /// </summary>
         /// <param name="inputCsv">Input CSV file path.</param>
         /// <returns>StringDatabase object.</returns>
-        static StringDatabase[] LoadCsvToStringDatabase(string inputCsv)
+        private static StringDatabase[] LoadCsvToStringDatabase(string inputCsv)
         {
             var stringDatabase = new List<StringDatabase>();
             using (var reader = new StreamReader(inputCsv, Encoding.GetEncoding("shift-jis")))
@@ -247,7 +243,7 @@ namespace FrontierTextTool
         /// <param name="stringDatabase">The new strings used for the update, contains offsets.</param>
         /// <param name="fileBytes">The binary file to do updates to.</param>
         /// <returns></returns>
-        static byte[] UpdateBinaryStrings(StringDatabase[] stringDatabase, byte[] fileBytes)
+        private static byte[] UpdateBinaryStrings(StringDatabase[] stringDatabase, byte[] fileBytes)
         {
             // Get info for translation array and get all offsets that need to be remapped
             List<uint> eStringsOffsets = [];
@@ -272,7 +268,7 @@ namespace FrontierTextTool
                     fileBytes.Length + eStringLengths.Take(i).Sum()
                 );
 
-            if (verbose)
+            if (_verbose)
                 Console.WriteLine($"Filling array of size {eStringsLength:X8}...");
             byte[] eStringsArray = new byte[eStringsLength];
             for (int i = 0, j = 0; i < stringDatabase.Length; i++)
@@ -280,7 +276,7 @@ namespace FrontierTextTool
                 if (stringDatabase[i].EString != "")
                 {
                     // Write string to string array
-                    if (verbose)
+                    if (_verbose)
                         Console.WriteLine($"String: '{stringDatabase[i].EString}', Length: {eStringLengths[j] - 1}");
                     byte[] eStringArray = Encoding.GetEncoding("shift-jis").GetBytes(stringDatabase[i].EString);
                     Array.Copy(eStringArray, 0, eStringsArray, eStringLengths.Take(j).Sum(), eStringLengths[j] - 1);
@@ -289,7 +285,7 @@ namespace FrontierTextTool
             }
 
             // Replace offsets in binary file
-            if (trueOffsets) {
+            if (_trueOffsets) {
                 for (int i = 0; i < offsetDict.Count; i++)
                 {
                     var element = offsetDict.ElementAt(i);
@@ -328,7 +324,7 @@ namespace FrontierTextTool
         /// </summary>
         /// <param name="inputFile">File to insert the translation to, such as mhfdat.bin</param>
         /// <param name="inputCsv">CSV with the updated transaltions.</param>
-        static void InsertStrings(string inputFile, string inputCsv)
+        private static void InsertStrings(string inputFile, string inputCsv)
         {
             Console.WriteLine($"Processing {inputFile}...");
             byte[] inputBytes = File.ReadAllBytes(inputFile);
@@ -371,7 +367,7 @@ namespace FrontierTextTool
         /// <param name="input">File to read</param>
         /// <param name="startOffset">Initial offset to read file from.</param>
         /// <param name="endOffset">End offset where stopping file reading</param>
-        static void DumpAndHash(string input, int startOffset, int endOffset)
+        private static void DumpAndHash(string input, int startOffset, int endOffset)
         {
             byte[] buffer = File.ReadAllBytes(input);
             MemoryStream msInput = new(buffer);
@@ -403,13 +399,13 @@ namespace FrontierTextTool
                 long offset = brInput.BaseStream.Position;
                 long tmpPos = brInput.BaseStream.Position;
 
-                if (trueOffsets)
+                if (_trueOffsets)
                 {
                     uint strPos = brInput.ReadUInt32();
                     if (strPos == 0 || strPos > brInput.BaseStream.Length)
                         continue;
                     tmpPos = brInput.BaseStream.Position;
-                    if (nullstrings)
+                    if (_nullStrings)
                     {
                         // Check if string is null, go to string position
                         brInput.BaseStream.Seek(strPos-1, SeekOrigin.Begin);
@@ -434,7 +430,7 @@ namespace FrontierTextTool
                     Hash = Crypto.GetCrc32(Encoding.GetEncoding("shift-jis").GetBytes(str)),
                     JString = str
                 };
-                if (trueOffsets)
+                if (_trueOffsets)
                 {
                     brInput.BaseStream.Seek(tmpPos, SeekOrigin.Begin);
                 }
@@ -450,7 +446,7 @@ namespace FrontierTextTool
         /// </summary>
         /// <param name="oldCsv">CSV to merge to</param>
         /// <param name="newCsv">New CSV with updated data</param>
-        static void Merge(string oldCsv, string newCsv)
+        private static void Merge(string oldCsv, string newCsv)
         {
             // Read csv
             var stringDbOld = new List<StringDatabase>();

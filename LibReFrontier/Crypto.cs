@@ -15,7 +15,7 @@ namespace LibReFrontier
         /// 
         /// Data from address 0x10292DCC
         /// </summary>
-        static readonly byte[] rndBufEcd = [
+        private static readonly byte[] rndBufEcd = [
             0x4A, 0x4B, 0x52, 0x2E, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x0D,
             0xCD, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x0D, 0xCD, 0x00, 0x00,
             0x00, 0x01, 0x00, 0x01, 0x0D, 0xCD, 0x00, 0x00, 0x00, 0x01, 0x00, 
@@ -28,7 +28,7 @@ namespace LibReFrontier
         /// 
         /// Data from address 0x1025F4E0
         /// </summary>
-        static readonly byte[] rndBufExf = [
+        private static readonly byte[] rndBufExf = [
             0x4A, 0x4B, 0x52, 0x2E, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x0D,
             0xCD, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x0D, 0xCD, 0x00, 0x00,
             0x00, 0x01, 0x00, 0x01, 0x0D, 0xCD, 0x00, 0x00, 0x00, 0x01, 0x02,
@@ -41,7 +41,7 @@ namespace LibReFrontier
         /// <param name="buffer">Data buffer to read from.</param>
         /// <param name="offset">First byte index to read</param>
         /// <returns>First four bytes as an integer.</returns>
-        static uint LoadUInt32BE(byte[] buffer, int offset)
+        private static uint LoadUInt32BE(byte[] buffer, int offset)
         {
             uint value = (uint)((buffer[offset] << 24) | (buffer[offset + 1] << 16) | (buffer[offset + 2] << 8) | buffer[offset + 3]);
             return value;
@@ -53,7 +53,7 @@ namespace LibReFrontier
         /// <param name="ecdKey">Key to use for rnd generation</param>
         /// <param name="rnd">Current ecd value.</param>
         /// <returns>Encoding random key.</returns>
-        static uint GetRndEcd(int ecdKey, ref uint rnd)
+        private static uint GetRndEcd(int ecdKey, ref uint rnd)
         {
             rnd = rnd * LoadUInt32BE(rndBufEcd, 8 * ecdKey) + LoadUInt32BE(rndBufEcd, 8 * ecdKey + 4);
             return rnd;
@@ -159,7 +159,7 @@ namespace LibReFrontier
         /// </summary>
         /// <param name="header">First 16 bytes of the EXF file.</param>
         /// <returns>Buffer of keys to use.</returns>
-        static byte[] CreateXorkeyExf(byte[] header)
+        private static byte[] CreateXorkeyExf(byte[] header)
         {
             byte[] keyBuffer = new byte[16];
             int index = BitConverter.ToUInt16(header, 4);

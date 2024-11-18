@@ -6,7 +6,7 @@ namespace ReFrontier.jpk
     /// <summary>
     /// Raw JPK "decoding", do not decode anything.
     /// </summary>
-    class JPKDecodeRW : IJPKDecode
+    internal class JPKDecodeRW : IJPKDecode
     {
         /// <summary>
         /// Read bytes directly without decoding.

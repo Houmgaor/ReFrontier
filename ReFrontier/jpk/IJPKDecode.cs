@@ -5,7 +5,7 @@ namespace ReFrontier.jpk
     /// <summary>
     /// Base interface for JPK decoding.
     /// </summary>
-    interface IJPKDecode
+    internal interface IJPKDecode
     {
         /// <summary>
         /// Read byte from stream.

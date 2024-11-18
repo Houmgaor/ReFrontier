@@ -7,7 +7,7 @@ namespace ReFrontier.jpk
     /// 
     /// It uses HFI byte reading and RW processing.
     /// </summary>
-    class JPKDecodeHFIRW : JPKDecodeHFI
+    internal class JPKDecodeHFIRW : JPKDecodeHFI
     {
         /// <summary>
         /// Decompress byte by byte on the whole file with JpkGetHf.

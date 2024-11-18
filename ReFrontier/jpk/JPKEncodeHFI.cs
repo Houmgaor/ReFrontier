@@ -7,7 +7,7 @@ namespace ReFrontier.jpk
     /// <summary>
     /// LZ77 encoding but with an extra layer.
     /// </summary>
-    class JPKEncodeHFI : JPKEncodeLz
+    internal class JPKEncodeHFI : JPKEncodeLz
     {
         private static readonly short m_hfTableLen = 0x1fe;
         private readonly short[] m_hfTable = new short[m_hfTableLen];
