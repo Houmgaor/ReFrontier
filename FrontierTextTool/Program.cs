@@ -26,18 +26,20 @@ namespace FrontierTextTool
         /// <param name="args">Arguments passed</param>
         static void Main(string[] args)
         {
-            if (args.Length < 2) {
-                Console.WriteLine("Too few arguments.");
-                return;
+            var parsedArgs = Helpers.ParseArguments(args);
+            if (parsedArgs.Count < 2) {
+                throw new ArgumentException($"Too few arguments. {parsedArgs.Count}, need at least 2 arguments.");
             }
 
-            if (args.Any("--verbose".Contains) || args.Any("-verbose".Contains))
+            var keyArgs = parsedArgs.Keys;
+
+            if (keyArgs.Contains("--verbose") || keyArgs.Contains("-verbose"))
                 verbose = true;
-            if (args.Any("--close".Contains) || args.Any("-close".Contains))
+            if (keyArgs.Contains("--close") || keyArgs.Contains("-close"))
                 autoClose = true;
-            if (args.Any("--trueoffsets)".Contains) || args.Any("-trueoffsets)".Contains))
+            if (keyArgs.Contains("--trueoffsets") || keyArgs.Contains("-trueoffsets"))
                 trueOffsets = true;
-            if (args.Any("--nullstrings)".Contains) || args.Any("-nullstrings)".Contains))
+            if (keyArgs.Contains("--nullstrings") || keyArgs.Contains("-nullstrings"))
                 nullstrings = true;
 
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
@@ -406,15 +408,17 @@ namespace FrontierTextTool
                     tmpPos = brInput.BaseStream.Position;
                     if (nullstrings)
                     {
+                        // Check if string is null, go to string position
                         brInput.BaseStream.Seek(strPos-1, SeekOrigin.Begin);
                         if (brInput.ReadByte() != 0)
                         {
+                            // Go back to previous position
                             brInput.BaseStream.Seek(tmpPos, SeekOrigin.Begin);
                             continue;
                         }
                     }
+                    // Go to 
                     brInput.BaseStream.Seek(strPos, SeekOrigin.Begin);
-
                 }
 
                 string str = Helpers.ReadNullterminatedString(brInput, Encoding.GetEncoding("shift-jis")).

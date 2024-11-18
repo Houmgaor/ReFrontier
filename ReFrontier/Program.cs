@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 
@@ -22,28 +21,6 @@ namespace ReFrontier
         static bool stageContainer = false;
         static bool autoStage = false;
 
-        /// <summary>
-        /// Simple arguments parser.
-        /// </summary>
-        /// <param name="args">Input arguments from the CLI</param>
-        /// <returns>Dictionary of arguments. Arguments with no value have a null value assigned.</returns>
-        static Dictionary<string, string> ParseArguments(string[] args)
-        {
-            var arguments = new Dictionary<string, string>();
-            foreach (var arg in args)
-            {
-                string[] parts = arg.Split('=');
-                if (parts.Length == 2)
-                {
-                    arguments[parts[0]] = parts[1];
-                }
-                else
-                {
-                    arguments[arg] = null;
-                }
-            }
-            return arguments;
-        }
 
 
         /// <summary>
@@ -53,7 +30,7 @@ namespace ReFrontier
         /// <exception cref="Exception">For wrong compression format.</exception>
         static void Main(string[] args)
         {
-            var parsedArgs = ParseArguments(args); 
+            var parsedArgs = Helpers.ParseArguments(args); 
             Helpers.Print(
                 "ReFrontier by MHVuze - " + 
                 "A tool for editing Monster Hunter Frontier files", 
@@ -126,7 +103,7 @@ namespace ReFrontier
                 autoClose = true;
             if (argKeys.Contains("--cleanUp") || argKeys.Contains("-cleanUp"))
                 cleanUp = true;
-            int[] compressArgs = null;
+            int compressType = -1, compressLevel = -1;
             if (argKeys.Contains("--compress") || argKeys.Contains("-compress"))
             {
                 compress = true;
@@ -143,7 +120,8 @@ namespace ReFrontier
                             "Example: --compress=3,50"
                         );
                     }
-                    compressArgs = [int.Parse(matches[0]), int.Parse(matches[1])];
+                    compressType = int.Parse(matches[0]);
+                    compressLevel = int.Parse(matches[1]);
                 }
                 else
                 {
@@ -159,12 +137,10 @@ namespace ReFrontier
                         );
                     }
                     var match = matches[0];
-                    compressArgs = [
-                        int.Parse(match.Groups[1].Value),
-                        int.Parse(match.Groups[2].Value)
-                    ];
+                    compressType = int.Parse(match.Groups[1].Value);
+                    compressLevel = int.Parse(match.Groups[2].Value);
                 }
-                if (compressArgs == null) {
+                if (compressType == 0 || compressLevel == 0) {
                     throw new Exception("Check compression level and type!");
                 }
             }
@@ -188,7 +164,7 @@ namespace ReFrontier
             string input = args[0];
             if (File.Exists(input) || Directory.Exists(input))
             {
-                StartProcessing(input, compressArgs);
+                StartProcessing(input, compressType, compressLevel);
                 Console.WriteLine("Done.");
             }
             else {
@@ -202,9 +178,10 @@ namespace ReFrontier
         /// Start the input processing.
         /// </summary>
         /// <param name="input">File or directory path.</param>
-        /// <param name="compressArgs">Compression type and level, in this order</param>
+        /// <param name="compressType">Compression type</param>
+        /// <param name="compressLevel">Compression level</param>
         /// <exception cref="FileNotFoundException">Raises if META file for encryption is missing.</exception>
-        static void StartProcessing(string input, int[] compressArgs = null)
+        static void StartProcessing(string input, int compressType = -1, int compressLevel = -1)
         {
 
             FileAttributes inputAttr = File.GetAttributes(input);
@@ -244,10 +221,7 @@ namespace ReFrontier
                 else if (compress) 
                 {
                     Pack.JPKEncode(
-                        (ushort)compressArgs[0],
-                        input,
-                        $"output/{Path.GetFileName(input)}",
-                        compressArgs[1] * 100
+                        compressType, input, $"output/{Path.GetFileName(input)}", compressLevel * 100
                     );
                 }
                 else if (encrypt)
