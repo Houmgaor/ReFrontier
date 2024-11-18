@@ -751,13 +751,13 @@ namespace FrontierDataTool
 
             // Find and modify item shop data pointer
             byte[] needle = [0x0F, 01, 01, 00, 00, 00, 00, 00, 03, 01, 01, 00, 00, 00, 00, 00];
-            int offsetData = Helpers.GetOffsetOfArray(outputArray, needle);
+            int offsetData = ByteOperations.GetOffsetOfArray(outputArray, needle);
             if (offsetData != -1)
             {
                 Console.WriteLine($"Found shop inventory to modify at 0x{offsetData:X8}.");
                 byte[] offsetArray = BitConverter.GetBytes(offsetData);
                 offsetArray.Reverse();
-                int offsetPointer = Helpers.GetOffsetOfArray(outputArray, offsetArray);
+                int offsetPointer = ByteOperations.GetOffsetOfArray(outputArray, offsetArray);
                 if (offsetPointer != -1)
                 {
                     Console.WriteLine($"Found shop pointer at 0x{offsetPointer:X8}.");
@@ -771,7 +771,7 @@ namespace FrontierDataTool
 
             // Find and modify Hunter Pearl Skill unlocks
             needle = [01, 00, 01, 00, 00, 00, 00, 00, 0x25, 00, 0x25, 00, 0x25, 00, 0x25, 00, 0x25, 00, 0x25, 00, 0x25, 00];
-            offsetData = Helpers.GetOffsetOfArray(outputArray, needle);
+            offsetData = ByteOperations.GetOffsetOfArray(outputArray, needle);
             if (offsetData != -1)
             {
                 Console.WriteLine($"Found hunter pearl skill data to modify at 0x{offsetData:X8}.");
@@ -795,7 +795,7 @@ namespace FrontierDataTool
             int off = brInput.ReadInt32();
             long pos = brInput.BaseStream.Position;
             brInput.BaseStream.Seek(off, SeekOrigin.Begin);
-            string str = Helpers.ReadNullterminatedString(brInput, Encoding.GetEncoding("shift-jis")).Replace("\n", "<NL>");
+            string str = FileOperations.ReadNullterminatedString(brInput, Encoding.GetEncoding("shift-jis")).Replace("\n", "<NL>");
             brInput.BaseStream.Seek(pos, SeekOrigin.Begin);
             return str;
         }

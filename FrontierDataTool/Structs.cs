@@ -1,7 +1,14 @@
 ﻿namespace FrontierDataTool
 {
+    /// <summary>
+    /// Structure defining game data.
+    /// </summary>
     public class Structs
     {
+
+        /// <summary>
+        /// All quest data.
+        /// </summary>
         public class QuestData
         {
             public string Title { get; set; }
@@ -51,6 +58,9 @@
             public int SubBGRP { get; set; }
         }
 
+        /// <summary>
+        /// Types of quests. 
+        /// </summary>
         public enum QuestTypes
         {
             None = 0,
@@ -63,6 +73,9 @@
 
         }
 
+        /// <summary>
+        /// Armor data.
+        /// </summary>
         public class ArmorDataEntry
         {
             public string EquipClass { get; set; }
@@ -128,6 +141,9 @@
             public short Unk19 { get; set; }
         }
 
+        /// <summary>
+        /// Melee weapon data.
+        /// </summary>
         public class MeleeWeaponEntry
         {
             public string Name { get; set; }
@@ -162,6 +178,9 @@
             public int Unk17 { get; set; }
         }
 
+        /// <summary>
+        /// Ranged weapon data.
+        /// </summary>
         public class RangedWeaponEntry
         {
             public string Name { get; set; }

@@ -31,11 +31,11 @@ namespace ReFrontier
         /// <exception cref="Exception">For wrong compression format.</exception>
         static void Main(string[] args)
         {
-            var parsedArgs = Helpers.ParseArguments(args);
+            var parsedArgs = ArgumentsParser.ParseArguments(args);
 
             var assembly = Assembly.GetExecutingAssembly();
             var fileVersionAttribute = assembly.GetCustomAttribute<AssemblyFileVersionAttribute>();
-            Helpers.Print(
+            ArgumentsParser.Print(
                 $"ReFrontier v{fileVersionAttribute.Version} - " + 
                 "A tool for editing Monster Hunter Frontier files, by MHVuze",
                 false
@@ -45,7 +45,7 @@ namespace ReFrontier
             // Display help
             if (args.Length < 1 || argKeys.Contains("--help"))
             {
-                Helpers.Print(
+                ArgumentsParser.Print(
                     "Usage: ReFrontier <file> [options]\n" +
                     "\nUnpacking Options\n" +
                     "===================\n\n" + 
@@ -243,8 +243,8 @@ namespace ReFrontier
                     byte[] bufferMeta = File.ReadAllBytes($"{input}.meta");
                     buffer = Crypto.EncodeEcd(buffer, bufferMeta);
                     File.WriteAllBytes(input, buffer);
-                    Helpers.Print($"File encrypted to {input}.", false);
-                    Helpers.GetUpdateEntry(input);
+                    ArgumentsParser.Print($"File encrypted to {input}.", false);
+                    FileOperations.GetUpdateEntry(input);
                 }
             }
         }
@@ -255,7 +255,7 @@ namespace ReFrontier
         /// <param name="input">File path</param>
         static void ProcessFile(string input)
         {
-            Helpers.Print($"Processing {input}", false);
+            ArgumentsParser.Print($"Processing {input}", false);
 
             // Read file to memory
             MemoryStream msInput = new(File.ReadAllBytes(input));
@@ -290,7 +290,7 @@ namespace ReFrontier
                 Console.WriteLine("ECD Header detected.");
                 if (noDecryption) 
                 {
-                    Helpers.Print("Not decrypting due to flag.", false);
+                    ArgumentsParser.Print("Not decrypting due to flag.", false);
                     return;
                 }
                 byte[] buffer = File.ReadAllBytes(input);
@@ -390,7 +390,7 @@ namespace ReFrontier
 
                 //Process All Successive Levels
                 ProcessMultipleLevels(
-                    Helpers.GetFiles(directory, patterns, SearchOption.TopDirectoryOnly)
+                    FileOperations.GetFiles(directory, patterns, SearchOption.TopDirectoryOnly)
                 );
             }
         }

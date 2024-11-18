@@ -61,7 +61,7 @@ namespace ReFrontier
                         offset += fileData.Length;
                     }
                 }
-                Helpers.GetUpdateEntry(fileName);
+                FileOperations.GetUpdateEntry(fileName);
             }
             // MHA; this doesn't do file data padding for now, but seems the game works just fine without it
             else if (logContent[0] == "MHA")
@@ -282,7 +282,7 @@ namespace ReFrontier
             start = DateTime.Now;
             encoder.ProcessOnEncode(buffer, fsot, level, null);
             finnish = DateTime.Now;
-            Helpers.Print(
+            ArgumentsParser.Print(
                 $"File compressed using type {atype} (level {level / 100}): " + 
                 $"{fsot.Length} bytes ({1 - (decimal)fsot.Length / insize:P} saved) in {finnish - start:%m\\:ss\\.ff}",
                 false

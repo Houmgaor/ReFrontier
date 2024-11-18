@@ -13,6 +13,9 @@ using ReFrontier;
 
 namespace FrontierTextTool
 {
+    /// <summary>
+    /// Utility program for text data edition.
+    /// </summary>
     class Program
     {
         static bool verbose = false;
@@ -26,7 +29,7 @@ namespace FrontierTextTool
         /// <param name="args">Arguments passed</param>
         static void Main(string[] args)
         {
-            var parsedArgs = Helpers.ParseArguments(args);
+            var parsedArgs = ArgumentsParser.ParseArguments(args);
             if (parsedArgs.Count < 2) {
                 throw new ArgumentException($"Too few arguments. {parsedArgs.Count}, need at least 2 arguments.");
             }
@@ -355,7 +358,7 @@ namespace FrontierTextTool
             File.WriteAllBytes(outputFile, buffer);
 
             // Update list
-            string updEntry = Helpers.GetUpdateEntry(outputFile);
+            string updEntry = FileOperations.GetUpdateEntry(outputFile);
             UpdateList(updEntry);
         }
 
@@ -421,7 +424,7 @@ namespace FrontierTextTool
                     brInput.BaseStream.Seek(strPos, SeekOrigin.Begin);
                 }
 
-                string str = Helpers.ReadNullterminatedString(brInput, Encoding.GetEncoding("shift-jis")).
+                string str = FileOperations.ReadNullterminatedString(brInput, Encoding.GetEncoding("shift-jis")).
                     Replace("\t", "<TAB>"). // Replace tab
                     Replace("\r\n", "<CLINE>"). // Replace carriage return
                     Replace("\n", "<NLINE>"); // Replace new line

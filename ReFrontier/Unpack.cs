@@ -103,8 +103,8 @@ namespace ReFrontier
                 byte[] header = new byte[4];
                 Array.Copy(entryData, header, 4);
                 uint headerInt = BitConverter.ToUInt32(header, 0);
-                string extension = Enum.GetName(typeof(Helpers.Extensions), headerInt);
-                extension ??= Helpers.CheckForMagic(headerInt, entryData);
+                string extension = Enum.GetName(typeof(ByteOperations.Extensions), headerInt);
+                extension ??= ByteOperations.CheckForMagic(headerInt, entryData);
                 extension ??= "bin";
 
                 // Print info
@@ -164,7 +164,7 @@ namespace ReFrontier
 
                 // Get name
                 brInput.BaseStream.Seek(pointerEntryNamesBlock + stringOffset, SeekOrigin.Begin);
-                string entryName = Helpers.ReadNullterminatedString(brInput, Encoding.UTF8);
+                string entryName = FileOperations.ReadNullterminatedString(brInput, Encoding.UTF8);
                 if (createLog)
                     logOutput.WriteLine(entryName + "," + fileId);
 
@@ -218,8 +218,8 @@ namespace ReFrontier
                 byte[] header = new byte[4];
                 Array.Copy(outBuffer, header, 4);
                 uint headerInt = BitConverter.ToUInt32(header, 0);                    
-                string extension = Enum.GetName(typeof(Helpers.Extensions), headerInt);
-                extension ??= Helpers.CheckForMagic(headerInt, outBuffer);
+                string extension = Enum.GetName(typeof(ByteOperations.Extensions), headerInt);
+                extension ??= ByteOperations.CheckForMagic(headerInt, outBuffer);
                 extension ??= "bin";
 
                 FileInfo fileInfo = new(input);
@@ -268,8 +268,8 @@ namespace ReFrontier
                 byte[] header = new byte[4];
                 Array.Copy(data, header, 4);
                 uint headerInt = BitConverter.ToUInt32(header, 0);
-                string extension = Enum.GetName(typeof(Helpers.Extensions), headerInt);
-                extension ??= Helpers.CheckForMagic(headerInt, data);
+                string extension = Enum.GetName(typeof(ByteOperations.Extensions), headerInt);
+                extension ??= ByteOperations.CheckForMagic(headerInt, data);
                 extension ??= "bin";
 
                 // Print info
@@ -315,8 +315,8 @@ namespace ReFrontier
                 byte[] header = new byte[4];
                 Array.Copy(data, header, 4);
                 uint headerInt = BitConverter.ToUInt32(header, 0);
-                string extension = Enum.GetName(typeof(Helpers.Extensions), headerInt);
-                extension ??= Helpers.CheckForMagic(headerInt, data);
+                string extension = Enum.GetName(typeof(ByteOperations.Extensions), headerInt);
+                extension ??= ByteOperations.CheckForMagic(headerInt, data);
                 extension ??= "bin";
 
                 // Print info
@@ -333,8 +333,10 @@ namespace ReFrontier
 
             // Clean up
             logOutput.Close();
-            if (!createLog) File.Delete($"{outputDir}/{Path.GetFileNameWithoutExtension(input)}.log");
-            if (cleanUp) File.Delete(input);
+            if (!createLog)
+                File.Delete($"{outputDir}/{Path.GetFileNameWithoutExtension(input)}.log");
+            if (cleanUp)
+                File.Delete(input);
         }
 
         /// <summary>
@@ -358,7 +360,7 @@ namespace ReFrontier
 
             for (int i = 0; i < stringCount; i++)
             {
-                string str = Helpers.ReadNullterminatedString(brInput, Encoding.GetEncoding("shift-jis"));
+                string str = FileOperations.ReadNullterminatedString(brInput, Encoding.GetEncoding("shift-jis"));
                 txtOutput.WriteLine(str.Replace("\n", "<NEWLINE>"));
             }
 
