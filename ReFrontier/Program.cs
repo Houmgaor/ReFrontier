@@ -192,7 +192,7 @@ namespace ReFrontier
                 Console.WriteLine("Done.");
             }
             else {
-                throw new FileNotFoundException("Input file does not exist.");
+                throw new FileNotFoundException($"{input} do not exist.");
             }
             if (!autoClose)
                 Console.Read();
