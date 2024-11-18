@@ -35,12 +35,19 @@ namespace ReFrontier
 
             var assembly = Assembly.GetExecutingAssembly();
             var fileVersionAttribute = assembly.GetCustomAttribute<AssemblyFileVersionAttribute>();
+            var argKeys = parsedArgs.Keys;
+
+            if (argKeys.Contains("--version"))
+            {
+                Console.WriteLine("v" + fileVersionAttribute.Version);
+                return;
+            }
+
             ArgumentsParser.Print(
                 $"ReFrontier v{fileVersionAttribute.Version} - " + 
                 "A tool for editing Monster Hunter Frontier files, by MHVuze",
                 false
             );
-            var argKeys = parsedArgs.Keys;
 
             // Display help
             if (args.Length < 1 || argKeys.Contains("--help"))
@@ -63,9 +70,10 @@ namespace ReFrontier
                     "--compress=[type],[level]: Pack file with JPK [type] (int) at compression [level]\n" +
                     "--encrypt: Encrypt input file with ECD algorithm\n" +
                     "\nGeneral Options\n" +
-                    "=================\n\n" + 
+                    "=================\n\n" +
+                    "--version: Show the current program version\n" + 
                     "--close: Close window after finishing process\n" +
-                    "--help: Print this window and leave.\n\n" +
+                    "--help: Print this window and leave\n\n" +
                     "You can use all arguments with a single dash \"-\" " +
                     "as in the original ReFrontier, but this is deprecated.",
                     false

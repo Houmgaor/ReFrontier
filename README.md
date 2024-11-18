@@ -34,26 +34,21 @@ or open a terminal at its location.
 For a simple use case:
 
 1. Copy "mhfdat.bin" (or any file) from the `dat/` folder of MHFrontier.
+Put in the the same folder as the executable.
 2. Decrypt and decompress the file with
 
     ```shell
-    ./ReFrontier.exe output/mhfdat.bin --log
+    ./ReFrontier.exe mhfdat.bin --log
     ```
 
 3. Edit to you convenience (view tools in [see also](#see-also)).
-4. Encrypt back
+4. Compress and encrypt
 
     ```shell
-    ./ReFrontier.exe output/mhfdat.bin --compress=4,80
+    ./ReFrontier.exe mhfdat.bin --compress=4,80 --encrypt
     ```
 
-5. Compress
-
-    ```shell
-    ./ReFrontier.exe output/mhfdat.bin --encrypt
-    ```
-
-6. Replace mhfdat.bin by the new file.
+5. Replace mhfdat.bin by the new file.
 
 To get help, use:
 
@@ -79,7 +74,7 @@ If you want to reuse the file in the game, don't forget to add ``--log`` to gene
 If you file is named "mhfdat.bin", the meta file will be mhfdat.bin.meta.
 
 ```commandline
-./ReFrontier.exe mhfdat.bin --log  # Decrypt mhfdat.bin, create mhfdat.bin.meta, then decompress mhfdat.bin
+./ReFrontier.exe mhfdat.bin --log --decryptOnly  # Decrypt mhfdat.bin, create mhfdat.bin.meta, do not decompress mhfdat.bin
 ```
 
 The decryption options are:
@@ -93,6 +88,12 @@ The decryption options are:
 ### Decompress
 
 Decompressing a file *replaces* the old file by its new format, don't forget to backup important data.
+You can recognized a compressed file by its "JKR" header (in the file first bytes).
+To decompress such a file:
+
+```commandline
+./ReFrontier.exe mhfdat.bin  # If mhdat.bin is already decrypted, decompress it
+```
 
 The unpacking options are:
 
@@ -151,6 +152,8 @@ It encrypts the input file with the ECD algorithm.
 
 It will implicitely look for mhfdat.bin.meta file in the same folder, see the [decryption](#decrypt) section.
 The file can now be used in Frontier.
+
+You can compress and encrypt a file in the same command, just add both arguments.
 
 ## Build
 
