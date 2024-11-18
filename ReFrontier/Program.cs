@@ -7,6 +7,9 @@ using LibReFrontier;
 
 namespace ReFrontier
 {
+    /// <summary>
+    /// Main program for ReFrontier to pack and depack game files.
+    /// </summary>
     internal class Program
     {
         private static bool _createLog = false;
@@ -23,6 +26,8 @@ namespace ReFrontier
         /// Main interface to start the program.
         /// </summary>
         /// <param name="args">Input arguments from the CLI.</param>
+        /// <exception cref="FileNotFoundException">The input does not exist.</exception>
+        /// <exception cref="ArgumentException">Compression argument are ill-formed.</exception>
         /// <exception cref="Exception">For wrong compression format.</exception>
         private static void Main(string[] args)
         {
@@ -192,6 +197,8 @@ namespace ReFrontier
         /// Start the input processing.
         /// </summary>
         /// <param name="input">File or directory path.</param>
+        /// <param name="encrypt">True if input file should be encrypted.</param>
+        /// <param name="repack">True if input directory should be packed as a file.</param>
         /// <param name="compressType">Compression type, -1 means no compression.</param>
         /// <param name="compressLevel">Compression level</param>
         /// <exception cref="InvalidOperationException">Thrown if the arguments are not coherent with the input.</exception>
@@ -212,7 +219,7 @@ namespace ReFrontier
                     string[] inputFiles = Directory.GetFiles(
                         input, "*.*", SearchOption.AllDirectories
                     );
-                    ProcessMultipleLevels(inputFiles, _recursive);
+                    ProcessMultipleLevels(inputFiles, _recursive, _noDecryption);
                 }
             }
             else
@@ -234,7 +241,7 @@ namespace ReFrontier
                 {
                     // Try to depile the file as multiple files
                     string[] inputFiles = [input];
-                    ProcessMultipleLevels(inputFiles, _recursive);
+                    ProcessMultipleLevels(inputFiles, _recursive, _noDecryption);
                 }
             }
         }
@@ -243,8 +250,10 @@ namespace ReFrontier
         /// <summary>
         /// Process a file
         /// </summary>
-        /// <param name="input">File path</param>
-        private static void ProcessFile(string input)
+        /// <param name="input">Input file path.</param>
+        /// <param name="noDecryption">Do not decrypt ECD files.</param>
+        /// <param name="decryptOnly">Decrypt file without decompressing..</param>
+        private static void ProcessFile(string input, bool noDecryption, bool decryptOnly)
         {
             ArgumentsParser.Print($"Processing {input}", false);
 
@@ -279,7 +288,7 @@ namespace ReFrontier
             else if (fileMagic == 0x1A646365)
             {
                 Console.WriteLine("ECD Header detected.");
-                if (_noDecryption) 
+                if (noDecryption) 
                 {
                     ArgumentsParser.Print("Not decrypting due to flag.", false);
                     return;
@@ -339,8 +348,8 @@ namespace ReFrontier
 
             Console.WriteLine("==============================");
             // Decompress file if it was an ECD (encypted)
-            if (fileMagic == 0x1A646365 && !_decryptOnly) {
-                ProcessFile(input);
+            if (fileMagic == 0x1A646365 && !decryptOnly) {
+                ProcessFile(input, noDecryption, decryptOnly);
             }
         }
 
@@ -349,14 +358,16 @@ namespace ReFrontier
         /// 
         /// Try to use each file is considered a container of multiple files.
         /// </summary>
-        /// <param name="inputFiles">Files to process</param>
-        private static void ProcessMultipleLevels(string[] inputFiles, bool recursive)
+        /// <param name="inputFiles">Files to process.</param>
+        /// <param name="recursive">True to process newly created files recursively.</param>
+        /// <param name="noDecryption">Do not decrypt ECD files.</param>
+        private static void ProcessMultipleLevels(string[] inputFiles, bool recursive, bool noDecryption)
         {
             string[] patterns = ["*.bin", "*.jkr", "*.ftxt", "*.snd"];
             // CurrentLevel        
             foreach (string inputFile in inputFiles)
             {
-                ProcessFile(inputFile);
+                ProcessFile(inputFile, noDecryption, _decryptOnly);
 
                 // Disable stage processing files unpacked from parent
                 if (_stageContainer == true)
@@ -376,7 +387,8 @@ namespace ReFrontier
                 //Process All Successive Levels
                 ProcessMultipleLevels(
                     FileOperations.GetFiles(directory, patterns, SearchOption.TopDirectoryOnly),
-                    recursive
+                    recursive,
+                    noDecryption
                 );
             }
         }
