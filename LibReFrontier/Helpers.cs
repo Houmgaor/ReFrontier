@@ -61,22 +61,25 @@ namespace LibReFrontier
         }
 
         /// <summary>
-        /// Multi-filter GetFiles https://stackoverflow.com/a/3754470/5343630
+        /// Find files corresponding to multiple filters. 
+        /// 
+        /// Source: https://stackoverflow.com/a/3754470/5343630
         /// </summary>
-        public static class MyDirectory
+        /// <param name="path">Directory to search into.</param>
+        /// <param name="searchPatterns">Patterns to search for.</param>
+        /// <param name="searchOption">Options</param>
+        /// <returns>All files found.</returns>
+        public static string[] GetFiles(
+            string path,
+            string[] searchPatterns,
+            SearchOption searchOption = SearchOption.TopDirectoryOnly
+        )
         {
-            public static string[] GetFiles(
-                string path,
-                string[] searchPatterns,
-                SearchOption searchOption = SearchOption.TopDirectoryOnly
-            )
-            {
-                return searchPatterns.AsParallel()
-                       .SelectMany(searchPattern => 
-                       Directory.EnumerateFiles(path, searchPattern, searchOption)
-                        )
-                        .ToArray();
-            }
+            return searchPatterns.AsParallel()
+                    .SelectMany(searchPattern => 
+                    Directory.EnumerateFiles(path, searchPattern, searchOption)
+                    )
+                    .ToArray();
         }
 
         /// <summary>
@@ -98,18 +101,6 @@ namespace LibReFrontier
             }
         }
 
-
-        /// <summary>
-        /// Compute CRC32 for byte array.
-        /// 
-        /// It is just to remove dependency from FrontierTextTool
-        /// </summary>
-        /// <param name="array">Array to hash</param>
-        /// <returns>CRC32 bits hash</returns>
-        public static uint GetCrc32(byte[] array)
-        {
-            return Crc32Algorithm.Compute(array);
-        }
 
         /// <summary>
         /// Get the update entry format for MHFUP_00.DAT.

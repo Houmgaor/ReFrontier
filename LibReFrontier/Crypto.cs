@@ -23,7 +23,11 @@ namespace LibReFrontier
             0x00, 0x00, 0x00, 0x01
         ];
 
-        // from addr 0x1025F4E0
+        /// <summary>
+        /// Buffer for the EXF file format.
+        /// 
+        /// Data from address 0x1025F4E0
+        /// </summary>
         static readonly byte[] rndBufExf = [
             0x4A, 0x4B, 0x52, 0x2E, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x0D,
             0xCD, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x0D, 0xCD, 0x00, 0x00,
@@ -150,6 +154,11 @@ namespace LibReFrontier
             return outputBuffer;
         }
 
+        /// <summary>
+        /// Create the key fom the EXF file format.
+        /// </summary>
+        /// <param name="header">First 16 bytes of the EXF file.</param>
+        /// <returns>Buffer of keys to use.</returns>
         static byte[] CreateXorkeyExf(byte[] header)
         {
             byte[] keyBuffer = new byte[16];
@@ -166,6 +175,10 @@ namespace LibReFrontier
             return keyBuffer;
         }
 
+        /// <summary>
+        /// Decode an EXF file.
+        /// </summary>
+        /// <param name="buffer">Buffer of data from the file.</param>
         public static void DecodeExf(byte[] buffer)
         {
             byte[] header = new byte[16];
@@ -190,6 +203,19 @@ namespace LibReFrontier
                     buffer[i] = (byte)r26;
                 }
             }
+        }
+
+
+        /// <summary>
+        /// Compute CRC32 for byte array.
+        /// 
+        /// It is just to remove dependency from FrontierTextTool
+        /// </summary>
+        /// <param name="array">Array to hash</param>
+        /// <returns>CRC32 bits hash</returns>
+        public static uint GetCrc32(byte[] array)
+        {
+            return Crc32Algorithm.Compute(array);
         }
     }
 }

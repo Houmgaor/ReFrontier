@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Reflection;
 using System.Text.RegularExpressions;
 
 using LibReFrontier;
@@ -30,10 +31,13 @@ namespace ReFrontier
         /// <exception cref="Exception">For wrong compression format.</exception>
         static void Main(string[] args)
         {
-            var parsedArgs = Helpers.ParseArguments(args); 
+            var parsedArgs = Helpers.ParseArguments(args);
+
+            var assembly = Assembly.GetExecutingAssembly();
+            var fileVersionAttribute = assembly.GetCustomAttribute<AssemblyFileVersionAttribute>();
             Helpers.Print(
-                "ReFrontier by MHVuze - " + 
-                "A tool for editing Monster Hunter Frontier files", 
+                $"ReFrontier v{fileVersionAttribute.Version} - " + 
+                "A tool for editing Monster Hunter Frontier files, by MHVuze",
                 false
             );
             var argKeys = parsedArgs.Keys;
@@ -386,7 +390,7 @@ namespace ReFrontier
 
                 //Process All Successive Levels
                 ProcessMultipleLevels(
-                    Helpers.MyDirectory.GetFiles(directory, patterns, SearchOption.TopDirectoryOnly)
+                    Helpers.GetFiles(directory, patterns, SearchOption.TopDirectoryOnly)
                 );
             }
         }

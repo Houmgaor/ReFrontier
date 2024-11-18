@@ -15,40 +15,38 @@ namespace FrontierDataTool
     class Program
     {
         // Define offset pointers
+
         // --- mhfdat.bin ---
         // Strings
+        // Start offset armor strings
         static readonly int soStringHead = 0x64, soStringBody = 0x68, soStringArm = 0x6C, soStringWaist = 0x70, soStringLeg = 0x74;
 
-        static readonly int eoStringHead = 0x60; 
-        static readonly int eoStringBody = 0x64; 
-        static readonly int eoStringArm = 0x68; 
-        static readonly int eoStringWaist = 0x6C; 
-        static readonly int eoStringLeg = 0x70;
+        // End offsets armor strings
+        static readonly int eoStringHead = 0x60, eoStringBody = 0x64, eoStringArm = 0x68, eoStringWaist = 0x6C, eoStringLeg = 0x70;
 
+        // Start offsets weapons string
         static readonly int soStringRanged = 0x84, soStringMelee = 0x88;
 
+        // End offsets weapons strings
         // static readonly int eoStringRanged = 0x88, eoStringMelee = 0x174;
         
-        static readonly int soStringItem = 0x100; 
-        static readonly int soStringItemDesc = 0x12C;
-        static readonly int eoStringItem = 0xFC; 
-        static readonly int eoStringItemDesc = 0x100;
+        // Start offsets items names, descriptions
+        static readonly int soStringItem = 0x100, soStringItemDesc = 0x12C;
+
+        // End offsets items names, descriptions
+        static readonly int eoStringItem = 0xFC, eoStringItemDesc = 0x100;
 
         // Armor
-        static readonly int soHead = 0x50; 
-        static readonly int soBody = 0x54; 
-        static readonly int soArm = 0x58; 
-        static readonly int soWaist = 0x5C; 
-        static readonly int soLeg = 0x60;
+        // Start offsets armors data
+        static readonly int soHead = 0x50, soBody = 0x54, soArm = 0x58, soWaist = 0x5C, soLeg = 0x60;
 
-        static readonly int eoHead = 0xE8; 
-        static readonly int eoBody = 0x50; 
-        static readonly int eoArm = 0x54; 
-        static readonly int eoWaist = 0x58; 
-        static readonly int eoLeg = 0x5C;
+        // End offsets armors data
+        static readonly int eoHead = 0xE8, eoBody = 0x50, eoArm = 0x54, eoWaist = 0x58, eoLeg = 0x5C;
 
         // Weapons
+        // Start offsets weapons data
         static readonly int soRanged = 0x80, soMelee = 0x7C;
+        // End offsets weapons data
         static readonly int eoRanged = 0x7C, eoMelee = 0x90;
 
 
@@ -59,6 +57,9 @@ namespace FrontierDataTool
         static readonly int eoStringSkillPt = 0xA1C, eoStringSkillActivate = 0xBC0, eoStringZSkill = 0xFB0, eoStringSkillDesc = 0xc0;
 
         // --- mhfinf.pac ---
+        /// <summary>
+        /// Quest data info.
+        /// </summary>
         public static List<KeyValuePair<int, int>> offsetInfQuestData =
         [
             new KeyValuePair<int, int>(0x6bd60, 95),
@@ -77,6 +78,9 @@ namespace FrontierDataTool
             new KeyValuePair<int, int>(0x161220, 20), // Incorrect
         ];
 
+        /// <summary>
+        /// Pointers for armors data
+        /// </summary>
         public static List<KeyValuePair<int, int>> dataPointersArmor =
         [
             new KeyValuePair<int, int>(soHead, eoHead),
@@ -86,6 +90,9 @@ namespace FrontierDataTool
             new KeyValuePair<int, int>(soLeg, eoLeg)
         ];
 
+        /// <summary>
+        /// Pointers for armors names.
+        /// </summary>
         public static List<KeyValuePair<int, int>> stringPointersArmor =
         [
             new KeyValuePair<int, int>(soStringHead, eoStringHead),
@@ -99,20 +106,37 @@ namespace FrontierDataTool
         public static string[] ailmentIds = ["なし", "毒", "麻痺", "睡眠", "爆破"];
         public static string[] wClassIds = ["大剣", "ヘビィボウガン", "ハンマー", "ランス", "片手剣", "ライトボウガン", "双剣", "太刀", "狩猟笛", "ガンランス", "弓", "穿龍棍", "スラッシュアックスＦ", "マグネットスパイク"];
         public static string[] aClassIds = ["頭", "胴", "腕", "腰", "脚"];
-        public enum EqType { 通常 = 0, ＳＰ = 1, 剛種 = 2, 進化 = 4, ＨＣ = 8 };
 
+        // Unused: public enum EqType { 通常 = 0, ＳＰ = 1, 剛種 = 2, 進化 = 4, ＨＣ = 8 };
+
+        /// <summary>
+        /// Get weapon and armor data from game files.
+        /// </summary>
+        /// <param name="args">Input argument from console.</param>
+        /// <exception cref="ArgumentException">For wring arguments entered.</exception>
         static void Main(string[] args)
         {
             if (args.Length < 2) {
-                Console.WriteLine("Too few arguments.");
-                return;
+                throw new ArgumentException($"{args.Length} arguments provided, 2 required.");
             }
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-            if (args[0] == "dump")
-                DumpData(args[1], args[2], args[3], args[4]);  // suffix, mhfpac.bin, mhfdat.bin, mhfinf.bin
-            if (args[0] == "modshop")
-                ModShop(args[1]);                              // mhfdat.bin
+            switch (args[0]) {
+                case "dump":
+                    if (args.Length < 5) {
+                        throw new ArgumentException("You must provide 5 positional arguments with 'dump'.");
+                    } 
+                    DumpData(args[1], args[2], args[3], args[4]);  // suffix, mhfpac.bin, mhfdat.bin, mhfinf.bin
+                    break;
+                case "modshop":
+                    // mhfdat.bin
+                    ModShop(args[1]);
+                    break;
+                default:
+                    throw new ArgumentException($"Argument {args[0]} is unknown.");
+
+            }
+
             Console.WriteLine("Done");
             Console.Read();
         }
@@ -291,68 +315,68 @@ namespace FrontierDataTool
                 {
                     Structs.ArmorDataEntry entry = new()
                     {
-                        equipClass = aClassIds[i],
-                        modelIdMale = brInput.ReadInt16(),
-                        modelIdFemale = brInput.ReadInt16()
+                        EquipClass = aClassIds[i],
+                        ModelIdMale = brInput.ReadInt16(),
+                        ModelIdFemale = brInput.ReadInt16()
                     };
                     byte bitfield = brInput.ReadByte();
-                    entry.isMaleEquip = (bitfield & (1 << 1 - 1)) != 0;
-                    entry.isFemaleEquip = (bitfield & (1 << 2 - 1)) != 0;
-                    entry.isBladeEquip = (bitfield & (1 << 3 - 1)) != 0;
-                    entry.isGunnerEquip = (bitfield & (1 << 4 - 1)) != 0;
-                    entry.bool1 = (bitfield & (1 << 5 - 1)) != 0;
-                    entry.isSPEquip = (bitfield & (1 << 6 - 1)) != 0;
-                    entry.bool3 = (bitfield & (1 << 7 - 1)) != 0;
-                    entry.bool4 = (bitfield & (1 << 8 - 1)) != 0;
-                    entry.rarity = brInput.ReadByte();
-                    entry.maxLevel = brInput.ReadByte();
-                    entry.unk1_1 = brInput.ReadByte();
-                    entry.unk1_2 = brInput.ReadByte();
-                    entry.unk1_3 = brInput.ReadByte();
-                    entry.unk1_4 = brInput.ReadByte();
-                    entry.unk2 = brInput.ReadByte();
-                    entry.zennyCost = brInput.ReadInt32();
-                    entry.unk3 = brInput.ReadInt16();
-                    entry.baseDefense = brInput.ReadInt16();
-                    entry.fireRes = brInput.ReadSByte();
-                    entry.waterRes = brInput.ReadSByte();
-                    entry.thunderRes = brInput.ReadSByte();
-                    entry.dragonRes = brInput.ReadSByte();
-                    entry.iceRes = brInput.ReadSByte();
-                    entry.unk3_1 = brInput.ReadInt16();
-                    entry.baseSlots = brInput.ReadByte();
-                    entry.maxSlots = brInput.ReadByte();
-                    entry.sthEventCrown = brInput.ReadByte();
-                    entry.unk5 = brInput.ReadByte();
-                    entry.unk6 = brInput.ReadByte();
-                    entry.unk7_1 = brInput.ReadByte();
-                    entry.unk7_2 = brInput.ReadByte();
-                    entry.unk7_3 = brInput.ReadByte();
-                    entry.unk7_4 = brInput.ReadByte();
-                    entry.unk8_1 = brInput.ReadByte();
-                    entry.unk8_2 = brInput.ReadByte();
-                    entry.unk8_3 = brInput.ReadByte();
-                    entry.unk8_4 = brInput.ReadByte();
-                    entry.unk10 = brInput.ReadInt16();
-                    entry.skillId1 = skillId[brInput.ReadByte()].Value;
-                    entry.skillPts1 = brInput.ReadSByte();
-                    entry.skillId2 = skillId[brInput.ReadByte()].Value;
-                    entry.skillPts2 = brInput.ReadSByte();
-                    entry.skillId3 = skillId[brInput.ReadByte()].Value;
-                    entry.skillPts3 = brInput.ReadSByte();
-                    entry.skillId4 = skillId[brInput.ReadByte()].Value;
-                    entry.skillPts4 = brInput.ReadSByte();
-                    entry.skillId5 = skillId[brInput.ReadByte()].Value;
-                    entry.skillPts5 = brInput.ReadSByte();
-                    entry.sthHiden = brInput.ReadInt32();
-                    entry.unk12 = brInput.ReadInt32();
-                    entry.unk13 = brInput.ReadByte();
-                    entry.unk14 = brInput.ReadByte();
-                    entry.unk15 = brInput.ReadByte();
-                    entry.unk16 = brInput.ReadByte();
-                    entry.unk17 = brInput.ReadInt32();
-                    entry.unk18 = brInput.ReadInt16();
-                    entry.unk19 = brInput.ReadInt16();
+                    entry.IsMaleEquip = (bitfield & (1 << 1 - 1)) != 0;
+                    entry.IsFemaleEquip = (bitfield & (1 << 2 - 1)) != 0;
+                    entry.IsBladeEquip = (bitfield & (1 << 3 - 1)) != 0;
+                    entry.IsGunnerEquip = (bitfield & (1 << 4 - 1)) != 0;
+                    entry.Bool1 = (bitfield & (1 << 5 - 1)) != 0;
+                    entry.IsSPEquip = (bitfield & (1 << 6 - 1)) != 0;
+                    entry.Bool3 = (bitfield & (1 << 7 - 1)) != 0;
+                    entry.Bool4 = (bitfield & (1 << 8 - 1)) != 0;
+                    entry.Rarity = brInput.ReadByte();
+                    entry.MaxLevel = brInput.ReadByte();
+                    entry.Unk1_1 = brInput.ReadByte();
+                    entry.Unk1_2 = brInput.ReadByte();
+                    entry.Unk1_3 = brInput.ReadByte();
+                    entry.Unk1_4 = brInput.ReadByte();
+                    entry.Unk2 = brInput.ReadByte();
+                    entry.ZennyCost = brInput.ReadInt32();
+                    entry.Unk3 = brInput.ReadInt16();
+                    entry.BaseDefense = brInput.ReadInt16();
+                    entry.FireRes = brInput.ReadSByte();
+                    entry.WaterRes = brInput.ReadSByte();
+                    entry.ThunderRes = brInput.ReadSByte();
+                    entry.DragonRes = brInput.ReadSByte();
+                    entry.IceRes = brInput.ReadSByte();
+                    entry.Unk3_1 = brInput.ReadInt16();
+                    entry.BaseSlots = brInput.ReadByte();
+                    entry.MaxSlots = brInput.ReadByte();
+                    entry.SthEventCrown = brInput.ReadByte();
+                    entry.Unk5 = brInput.ReadByte();
+                    entry.Unk6 = brInput.ReadByte();
+                    entry.Unk7_1 = brInput.ReadByte();
+                    entry.Unk7_2 = brInput.ReadByte();
+                    entry.Unk7_3 = brInput.ReadByte();
+                    entry.Unk7_4 = brInput.ReadByte();
+                    entry.Unk8_1 = brInput.ReadByte();
+                    entry.Unk8_2 = brInput.ReadByte();
+                    entry.Unk8_3 = brInput.ReadByte();
+                    entry.Unk8_4 = brInput.ReadByte();
+                    entry.Unk10 = brInput.ReadInt16();
+                    entry.SkillId1 = skillId[brInput.ReadByte()].Value;
+                    entry.SkillPts1 = brInput.ReadSByte();
+                    entry.SkillId2 = skillId[brInput.ReadByte()].Value;
+                    entry.SkillPts2 = brInput.ReadSByte();
+                    entry.SkillId3 = skillId[brInput.ReadByte()].Value;
+                    entry.SkillPts3 = brInput.ReadSByte();
+                    entry.SkillId4 = skillId[brInput.ReadByte()].Value;
+                    entry.SkillPts4 = brInput.ReadSByte();
+                    entry.SkillId5 = skillId[brInput.ReadByte()].Value;
+                    entry.SkillPts5 = brInput.ReadSByte();
+                    entry.SthHiden = brInput.ReadInt32();
+                    entry.Unk12 = brInput.ReadInt32();
+                    entry.Unk13 = brInput.ReadByte();
+                    entry.Unk14 = brInput.ReadByte();
+                    entry.Unk15 = brInput.ReadByte();
+                    entry.Unk16 = brInput.ReadByte();
+                    entry.Unk17 = brInput.ReadInt32();
+                    entry.Unk18 = brInput.ReadInt16();
+                    entry.Unk19 = brInput.ReadInt16();
 
                     armorEntries[j + currentCount] = entry;
                 }
@@ -365,7 +389,7 @@ namespace FrontierDataTool
                 for (int j = 0; j < entryCount - 1; j++)
                 {
                     string name = StringFromPointer(brInput);
-                    armorEntries[j + currentCount].name = name;
+                    armorEntries[j + currentCount].Name = name;
                 }
                 currentCount += entryCount;
             }
@@ -385,7 +409,7 @@ namespace FrontierDataTool
             textName = $"mhsx_Armor_{suffix}.txt";
             using (StreamWriter file = new(textName, false, Encoding.UTF8))
                 foreach (var entry in armorEntries)
-                    file.WriteLine("{0}", entry.name);
+                    file.WriteLine("{0}", entry.Name);
             #endregion
 
             #region WeaponData
@@ -404,36 +428,36 @@ namespace FrontierDataTool
             {
                 Structs.MeleeWeaponEntry entry = new()
                 {
-                    modelId = brInput.ReadInt16()
+                    ModelId = brInput.ReadInt16()
                 };
-                entry.modelIdData = GetModelIdData(entry.modelId);
-                entry.rarity = brInput.ReadByte();
-                entry.classId = wClassIds[brInput.ReadByte()];
-                entry.zennyCost = brInput.ReadInt32();
-                entry.sharpnessId = brInput.ReadInt16();
-                entry.rawDamage = brInput.ReadInt16();
-                entry.defense = brInput.ReadInt16();
-                entry.affinity = brInput.ReadSByte();
-                entry.elementId = elementIds[brInput.ReadByte()];
-                entry.eleDamage = brInput.ReadByte() * 10;
-                entry.ailmentId = ailmentIds[brInput.ReadByte()];
-                entry.ailDamage = brInput.ReadByte() * 10;
-                entry.slots = brInput.ReadByte();
-                entry.unk3 = brInput.ReadByte();
-                entry.unk4 = brInput.ReadByte();
-                entry.unk5 = brInput.ReadInt16();
-                entry.unk6 = brInput.ReadInt16();
-                entry.unk7 = brInput.ReadInt16();
-                entry.unk8 = brInput.ReadInt32();
-                entry.unk9 = brInput.ReadInt32();
-                entry.unk10 = brInput.ReadInt16();
-                entry.unk11 = brInput.ReadInt16();
-                entry.unk12 = brInput.ReadByte();
-                entry.unk13 = brInput.ReadByte();
-                entry.unk14 = brInput.ReadByte();
-                entry.unk15 = brInput.ReadByte();
-                entry.unk16 = brInput.ReadInt32();
-                entry.unk17 = brInput.ReadInt32();
+                entry.ModelIdData = GetModelIdData(entry.ModelId);
+                entry.Rarity = brInput.ReadByte();
+                entry.ClassId = wClassIds[brInput.ReadByte()];
+                entry.ZennyCost = brInput.ReadInt32();
+                entry.SharpnessId = brInput.ReadInt16();
+                entry.RawDamage = brInput.ReadInt16();
+                entry.Defense = brInput.ReadInt16();
+                entry.Affinity = brInput.ReadSByte();
+                entry.ElementId = elementIds[brInput.ReadByte()];
+                entry.EleDamage = brInput.ReadByte() * 10;
+                entry.AilmentId = ailmentIds[brInput.ReadByte()];
+                entry.AilDamage = brInput.ReadByte() * 10;
+                entry.Slots = brInput.ReadByte();
+                entry.Unk3 = brInput.ReadByte();
+                entry.Unk4 = brInput.ReadByte();
+                entry.Unk5 = brInput.ReadInt16();
+                entry.Unk6 = brInput.ReadInt16();
+                entry.Unk7 = brInput.ReadInt16();
+                entry.Unk8 = brInput.ReadInt32();
+                entry.Unk9 = brInput.ReadInt32();
+                entry.Unk10 = brInput.ReadInt16();
+                entry.Unk11 = brInput.ReadInt16();
+                entry.Unk12 = brInput.ReadByte();
+                entry.Unk13 = brInput.ReadByte();
+                entry.Unk14 = brInput.ReadByte();
+                entry.Unk15 = brInput.ReadByte();
+                entry.Unk16 = brInput.ReadInt32();
+                entry.Unk17 = brInput.ReadInt32();
 
                 meleeEntries[i] = entry;
             }
@@ -446,7 +470,7 @@ namespace FrontierDataTool
             for (int j = 0; j < entryCountMelee - 1; j++)
             {
                 string name = StringFromPointer(brInput);
-                meleeEntries[j].name = name;
+                meleeEntries[j].Name = name;
             }
 
             // Write csv
@@ -475,62 +499,62 @@ namespace FrontierDataTool
             {
                 Structs.RangedWeaponEntry entry = new()
                 {
-                    modelId = brInput.ReadInt16()
+                    ModelId = brInput.ReadInt16()
                 };
-                entry.modelIdData = GetModelIdData(entry.modelId);
-                entry.rarity = brInput.ReadByte();
-                entry.maxSlotsMaybe = brInput.ReadByte();
-                entry.classId = wClassIds[brInput.ReadByte()];
-                entry.unk2_1 = brInput.ReadByte();
-                entry.eqType = brInput.ReadByte().ToString(); //Enum.GetName(typeof(eqType), brInput.ReadByte());
-                entry.unk2_3 = brInput.ReadByte();
-                entry.unk3_1 = brInput.ReadByte();
-                entry.unk3_2 = brInput.ReadByte();
-                entry.unk3_3 = brInput.ReadByte();
-                entry.unk3_4 = brInput.ReadByte();
-                entry.unk4_1 = brInput.ReadByte();
-                entry.unk4_2 = brInput.ReadByte();
-                entry.unk4_3 = brInput.ReadByte();
-                entry.unk4_4 = brInput.ReadByte();
-                entry.unk5_1 = brInput.ReadByte();
-                entry.unk5_2 = brInput.ReadByte();
-                entry.unk5_3 = brInput.ReadByte();
-                entry.unk5_4 = brInput.ReadByte();
-                entry.zennyCost = brInput.ReadInt32();
-                entry.rawDamage = brInput.ReadInt16();
-                entry.defense = brInput.ReadInt16();
-                entry.recoilMaybe = brInput.ReadByte();
-                entry.slots = brInput.ReadByte();
-                entry.affinity = brInput.ReadSByte();
-                entry.sortOrderMaybe = brInput.ReadByte();
-                entry.unk6_1 = brInput.ReadByte();
-                entry.elementId = elementIds[brInput.ReadByte()];
-                entry.eleDamage = brInput.ReadByte() * 10;
-                entry.unk6_4 = brInput.ReadByte();
-                entry.unk7_1 = brInput.ReadByte();
-                entry.unk7_2 = brInput.ReadByte();
-                entry.unk7_3 = brInput.ReadByte();
-                entry.unk7_4 = brInput.ReadByte();
-                entry.unk8_1 = brInput.ReadByte();
-                entry.unk8_2 = brInput.ReadByte();
-                entry.unk8_3 = brInput.ReadByte();
-                entry.unk8_4 = brInput.ReadByte();
-                entry.unk9_1 = brInput.ReadByte();
-                entry.unk9_2 = brInput.ReadByte();
-                entry.unk9_3 = brInput.ReadByte();
-                entry.unk9_4 = brInput.ReadByte();
-                entry.unk10_1 = brInput.ReadByte();
-                entry.unk10_2 = brInput.ReadByte();
-                entry.unk10_3 = brInput.ReadByte();
-                entry.unk10_4 = brInput.ReadByte();
-                entry.unk11_1 = brInput.ReadByte();
-                entry.unk11_2 = brInput.ReadByte();
-                entry.unk11_3 = brInput.ReadByte();
-                entry.unk11_4 = brInput.ReadByte();
-                entry.unk12_1 = brInput.ReadByte();
-                entry.unk12_2 = brInput.ReadByte();
-                entry.unk12_3 = brInput.ReadByte();
-                entry.unk12_4 = brInput.ReadByte();
+                entry.ModelIdData = GetModelIdData(entry.ModelId);
+                entry.Rarity = brInput.ReadByte();
+                entry.MaxSlotsMaybe = brInput.ReadByte();
+                entry.ClassId = wClassIds[brInput.ReadByte()];
+                entry.Unk2_1 = brInput.ReadByte();
+                entry.EqType = brInput.ReadByte().ToString(); //Enum.GetName(typeof(eqType), brInput.ReadByte());
+                entry.Unk2_3 = brInput.ReadByte();
+                entry.Unk3_1 = brInput.ReadByte();
+                entry.Unk3_2 = brInput.ReadByte();
+                entry.Unk3_3 = brInput.ReadByte();
+                entry.Unk3_4 = brInput.ReadByte();
+                entry.Unk4_1 = brInput.ReadByte();
+                entry.Unk4_2 = brInput.ReadByte();
+                entry.Unk4_3 = brInput.ReadByte();
+                entry.Unk4_4 = brInput.ReadByte();
+                entry.Unk5_1 = brInput.ReadByte();
+                entry.Unk5_2 = brInput.ReadByte();
+                entry.Unk5_3 = brInput.ReadByte();
+                entry.Unk5_4 = brInput.ReadByte();
+                entry.ZennyCost = brInput.ReadInt32();
+                entry.RawDamage = brInput.ReadInt16();
+                entry.Defense = brInput.ReadInt16();
+                entry.RecoilMaybe = brInput.ReadByte();
+                entry.Slots = brInput.ReadByte();
+                entry.Affinity = brInput.ReadSByte();
+                entry.SortOrderMaybe = brInput.ReadByte();
+                entry.Unk6_1 = brInput.ReadByte();
+                entry.ElementId = elementIds[brInput.ReadByte()];
+                entry.EleDamage = brInput.ReadByte() * 10;
+                entry.Unk6_4 = brInput.ReadByte();
+                entry.Unk7_1 = brInput.ReadByte();
+                entry.Unk7_2 = brInput.ReadByte();
+                entry.Unk7_3 = brInput.ReadByte();
+                entry.Unk7_4 = brInput.ReadByte();
+                entry.Unk8_1 = brInput.ReadByte();
+                entry.Unk8_2 = brInput.ReadByte();
+                entry.Unk8_3 = brInput.ReadByte();
+                entry.Unk8_4 = brInput.ReadByte();
+                entry.Unk9_1 = brInput.ReadByte();
+                entry.Unk9_2 = brInput.ReadByte();
+                entry.Unk9_3 = brInput.ReadByte();
+                entry.Unk9_4 = brInput.ReadByte();
+                entry.Unk10_1 = brInput.ReadByte();
+                entry.Unk10_2 = brInput.ReadByte();
+                entry.Unk10_3 = brInput.ReadByte();
+                entry.Unk10_4 = brInput.ReadByte();
+                entry.Unk11_1 = brInput.ReadByte();
+                entry.Unk11_2 = brInput.ReadByte();
+                entry.Unk11_3 = brInput.ReadByte();
+                entry.Unk11_4 = brInput.ReadByte();
+                entry.Unk12_1 = brInput.ReadByte();
+                entry.Unk12_2 = brInput.ReadByte();
+                entry.Unk12_3 = brInput.ReadByte();
+                entry.Unk12_4 = brInput.ReadByte();
 
                 rangedEntries[i] = entry;
             }
@@ -543,7 +567,7 @@ namespace FrontierDataTool
             for (int j = 0; j < entryCountRanged - 1; j++)
             {
                 string name = StringFromPointer(brInput);
-                rangedEntries[j].name = name;
+                rangedEntries[j].Name = name;
             }
 
             // Write csv
@@ -576,63 +600,63 @@ namespace FrontierDataTool
                 {
                     Structs.QuestData entry = new()
                     {
-                        unk1 = brInput.ReadByte(),
-                        unk2 = brInput.ReadByte(),
-                        unk3 = brInput.ReadByte(),
-                        unk4 = brInput.ReadByte(),
-                        level = brInput.ReadByte(),
-                        unk5 = brInput.ReadByte(),
-                        courseType = brInput.ReadByte(),
-                        unk7 = brInput.ReadByte(),
-                        unk8 = brInput.ReadByte(),
-                        unk9 = brInput.ReadByte(),
-                        unk10 = brInput.ReadByte(),
-                        unk11 = brInput.ReadByte(),
-                        fee = brInput.ReadInt32(),
-                        zennyMain = brInput.ReadInt32(),
-                        zennyKo = brInput.ReadInt32(),
-                        zennySubA = brInput.ReadInt32(),
-                        zennySubB = brInput.ReadInt32(),
-                        time = brInput.ReadInt32(),
-                        unk12 = brInput.ReadInt32(),
-                        unk13 = brInput.ReadByte(),
-                        unk14 = brInput.ReadByte(),
-                        unk15 = brInput.ReadByte(),
-                        unk16 = brInput.ReadByte(),
-                        unk17 = brInput.ReadByte(),
-                        unk18 = brInput.ReadByte(),
-                        unk19 = brInput.ReadByte(),
-                        unk20 = brInput.ReadByte()
+                        Unk1 = brInput.ReadByte(),
+                        Unk2 = brInput.ReadByte(),
+                        Unk3 = brInput.ReadByte(),
+                        Unk4 = brInput.ReadByte(),
+                        Level = brInput.ReadByte(),
+                        Unk5 = brInput.ReadByte(),
+                        CourseType = brInput.ReadByte(),
+                        Unk7 = brInput.ReadByte(),
+                        Unk8 = brInput.ReadByte(),
+                        Unk9 = brInput.ReadByte(),
+                        Unk10 = brInput.ReadByte(),
+                        Unk11 = brInput.ReadByte(),
+                        Fee = brInput.ReadInt32(),
+                        ZennyMain = brInput.ReadInt32(),
+                        ZennyKo = brInput.ReadInt32(),
+                        ZennySubA = brInput.ReadInt32(),
+                        ZennySubB = brInput.ReadInt32(),
+                        Time = brInput.ReadInt32(),
+                        Unk12 = brInput.ReadInt32(),
+                        Unk13 = brInput.ReadByte(),
+                        Unk14 = brInput.ReadByte(),
+                        Unk15 = brInput.ReadByte(),
+                        Unk16 = brInput.ReadByte(),
+                        Unk17 = brInput.ReadByte(),
+                        Unk18 = brInput.ReadByte(),
+                        Unk19 = brInput.ReadByte(),
+                        Unk20 = brInput.ReadByte()
                     };
                     int questType = brInput.ReadInt32();
-                    entry.mainGoalType = Enum.GetName(typeof(Structs.QuestTypes), questType);
-                    entry.mainGoalType ??= questType.ToString("X8");
+                    entry.MainGoalType = Enum.GetName(typeof(Structs.QuestTypes), questType);
+                    entry.MainGoalType ??= questType.ToString("X8");
 
-                    entry.mainGoalTarget = brInput.ReadInt16();
-                    entry.mainGoalCount = brInput.ReadInt16();
+                    entry.MainGoalTarget = brInput.ReadInt16();
+                    entry.MainGoalCount = brInput.ReadInt16();
                     questType = brInput.ReadInt32();
-                    entry.subAGoalType = Enum.GetName(typeof(Structs.QuestTypes), questType);
-                    entry.subAGoalType ??= questType.ToString("X8");
+                    entry.SubAGoalType = Enum.GetName(typeof(Structs.QuestTypes), questType);
+                    entry.SubAGoalType ??= questType.ToString("X8");
 
-                    entry.subAGoalTarget = brInput.ReadInt16();
-                    entry.subAGoalCount = brInput.ReadInt16();
+                    entry.SubAGoalTarget = brInput.ReadInt16();
+                    entry.SubAGoalCount = brInput.ReadInt16();
                     questType = brInput.ReadInt32();
-                    entry.subBGoalType = Enum.GetName(typeof(Structs.QuestTypes), questType);
-                    entry.subBGoalType ??= questType.ToString("X8");
+                    entry.SubBGoalType = Enum.GetName(typeof(Structs.QuestTypes), questType);
+                    entry.SubBGoalType ??= questType.ToString("X8");
 
-                    entry.subBGoalTarget = brInput.ReadInt16();
-                    entry.subBGoalCount = brInput.ReadInt16();
+                    entry.SubBGoalTarget = brInput.ReadInt16();
+                    entry.SubBGoalCount = brInput.ReadInt16();
 
                     brInput.BaseStream.Seek(0x5C, SeekOrigin.Current);
-                    entry.mainGRP = brInput.ReadInt32();
-                    entry.subAGRP = brInput.ReadInt32();
-                    entry.subBGRP = brInput.ReadInt32();
+                    entry.MainGRP = brInput.ReadInt32();
+                    entry.SubAGRP = brInput.ReadInt32();
+                    entry.SubBGRP = brInput.ReadInt32();
 
                     brInput.BaseStream.Seek(0x90, SeekOrigin.Current);
-                    entry.title = StringFromPointer(brInput);
-                    entry.textMain = StringFromPointer(brInput);
-                    entry.textSubA = StringFromPointer(brInput);
-                    entry.textSubB = StringFromPointer(brInput);
+                    entry.Title = StringFromPointer(brInput);
+                    entry.TextMain = StringFromPointer(brInput);
+                    entry.TextSubA = StringFromPointer(brInput);
+                    entry.TextSubB = StringFromPointer(brInput);
                     brInput.BaseStream.Seek(0x10, SeekOrigin.Current);
                     Console.WriteLine(brInput.BaseStream.Position.ToString("X8"));
 
@@ -658,7 +682,7 @@ namespace FrontierDataTool
         /// <summary>
         /// Add all-items shop to file, change item prices, change armor prices
         /// </summary>
-        /// <param name="file">Input file path.</param>
+        /// <param name="file">Input file path, usually mhfdat.bin.</param>
         static void ModShop(string file)
         {
             MemoryStream msInput = new(File.ReadAllBytes(file));
@@ -761,6 +785,11 @@ namespace FrontierDataTool
             File.WriteAllBytes(file, outputArray);
         }
 
+        /// <summary>
+        /// Read a string following a pointer.
+        /// </summary>
+        /// <param name="brInput">Input binary reader.</param>
+        /// <returns>String found.</returns>
         static string StringFromPointer(BinaryReader brInput)
         {
             int off = brInput.ReadInt32();

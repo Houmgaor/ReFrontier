@@ -428,7 +428,7 @@ namespace FrontierTextTool
 
                 var stringDatabase = new StringDatabase() {
                     Offset = (uint) offset,
-                    Hash = Helpers.GetCrc32(Encoding.GetEncoding("shift-jis").GetBytes(str)),
+                    Hash = Crypto.GetCrc32(Encoding.GetEncoding("shift-jis").GetBytes(str)),
                     JString = str
                 };
                 if (trueOffsets)
