@@ -372,14 +372,19 @@ namespace FrontierTextTool
             );
 
             string fileName = Path.GetFileNameWithoutExtension(input);
-            if (File.Exists($"{fileName}.csv")) File.Delete($"{fileName}.csv");
-            StreamWriter txtOutput = new($"{fileName}.csv", true, Encoding.GetEncoding("shift-jis"));
-            txtOutput.WriteLine("Offset\tHash\tjString\teString");
+            if (File.Exists($"{fileName}.csv"))
+                File.Delete($"{fileName}.csv");
+            using StreamWriter txtOutput = new($"{fileName}.csv", true, Encoding.GetEncoding("shift-jis"));
+            using var csvOutput = new CsvWriter(txtOutput);
+            csvOutput.Configuration.Delimiter = "\t";
+
+            csvOutput.WriteHeader<StringDatabase>();
+            csvOutput.NextRecord();
 
             brInput.BaseStream.Seek(startOffset, SeekOrigin.Begin);
             while (brInput.BaseStream.Position + 4 <= endOffset)
             {
-                long off = brInput.BaseStream.Position;
+                long offset = brInput.BaseStream.Position;
                 long tmpPos = brInput.BaseStream.Position;
 
                 if (trueOffsets)
@@ -405,16 +410,21 @@ namespace FrontierTextTool
                     Replace("\t", "<TAB>"). // Replace tab
                     Replace("\r\n", "<CLINE>"). // Replace carriage return
                     Replace("\n", "<NLINE>"); // Replace new line
-                
+
+                var stringDatabase = new StringDatabase() {
+                    Offset = (uint) offset,
+                    Hash = Helpers.GetCrc32(Encoding.GetEncoding("shift-jis").GetBytes(str)),
+                    JString = str
+                };
                 if (trueOffsets)
                 {
                     brInput.BaseStream.Seek(tmpPos, SeekOrigin.Begin);
                 }
                 if (str == "")
                     continue;
-                txtOutput.WriteLine($"{off}\t{Helpers.GetCrc32(Encoding.GetEncoding("shift-jis").GetBytes(str))}\t{str}\t");
+                csvOutput.WriteRecord<StringDatabase>(stringDatabase);
+                csvOutput.NextRecord();
             }
-            txtOutput.Close();
         }
 
         /// <summary>
