@@ -1,11 +1,15 @@
-﻿using CsvHelper;
-using ReFrontier;
-using LibReFrontier;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+
+using CsvHelper;
+using CsvHelper.Configuration;
+
+using LibReFrontier;
+using ReFrontier;
 
 namespace FrontierTextTool
 {
@@ -13,25 +17,38 @@ namespace FrontierTextTool
     {
         static bool verbose = false;
         static bool autoClose = false;
+        static bool trueOffsets = false;
+        static bool nullstrings = false;
 
-        //[STAThread]
         /// <summary>
         /// Main CLI for text edition.
         /// </summary>
         /// <param name="args">Arguments passed</param>
         static void Main(string[] args)
         {
-            if (args.Length < 2) {
-                Console.WriteLine("Too few arguments.");
-                return;
+            var parsedArgs = Helpers.ParseArguments(args);
+            if (parsedArgs.Count < 2) {
+                throw new ArgumentException($"Too few arguments. {parsedArgs.Count}, need at least 2 arguments.");
             }
 
-            if (args.Any("-verbose".Contains)) verbose = true;
-            if (args.Any("-close".Contains)) autoClose = true;
+            var keyArgs = parsedArgs.Keys;
+
+            if (keyArgs.Contains("--verbose") || keyArgs.Contains("-verbose"))
+                verbose = true;
+            if (keyArgs.Contains("--close") || keyArgs.Contains("-close"))
+                autoClose = true;
+            if (keyArgs.Contains("--trueoffsets") || keyArgs.Contains("-trueoffsets"))
+                trueOffsets = true;
+            if (keyArgs.Contains("--nullstrings") || keyArgs.Contains("-nullstrings"))
+                nullstrings = true;
 
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
+
             switch (args[0]) {
+                case "fulldump":
+                    DumpAndHash(args[1], 0, 0);
+                    break;
                 case "dump":
                     DumpAndHash(args[1], Convert.ToInt32(args[2]), Convert.ToInt32(args[3]));
                     break;
@@ -48,7 +65,7 @@ namespace FrontierTextTool
                     InsertCatFile(args[1], args[2]);
                     break;
                 default:
-                break;
+                    throw new ArgumentException($"{args[0]} is not a valid argument.");
             }
 
             if (!autoClose) {
@@ -110,10 +127,13 @@ namespace FrontierTextTool
             var stringDb = new List<StringDatabase>();
             using (var reader = new StreamReader(csvFile, Encoding.GetEncoding("shift-jis")))
             {
-                using var csv = new CsvReader(reader);
-                csv.Configuration.Delimiter = "\t";
-                csv.Configuration.IgnoreQuotes = true;
-                csv.Configuration.MissingFieldFound = null;
+                var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
+                {
+                    Delimiter = "\t",
+                    MissingFieldFound = null,
+                    IgnoreQuotes = true,
+                };
+                using var csv = new CsvReader(reader, configuration);
                 csv.Read();
                 csv.ReadHeader();
                 while (csv.Read())
@@ -151,7 +171,8 @@ namespace FrontierTextTool
                 txtOutput.WriteLine($"{obj.Offset}\t{obj.Hash}\t{obj.JString}\t{obj.EString}");
             txtOutput.Close();
 
-            if (!Directory.Exists("backup")) Directory.CreateDirectory("backup");
+            if (!Directory.Exists("backup"))
+                Directory.CreateDirectory("backup");
             File.Move(
                 catFile, 
                 $"backup/{Path.GetFileNameWithoutExtension(catFile)}_{DateTime.Now:yyyyMMdd_HHmm}.txt"
@@ -191,10 +212,13 @@ namespace FrontierTextTool
             var stringDatabase = new List<StringDatabase>();
             using (var reader = new StreamReader(inputCsv, Encoding.GetEncoding("shift-jis")))
             {
-                using var csv = new CsvReader(reader);
-                csv.Configuration.Delimiter = "\t";
-                csv.Configuration.IgnoreQuotes = true;
-                csv.Configuration.MissingFieldFound = null;
+                var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
+                {
+                    Delimiter = "\t",
+                    MissingFieldFound = null,
+                    IgnoreQuotes = true,
+                };
+                using var csv = new CsvReader(reader, configuration);
                 csv.Read();
                 csv.ReadHeader();
                 while (csv.Read())
@@ -262,17 +286,27 @@ namespace FrontierTextTool
             }
 
             // Replace offsets in binary file
-            for (int p = 0; p < fileBytes.Length; p += 4)
-            {
-                if (p + 4 > fileBytes.Length)
-                    continue;
-                int cur = BitConverter.ToInt32(fileBytes, p);
-                if (offsetDict.ContainsKey(cur) && p > 10000)
+            if (trueOffsets) {
+                for (int i = 0; i < offsetDict.Count; i++)
                 {
-                    offsetDict.TryGetValue(cur, out int replacement);
-                    byte[] newPointer = BitConverter.GetBytes(replacement);
+                    var element = offsetDict.ElementAt(i);
+                    byte[] newPointer = BitConverter.GetBytes(element.Value);
                     for (int w = 0; w < 4; w++)
-                        fileBytes[p + w] = newPointer[w];
+                        fileBytes[element.Key + w] = newPointer[w];
+                }
+            } else {
+                for (int p = 0; p < fileBytes.Length; p += 4)
+                {
+                    if (p + 4 > fileBytes.Length)
+                        continue;
+                    int cur = BitConverter.ToInt32(fileBytes, p);
+                    if (offsetDict.ContainsKey(cur) && p > 10000)
+                    {
+                        offsetDict.TryGetValue(cur, out int replacement);
+                        byte[] newPointer = BitConverter.GetBytes(replacement);
+                        for (int w = 0; w < 4; w++)
+                            fileBytes[p + w] = newPointer[w];
+                    }
                 }
             }
 
@@ -312,7 +346,7 @@ namespace FrontierTextTool
             byte[] buffer = File.ReadAllBytes(outputFile);
             if (File.Exists($"{outputFile}.meta")) {
                 throw new FileNotFoundException(
-                    $"META file {outputFile}.meta does not exist, did you use '-log' during decrypting to generate it?"
+                    $"META file {outputFile}.meta does not exist, did you use '--log' during decrypting to generate it?"
                 );
             }
             byte[] bufferMeta = File.ReadAllBytes($"{outputFile}.meta");
@@ -340,31 +374,72 @@ namespace FrontierTextTool
             MemoryStream msInput = new(buffer);
             BinaryReader brInput = new(msInput);
 
+            if (endOffset == 0)
+                endOffset = (int)brInput.BaseStream.Length;
+
             Console.WriteLine(
                 $"Strings at: 0x{startOffset:X8} - 0x{endOffset:X8}. Size 0x{endOffset - startOffset:X8}"
             );
 
             string fileName = Path.GetFileNameWithoutExtension(input);
-            if (File.Exists($"{fileName}.csv")) File.Delete($"{fileName}.csv");
-            StreamWriter txtOutput = new($"{fileName}.csv", true, Encoding.GetEncoding("shift-jis"));
-            txtOutput.WriteLine("Offset\tHash\tjString\teString");
+            if (File.Exists($"{fileName}.csv"))
+                File.Delete($"{fileName}.csv");
+            using StreamWriter txtOutput = new($"{fileName}.csv", true, Encoding.GetEncoding("shift-jis"));
+            var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
+            {
+                Delimiter = "\t",
+            };
+            using var csvOutput = new CsvWriter(txtOutput, configuration);
+
+            csvOutput.WriteHeader<StringDatabase>();
+            csvOutput.NextRecord();
 
             brInput.BaseStream.Seek(startOffset, SeekOrigin.Begin);
-            while (brInput.BaseStream.Position < endOffset)
+            while (brInput.BaseStream.Position + 4 <= endOffset)
             {
-                long off = brInput.BaseStream.Position;
-                string str = Helpers.ReadNullterminatedString(
-                    brInput, 
-                    Encoding.GetEncoding("shift-jis")
-                ).
-                Replace("\t", "<TAB>"). // Replace tab
-                Replace("\r\n", "<CLINE>"). // Replace carriage return
-                Replace("\n", "<NLINE>"); // Replace new line
-                txtOutput.WriteLine(
-                    $"{off}\t{Helpers.GetCrc32(Encoding.GetEncoding("shift-jis").GetBytes(str))}\t{str}\t"
-                );
+                long offset = brInput.BaseStream.Position;
+                long tmpPos = brInput.BaseStream.Position;
+
+                if (trueOffsets)
+                {
+                    uint strPos = brInput.ReadUInt32();
+                    if (strPos == 0 || strPos > brInput.BaseStream.Length)
+                        continue;
+                    tmpPos = brInput.BaseStream.Position;
+                    if (nullstrings)
+                    {
+                        // Check if string is null, go to string position
+                        brInput.BaseStream.Seek(strPos-1, SeekOrigin.Begin);
+                        if (brInput.ReadByte() != 0)
+                        {
+                            // Go back to previous position
+                            brInput.BaseStream.Seek(tmpPos, SeekOrigin.Begin);
+                            continue;
+                        }
+                    }
+                    // Go to 
+                    brInput.BaseStream.Seek(strPos, SeekOrigin.Begin);
+                }
+
+                string str = Helpers.ReadNullterminatedString(brInput, Encoding.GetEncoding("shift-jis")).
+                    Replace("\t", "<TAB>"). // Replace tab
+                    Replace("\r\n", "<CLINE>"). // Replace carriage return
+                    Replace("\n", "<NLINE>"); // Replace new line
+
+                var stringDatabase = new StringDatabase() {
+                    Offset = (uint) offset,
+                    Hash = Helpers.GetCrc32(Encoding.GetEncoding("shift-jis").GetBytes(str)),
+                    JString = str
+                };
+                if (trueOffsets)
+                {
+                    brInput.BaseStream.Seek(tmpPos, SeekOrigin.Begin);
+                }
+                if (str == "")
+                    continue;
+                csvOutput.WriteRecord<StringDatabase>(stringDatabase);
+                csvOutput.NextRecord();
             }
-            txtOutput.Close();
         }
 
         /// <summary>
@@ -378,10 +453,13 @@ namespace FrontierTextTool
             var stringDbOld = new List<StringDatabase>();
             using (var reader = new StreamReader(oldCsv, Encoding.GetEncoding("shift-jis")))
             {
-                using var csv = new CsvReader(reader);
-                csv.Configuration.Delimiter = "\t";
-                csv.Configuration.IgnoreQuotes = true;
-                csv.Configuration.MissingFieldFound = null;
+                var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
+                {
+                    Delimiter = "\t",
+                    MissingFieldFound = null,
+                    IgnoreQuotes = true,
+                };
+                using var csv = new CsvReader(reader, configuration);
                 csv.Read();
                 csv.ReadHeader();
                 while (csv.Read())
@@ -398,10 +476,13 @@ namespace FrontierTextTool
             var stringDbNew = new List<StringDatabase>();
             using (var reader = new StreamReader(newCsv, Encoding.GetEncoding("shift-jis")))
             {
-                using var csv = new CsvReader(reader);
-                csv.Configuration.Delimiter = "\t";
-                csv.Configuration.IgnoreQuotes = true;
-                csv.Configuration.MissingFieldFound = null;
+                var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
+                {
+                    Delimiter = "\t",
+                    MissingFieldFound = null,
+                    IgnoreQuotes = true,
+                };
+                using var csv = new CsvReader(reader, configuration);
                 csv.Read();
                 csv.ReadHeader();
                 while (csv.Read())

@@ -12,6 +12,7 @@ Yet it brings many improvements.
 - Compatibility with Linux/Mac.
 - 4x times faster.
 - Interface standardization.
+- Better parsing for CSV files.
 - Removes outdated/unused libraries.
 - Removes memory-unsafe code.
 - User documentation.

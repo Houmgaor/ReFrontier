@@ -9,6 +9,30 @@ namespace LibReFrontier
 {
     public class Helpers
     {
+
+        /// <summary>
+        /// Simple arguments parser.
+        /// </summary>
+        /// <param name="args">Input arguments from the CLI</param>
+        /// <returns>Dictionary of arguments. Arguments with no value have a null value assigned.</returns>
+        public static Dictionary<string, string> ParseArguments(string[] args)
+        {
+            var arguments = new Dictionary<string, string>();
+            foreach (var arg in args)
+            {
+                string[] parts = arg.Split('=');
+                if (parts.Length == 2)
+                {
+                    arguments[parts[0]] = parts[1];
+                }
+                else
+                {
+                    arguments[arg] = null;
+                }
+            }
+            return arguments;
+        }
+
         /// <summary>
         /// Read null-terminated string
         /// </summary>
@@ -76,33 +100,12 @@ namespace LibReFrontier
 
 
         /// <summary>
-        /// String to byte array
+        /// Compute CRC32 for byte array.
+        /// 
+        /// It is just to remove dependency from FrontierTextTool
         /// </summary>
-        /// <param name="hex"></param>
-        /// <returns></returns>
-        public static byte[] StringToByteArray(string hex)
-        {
-            int NumberChars = hex.Length;
-            byte[] bytes = new byte[NumberChars / 2];
-            for (int i = 0; i < NumberChars; i += 2)
-                bytes[i / 2] = Convert.ToByte(hex.Substring(i, 2), 16);
-            return bytes;
-        }
-
-        // Byte array to string
-        public static string ByteArrayToString(byte[] ba)
-        {
-            StringBuilder hex = new(ba.Length * 2);
-            foreach (byte b in ba)
-                hex.AppendFormat("{0:x2}", b);
-            return hex.ToString();
-        }
-
-        /// <summary>
-        /// CRC32 byte array - just to remove dependency from TextTool
-        /// </summary>
-        /// <param name="array"></param>
-        /// <returns></returns>
+        /// <param name="array">Array to hash</param>
+        /// <returns>CRC32 bits hash</returns>
         public static uint GetCrc32(byte[] array)
         {
             return Crc32Algorithm.Compute(array);
@@ -132,9 +135,19 @@ namespace LibReFrontier
         /// <returns>Offset if found, -1 otherwise.</returns>
         public static int GetOffsetOfArray(byte[] haystack, byte[] needle)
         {
+            // Edge case: empty needle
+            if (needle.Length == 0)
+                return 0;
+            // If haystack is too small
+            if (haystack.Length < needle.Length)
+            return -1;
+
+            Span<byte> haystackSpan = haystack;
+            Span<byte> needleSpan = needle;
+
             for (int i = 0; i <= haystack.Length - needle.Length; i++)
             {
-                if (MatchArrays(haystack, needle, i))
+                if (haystackSpan.Slice(i, needle.Length).SequenceEqual(needleSpan))
                 {
                     return i;
                 }
@@ -142,36 +155,40 @@ namespace LibReFrontier
             return -1;
         }
 
-        static bool MatchArrays(byte[] haystack, byte[] needle, int start)
-        {
-            if (needle.Length + start > haystack.Length)
-            {
-                return false;
-            }
-            for (int i = 0; i < needle.Length; i++)
-            {
-                if (needle[i] != haystack[i + start])
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
 
-        // Header <-> extensions
+        /// <summary>
+        /// From file header magic number to corresponding file extensions
+        /// </summary>
         public enum Extensions
         {
             dds = 542327876,
-            ftxt = 0x000B0000,  // custom extension
-            gfx2 = 846751303,   // WiiU texture
+            /// <summary>
+            /// Custom extension
+            /// </summary>
+            ftxt = 0x000B0000,
+            /// <summary>
+            /// WiiU texture
+            /// </summary>
+            gfx2 = 846751303,
             jkr = 0x1A524B4A,
             ogg = 0x5367674F,
-            pmo = 7302512,      // iOS MHFU model
+            /// <summary>
+            /// iOS MHFU model
+            /// </summary>
+            pmo = 7302512,
             png = 0x474e5089,
-            tmh = 1213027374    // iOS MHFU texture
+            /// <summary>
+            /// iOS MHFU texture
+            /// </summary>
+            tmh = 1213027374
         }
 
-        // Get file extension for files without unique 4-byte magic
+        /// <summary>
+        /// Get file extension for files without unique 4-byte magic
+        /// </summary>
+        /// <param name="headerInt"></param>
+        /// <param name="data"></param>
+        /// <returns></returns>
         public static string CheckForMagic(uint headerInt, byte[] data)
         {
             byte[] header;
@@ -182,14 +199,16 @@ namespace LibReFrontier
                 header = new byte[12];
                 Array.Copy(data, header, 12);
                 headerInt = BitConverter.ToUInt32(header, 8);
-                if (headerInt == data.Length) extension = "fmod";
+                if (headerInt == data.Length)
+                    extension = "fmod";
             }
             else if (headerInt == 0xC0000000)
             {
                 header = new byte[12];
                 Array.Copy(data, header, 12);
                 headerInt = BitConverter.ToUInt32(header, 8);
-                if (headerInt == data.Length) extension = "fskl";
+                if (headerInt == data.Length)
+                    extension = "fskl";
             }
 
             return extension;

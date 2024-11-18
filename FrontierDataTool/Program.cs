@@ -1,9 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+
 using CsvHelper;
+using CsvHelper.Configuration;
+
 using LibReFrontier;
 
 namespace FrontierDataTool
@@ -369,8 +373,11 @@ namespace FrontierDataTool
             // Write armor csv
             using (var textWriter = new StreamWriter($"Armor.csv", false, Encoding.GetEncoding("shift-jis")))
             {
-                var writer = new CsvWriter(textWriter);
-                writer.Configuration.Delimiter = "\t";
+                var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
+                {
+                    Delimiter = "\t",
+                };
+                var writer = new CsvWriter(textWriter, configuration);
                 writer.WriteRecords(armorEntries);
             }
 
@@ -445,8 +452,11 @@ namespace FrontierDataTool
             // Write csv
             using (var textWriter = new StreamWriter("Melee.csv", false, Encoding.GetEncoding("shift-jis")))
             {
-                var writer = new CsvWriter(textWriter);
-                writer.Configuration.Delimiter = "\t";
+                var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
+                {
+                    Delimiter = "\t",
+                };
+                var writer = new CsvWriter(textWriter, configuration);
                 writer.WriteRecords(meleeEntries);
             }
 
@@ -539,8 +549,11 @@ namespace FrontierDataTool
             // Write csv
             using (var textWriter = new StreamWriter("Ranged.csv", false, Encoding.GetEncoding("shift-jis")))
             {
-                var writer = new CsvWriter(textWriter);
-                writer.Configuration.Delimiter = "\t";
+                var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
+                {
+                    Delimiter = "\t",
+                };
+                var writer = new CsvWriter(textWriter, configuration);
                 writer.WriteRecords(rangedEntries);
             }
             #endregion
@@ -631,8 +644,11 @@ namespace FrontierDataTool
             // Write csv
             using (var textWriter = new StreamWriter("InfQuests.csv", false, Encoding.GetEncoding("shift-jis")))
             {
-                var writer = new CsvWriter(textWriter);
-                writer.Configuration.Delimiter = "\t";
+                var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
+                {
+                    Delimiter = "\t",
+                };
+                var writer = new CsvWriter(textWriter, configuration);
                 writer.WriteRecords(quests);
             }
             #endregion
