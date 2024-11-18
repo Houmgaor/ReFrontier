@@ -107,6 +107,8 @@ namespace ReFrontier
                 autoClose = true;
             if (argKeys.Contains("--cleanUp") || argKeys.Contains("-cleanUp"))
                 cleanUp = true;
+            
+            // For compression level we need a bit of text parsing
             int compressType = -1, compressLevel = -1;
             if (argKeys.Contains("--compress") || argKeys.Contains("-compress"))
             {
@@ -179,72 +181,77 @@ namespace ReFrontier
         }
 
         /// <summary>
+        /// Encrypt a single file using 
+        /// </summary>
+        /// <param name="input">Input file to encrypt.</param>
+        /// <param name="metaFile">Data to use for encryption.</param>
+        /// <exception cref="FileNotFoundException">Thrown if the meta file does not exist.</exception>
+        static void EncryptFile(string input, string metaFile)
+        {
+            byte[] buffer = File.ReadAllBytes(input);
+            if (!File.Exists(metaFile)) {
+                throw new FileNotFoundException(
+                    $"META file {input}.meta does not exist, " +
+                    $"cannot encryt {input}." +
+                    "Make sure to decryt the initial file with the -log option, " +
+                    "and to place the generate meta file in the same folder as the file " +
+                    "to encypt."
+                );
+            }
+            byte[] bufferMeta = File.ReadAllBytes(metaFile);
+            buffer = Crypto.EncodeEcd(buffer, bufferMeta);
+            File.WriteAllBytes(input, buffer);
+            ArgumentsParser.Print($"File encrypted to {input}.", false);
+            FileOperations.GetUpdateEntry(input);
+        }
+
+        /// <summary>
         /// Start the input processing.
         /// </summary>
         /// <param name="input">File or directory path.</param>
         /// <param name="compressType">Compression type</param>
         /// <param name="compressLevel">Compression level</param>
-        /// <exception cref="FileNotFoundException">Raises if META file for encryption is missing.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if the arguments are not coherent with the input.</exception>
         static void StartProcessing(string input, int compressType = -1, int compressLevel = -1)
         {
-
-            FileAttributes inputAttr = File.GetAttributes(input);
-            // Directories
-            if (inputAttr.HasFlag(FileAttributes.Directory))
+            if (File.GetAttributes(input).HasFlag(FileAttributes.Directory))
             {
-                if (!repack && !encrypt)
+                // Directory
+                if (compress)
+                    throw new InvalidOperationException("Cannot compress a directory.");
+                if (encrypt)
+                    throw new InvalidOperationException("Cannot encrypt a directory.");
+                if (repack)
+                    Pack.ProcessPackInput(input);
+                else
                 {
+                    // Decompress each file
                     string[] inputFiles = Directory.GetFiles(
                         input, "*.*", SearchOption.AllDirectories
                     );
                     ProcessMultipleLevels(inputFiles);
                 }
-                else if (repack)
-                    Pack.ProcessPackInput(input);
-                else if (compress)
-                    Console.WriteLine(
-                        "A directory was specified while in compression mode. Stopping."
-                    );
-                else if (encrypt)
-                    Console.WriteLine(
-                        "A directory was specified while in encryption mode. Stopping."
-                    );
             }
-            // Single file
             else
             {
-                if (!repack && !encrypt && !compress)
-                {
-                    string[] inputFiles = [input];
-                    ProcessMultipleLevels(inputFiles);
-                }
-                else if (repack) 
-                    Console.WriteLine(
-                        "A single file was specified while in repacking mode. Stopping."
-                    );
-                else if (compress) 
+                // Single file
+                if (repack)
+                    throw new InvalidOperationException("A single file cannot be used while in repacking mode.");
+                if (compress)
                 {
                     Pack.JPKEncode(
                         compressType, input, $"output/{Path.GetFileName(input)}", compressLevel * 100
                     );
-                }
+                } 
                 else if (encrypt)
                 {
-                    byte[] buffer = File.ReadAllBytes(input);
-                    if (!File.Exists($"{input}.meta")) {
-                        throw new FileNotFoundException(
-                            $"META file {input}.meta does not exist, " +
-                            $"cannot encryt {input}." +
-                            "Make sure to decryt the initial file with the -log option, " +
-                            "and to place the generate meta file in the same folder as the file " +
-                            "to encypt."
-                        );
-                    }
-                    byte[] bufferMeta = File.ReadAllBytes($"{input}.meta");
-                    buffer = Crypto.EncodeEcd(buffer, bufferMeta);
-                    File.WriteAllBytes(input, buffer);
-                    ArgumentsParser.Print($"File encrypted to {input}.", false);
-                    FileOperations.GetUpdateEntry(input);
+                    EncryptFile(input, $"{input}.meta");
+                }
+                else 
+                {
+                    // Try to depile the file as multiple files
+                    string[] inputFiles = [input];
+                    ProcessMultipleLevels(inputFiles);
                 }
             }
         }
@@ -362,7 +369,9 @@ namespace ReFrontier
         }
 
         /// <summary>
-        /// Process file(s) on multiple levels
+        /// Process file(s) on multiple container level.
+        /// 
+        /// Try to use each file is considered a container of multiple files.
         /// </summary>
         /// <param name="inputFiles">Files to process</param>
         static void ProcessMultipleLevels(string[] inputFiles)
