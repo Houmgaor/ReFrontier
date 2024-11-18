@@ -227,28 +227,30 @@ namespace ReFrontier
                 // Single file
                 if (repack)
                     throw new InvalidOperationException("A single file cannot be used while in repacking mode.");
+                
                 if (compressType != -1)
                 {
                     Pack.JPKEncode(
                         compressType, input, $"output/{Path.GetFileName(input)}", compressLevel * 100
                     );
-                } 
-                else if (encrypt)
+                }
+                
+                if (encrypt)
                 {
                     EncryptEcdFile(input, $"{input}.meta");
                 }
-                else 
+
+                if (compressType == -1 && !encrypt) 
                 {
                     // Try to depile the file as multiple files
-                    string[] inputFiles = [input];
-                    ProcessMultipleLevels(inputFiles, _recursive, _noDecryption);
+                    ProcessMultipleLevels([input], _recursive, _noDecryption);                    
                 }
             }
         }
 
 
         /// <summary>
-        /// Process a file
+        /// Decode a single file.
         /// </summary>
         /// <param name="input">Input file path.</param>
         /// <param name="noDecryption">Do not decrypt ECD files.</param>
@@ -267,7 +269,7 @@ namespace ReFrontier
             int fileMagic = brInput.ReadInt32();
 
             // Since stage containers have no file magic, check for them first
-            if (_stageContainer == true)
+            if (_stageContainer)
             {
                 brInput.BaseStream.Seek(0, SeekOrigin.Begin);
                 try {
@@ -276,17 +278,17 @@ namespace ReFrontier
                     Console.WriteLine(error);
                 }
             }
-            // MOMO Header: snp, snd
             else if (fileMagic == 0x4F4D4F4D)
             {
+                // MOMO Header: snp, snd
                 Console.WriteLine("MOMO Header detected.");
                 Unpack.UnpackSimpleArchive(
                     input, brInput, 8, _createLog, _cleanUp, _autoStage
                 );
             }
-            // ECD Header
             else if (fileMagic == 0x1A646365)
             {
+                // ECD Header
                 Console.WriteLine("ECD Header detected.");
                 if (noDecryption) 
                 {
@@ -301,9 +303,9 @@ namespace ReFrontier
 
                 Console.WriteLine($"File decrypted to {input}{logInfo}.");
             }
-            // EXF Header
             else if (fileMagic == 0x1A667865)
             {
+                // EXF Header
                 Console.WriteLine("EXF Header detected.");
                 byte[] buffer = File.ReadAllBytes(input);
                 Crypto.DecodeExf(buffer);
@@ -312,30 +314,30 @@ namespace ReFrontier
                 File.WriteAllBytes(input, bufferStripped);
                 Console.WriteLine("File decrypted.");
             }
-            // JKR Header
             else if (fileMagic == 0x1A524B4A)
             {
+                // JKR Header
                 Console.WriteLine("JKR Header detected.");
                 if (!_ignoreJPK) {
                     Unpack.UnpackJPK(input);
                     Console.WriteLine("File decompressed.");
                 }
             }
-            // MHA Header
             else if (fileMagic == 0x0161686D)
             {
+                // MHA Header
                 Console.WriteLine("MHA Header detected.");
                 Unpack.UnpackMHA(input, brInput, _createLog);
             }
-            // MHF Text file
             else if (fileMagic == 0x000B0000)
             {
+                // MHF Text file
                 Console.WriteLine("MHF Text file detected.");
                 Unpack.PrintFTXT(input, brInput);
             }
-            // Try to unpack as simple container: i.e. txb, bin, pac, gab
             else
             {
+                // Try to unpack as simple container: i.e. txb, bin, pac, gab
                 brInput.BaseStream.Seek(0, SeekOrigin.Begin);
                 try {
                     Unpack.UnpackSimpleArchive(
@@ -370,7 +372,7 @@ namespace ReFrontier
                 ProcessFile(inputFile, noDecryption, _decryptOnly);
 
                 // Disable stage processing files unpacked from parent
-                if (_stageContainer == true)
+                if (_stageContainer)
                     _stageContainer = false;
 
                 FileInfo fileInfo = new(inputFile);
