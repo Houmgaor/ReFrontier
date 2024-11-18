@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
 
 using CsvHelper;
+using CsvHelper.Configuration;
 
 using LibReFrontier;
 using ReFrontier;
@@ -123,10 +125,13 @@ namespace FrontierTextTool
             var stringDb = new List<StringDatabase>();
             using (var reader = new StreamReader(csvFile, Encoding.GetEncoding("shift-jis")))
             {
-                using var csv = new CsvReader(reader);
-                csv.Configuration.Delimiter = "\t";
-                csv.Configuration.IgnoreQuotes = true;
-                csv.Configuration.MissingFieldFound = null;
+                var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
+                {
+                    Delimiter = "\t",
+                    MissingFieldFound = null,
+                    IgnoreQuotes = true,
+                };
+                using var csv = new CsvReader(reader, configuration);
                 csv.Read();
                 csv.ReadHeader();
                 while (csv.Read())
@@ -205,10 +210,13 @@ namespace FrontierTextTool
             var stringDatabase = new List<StringDatabase>();
             using (var reader = new StreamReader(inputCsv, Encoding.GetEncoding("shift-jis")))
             {
-                using var csv = new CsvReader(reader);
-                csv.Configuration.Delimiter = "\t";
-                csv.Configuration.IgnoreQuotes = true;
-                csv.Configuration.MissingFieldFound = null;
+                var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
+                {
+                    Delimiter = "\t",
+                    MissingFieldFound = null,
+                    IgnoreQuotes = true,
+                };
+                using var csv = new CsvReader(reader, configuration);
                 csv.Read();
                 csv.ReadHeader();
                 while (csv.Read())
@@ -375,8 +383,11 @@ namespace FrontierTextTool
             if (File.Exists($"{fileName}.csv"))
                 File.Delete($"{fileName}.csv");
             using StreamWriter txtOutput = new($"{fileName}.csv", true, Encoding.GetEncoding("shift-jis"));
-            using var csvOutput = new CsvWriter(txtOutput);
-            csvOutput.Configuration.Delimiter = "\t";
+            var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
+            {
+                Delimiter = "\t",
+            };
+            using var csvOutput = new CsvWriter(txtOutput, configuration);
 
             csvOutput.WriteHeader<StringDatabase>();
             csvOutput.NextRecord();
@@ -438,10 +449,13 @@ namespace FrontierTextTool
             var stringDbOld = new List<StringDatabase>();
             using (var reader = new StreamReader(oldCsv, Encoding.GetEncoding("shift-jis")))
             {
-                using var csv = new CsvReader(reader);
-                csv.Configuration.Delimiter = "\t";
-                csv.Configuration.IgnoreQuotes = true;
-                csv.Configuration.MissingFieldFound = null;
+                var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
+                {
+                    Delimiter = "\t",
+                    MissingFieldFound = null,
+                    IgnoreQuotes = true,
+                };
+                using var csv = new CsvReader(reader, configuration);
                 csv.Read();
                 csv.ReadHeader();
                 while (csv.Read())
@@ -458,10 +472,13 @@ namespace FrontierTextTool
             var stringDbNew = new List<StringDatabase>();
             using (var reader = new StreamReader(newCsv, Encoding.GetEncoding("shift-jis")))
             {
-                using var csv = new CsvReader(reader);
-                csv.Configuration.Delimiter = "\t";
-                csv.Configuration.IgnoreQuotes = true;
-                csv.Configuration.MissingFieldFound = null;
+                var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
+                {
+                    Delimiter = "\t",
+                    MissingFieldFound = null,
+                    IgnoreQuotes = true,
+                };
+                using var csv = new CsvReader(reader, configuration);
                 csv.Read();
                 csv.ReadHeader();
                 while (csv.Read())
