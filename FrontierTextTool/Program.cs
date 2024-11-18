@@ -1,11 +1,13 @@
-﻿using CsvHelper;
-using ReFrontier;
-using LibReFrontier;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+
+using CsvHelper;
+
+using LibReFrontier;
+using ReFrontier;
 
 namespace FrontierTextTool
 {
@@ -16,7 +18,6 @@ namespace FrontierTextTool
         static bool trueOffsets = false;
         static bool nullstrings = false;
 
-        //[STAThread]
         /// <summary>
         /// Main CLI for text edition.
         /// </summary>
@@ -28,10 +29,14 @@ namespace FrontierTextTool
                 return;
             }
 
-            if (args.Any("-verbose".Contains)) verbose = true;
-            if (args.Any("-close".Contains)) autoClose = true;
-            if (args.Any("-trueoffsets)".Contains)) trueOffsets = true;
-            if (args.Any("-nullstrings)".Contains)) nullstrings = true;
+            if (args.Any("--verbose".Contains) || args.Any("-verbose".Contains))
+                verbose = true;
+            if (args.Any("--close".Contains) || args.Any("-close".Contains))
+                autoClose = true;
+            if (args.Any("--trueoffsets)".Contains) || args.Any("-trueoffsets)".Contains))
+                trueOffsets = true;
+            if (args.Any("--nullstrings)".Contains) || args.Any("-nullstrings)".Contains))
+                nullstrings = true;
 
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
@@ -56,7 +61,7 @@ namespace FrontierTextTool
                     InsertCatFile(args[1], args[2]);
                     break;
                 default:
-                break;
+                    throw new ArgumentException($"{args[0]} is not a valid argument.");
             }
 
             if (!autoClose) {
@@ -159,7 +164,8 @@ namespace FrontierTextTool
                 txtOutput.WriteLine($"{obj.Offset}\t{obj.Hash}\t{obj.JString}\t{obj.EString}");
             txtOutput.Close();
 
-            if (!Directory.Exists("backup")) Directory.CreateDirectory("backup");
+            if (!Directory.Exists("backup"))
+                Directory.CreateDirectory("backup");
             File.Move(
                 catFile, 
                 $"backup/{Path.GetFileNameWithoutExtension(catFile)}_{DateTime.Now:yyyyMMdd_HHmm}.txt"
@@ -273,10 +279,10 @@ namespace FrontierTextTool
             if (trueOffsets) {
                 for (int i = 0; i < offsetDict.Count; i++)
                 {
-                    int replacement = offsetDict.ElementAt(i).Value;
-                    byte[] newPointer = BitConverter.GetBytes(replacement);
-                    int test = offsetDict.ElementAt(i).Key;
-                    for (int w = 0; w < 4; w++) fileBytes[offsetDict.ElementAt(i).Key + w] = newPointer[w];
+                    var element = offsetDict.ElementAt(i);
+                    byte[] newPointer = BitConverter.GetBytes(element.Value);
+                    for (int w = 0; w < 4; w++)
+                        fileBytes[element.Key + w] = newPointer[w];
                 }
             } else {
                 for (int p = 0; p < fileBytes.Length; p += 4)
@@ -330,7 +336,7 @@ namespace FrontierTextTool
             byte[] buffer = File.ReadAllBytes(outputFile);
             if (File.Exists($"{outputFile}.meta")) {
                 throw new FileNotFoundException(
-                    $"META file {outputFile}.meta does not exist, did you use '-log' during decrypting to generate it?"
+                    $"META file {outputFile}.meta does not exist, did you use '--log' during decrypting to generate it?"
                 );
             }
             byte[] bufferMeta = File.ReadAllBytes($"{outputFile}.meta");
@@ -358,7 +364,8 @@ namespace FrontierTextTool
             MemoryStream msInput = new(buffer);
             BinaryReader brInput = new(msInput);
 
-            endOffset = endOffset == 0 ? (int)brInput.BaseStream.Length : endOffset;
+            if (endOffset == 0)
+                endOffset = (int)brInput.BaseStream.Length;
 
             Console.WriteLine(
                 $"Strings at: 0x{startOffset:X8} - 0x{endOffset:X8}. Size 0x{endOffset - startOffset:X8}"
@@ -370,7 +377,7 @@ namespace FrontierTextTool
             txtOutput.WriteLine("Offset\tHash\tjString\teString");
 
             brInput.BaseStream.Seek(startOffset, SeekOrigin.Begin);
-            while (brInput.BaseStream.Position+4 <= endOffset)
+            while (brInput.BaseStream.Position + 4 <= endOffset)
             {
                 long off = brInput.BaseStream.Position;
                 long tmpPos = brInput.BaseStream.Position;
@@ -378,7 +385,8 @@ namespace FrontierTextTool
                 if (trueOffsets)
                 {
                     uint strPos = brInput.ReadUInt32();
-                    if (strPos == 0 || strPos > brInput.BaseStream.Length) continue;
+                    if (strPos == 0 || strPos > brInput.BaseStream.Length)
+                        continue;
                     tmpPos = brInput.BaseStream.Position;
                     if (nullstrings)
                     {
@@ -402,7 +410,8 @@ namespace FrontierTextTool
                 {
                     brInput.BaseStream.Seek(tmpPos, SeekOrigin.Begin);
                 }
-                if (str == "") continue;
+                if (str == "")
+                    continue;
                 txtOutput.WriteLine($"{off}\t{Helpers.GetCrc32(Encoding.GetEncoding("shift-jis").GetBytes(str))}\t{str}\t");
             }
             txtOutput.Close();
