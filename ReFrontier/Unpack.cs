@@ -184,7 +184,7 @@ namespace ReFrontier
         }
 
         /// <summary>
-        /// Unpack a JPK file.
+        /// Unpack, decompress, a JPK file.
         /// </summary>
         /// <param name="input">Input file path.</param>
         public static void UnpackJPK(string input)

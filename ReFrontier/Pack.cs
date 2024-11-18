@@ -240,7 +240,7 @@ namespace ReFrontier
         /// <param name="inPath">Input file path.</param>
         /// <param name="otPath">Output file path.</param>
         /// <param name="level">Compression level between 0 and 10000.</param>
-        public static void JPKEncode(ushort atype, string inPath, string otPath, int level)
+        public static void JPKEncode(int atype, string inPath, string otPath, int level)
         {
             Directory.CreateDirectory("output");
 
@@ -256,7 +256,7 @@ namespace ReFrontier
             // JKR header
             br.Write((uint) 0x1A524B4A);
             br.Write((ushort) 0x108);
-            br.Write(atype);
+            br.Write((ushort) atype);
             br.Write((uint) 0x10);
             br.Write(insize);
             IJPKEncode encoder;
@@ -273,11 +273,9 @@ namespace ReFrontier
                     break;
                 default:
                     // For level 2 encoding use: encoder = new JPKEncodeHFIRW();
-
-                    Console.WriteLine("Unsupported/invalid type: " + atype);
                     fsot.Close();
                     File.Delete(otPath);
-                    return;
+                    throw new InvalidOperationException("Unsupported/invalid type: " + atype);
             }
 
             DateTime start, finnish;

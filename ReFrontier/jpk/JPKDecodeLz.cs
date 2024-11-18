@@ -18,25 +18,37 @@ namespace ReFrontier.jpk
         /// <param name="buffer">Buffer to rewrite</param>
         /// <param name="offset">Offset position to the left.</param>
         /// <param name="length">Number of bytes to write.</param>
-        /// <param name="index">Initial position.</param>
+        /// <param name="index">Initial position to start copying bytes.</param>
         private static int JpkCopyLz(byte[] buffer, int offset, int length, int index)
         {
-            for (int i = index; i < length - index; i++)
+            int noOverlapSpan = Math.Min(length, offset);
+            // Copy in block
+            Buffer.BlockCopy(buffer, index - offset - 1, buffer, index, noOverlapSpan);
+            // Add repeated elements
+            for (int i = index + noOverlapSpan; i < length + index; i++)
             {
                 buffer[i] = buffer[i - offset - 1];
             }
             return length;
         }
 
-        private byte JpkBitLz(Stream s)
+        /// <summary>
+        /// Return the value of the next byte from stream.
+        /// </summary>
+        /// <param name="s">Input stream</param>
+        /// <returns>If byte is true or not</returns>
+        private bool JpkBitLz(Stream s)
         {
-            m_shiftIndex--;
-            if (m_shiftIndex < 0)
+            if (m_shiftIndex <= 0)
             {
                 m_shiftIndex = 7;
                 m_flag = ReadByte(s);
             }
-            return (byte)((m_flag >> m_shiftIndex) & 1);
+            else
+            {
+                m_shiftIndex--;
+            }
+            return ((m_flag >> m_shiftIndex) & 1) == 1;
         }
 
         /// <summary>
@@ -49,7 +61,7 @@ namespace ReFrontier.jpk
             int outIndex = 0;
             while (inStream.Position < inStream.Length && outIndex < outBuffer.Length)
             {
-                if (JpkBitLz(inStream) == 0)
+                if (!JpkBitLz(inStream))
                 {
                     outBuffer[outIndex++] = ReadByte(inStream);
                     continue;
@@ -57,10 +69,10 @@ namespace ReFrontier.jpk
                 
                 int length, offset;
 
-                if (JpkBitLz(inStream) == 0)
+                if (!JpkBitLz(inStream))
                 {
                     // Case 0
-                    length = (byte)((JpkBitLz(inStream) << 1) | JpkBitLz(inStream));
+                    length = (JpkBitLz(inStream) ? 2 : 0) + (JpkBitLz(inStream) ? 1 : 0);
                     offset = ReadByte(inStream);
                     outIndex += JpkCopyLz(outBuffer, offset, length + 3, outIndex);
                     continue;
@@ -77,10 +89,12 @@ namespace ReFrontier.jpk
                     continue;
                 }
 
-                if (JpkBitLz(inStream) == 0)
+                if (!JpkBitLz(inStream))
                 {
                     // Case 2, compute bytes to copy length
-                    length = (byte)((JpkBitLz(inStream) << 3) | (JpkBitLz(inStream) << 2) | (JpkBitLz(inStream) << 1) | JpkBitLz(inStream));
+                    length = 0;
+                    for (int i = 3; i > -1; i--)
+                        length += JpkBitLz(inStream) ? 1 << i : 0;
                     outIndex += JpkCopyLz(outBuffer, offset, length + 2 + 8, outIndex);
                     continue;
                 }

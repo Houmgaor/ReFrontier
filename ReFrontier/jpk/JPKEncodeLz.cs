@@ -60,32 +60,34 @@ namespace ReFrontier.jpk
         /// <returns>Length of the longest repeated sequence.</returns>
         private int LongestRepetition(int inputDataIndex, out uint offset)
         {
+            const int minLength = 3;
+
             // Limit length compression level, truncate if the length is above remaining data length
             int lengthThreshold = Math.Min(m_compressionLevel, m_inputBuffer.Length - inputDataIndex);
             offset = 0;
-            if (inputDataIndex == 0 || lengthThreshold < 3)
+            if (inputDataIndex == 0 || lengthThreshold < minLength)
             {
                 return 0;
             }
             // Start position to find a repeated element, minimum is 0 
             int inputStart = Math.Max(inputDataIndex - m_maxIndexDist, 0);
             
-            // Translation of <cref>inputDataIndex</cref> in pointers
             int maxLength = 0;
-            // Start identical sequence search
+            
             for (int leftIterator = inputStart; leftIterator < inputDataIndex; leftIterator++)
             {
                 int currentLength = 0;
-
-                for (int i = 0; i < lengthThreshold; i++)
+                            
+                while (
+                    currentLength < lengthThreshold && 
+                    m_inputBuffer[leftIterator + currentLength] == m_inputBuffer[inputDataIndex + currentLength]
+                )
                 {
-                    if (m_inputBuffer[leftIterator + i] != m_inputBuffer[inputDataIndex + i])
-                        break;
                     currentLength++;
                 }
 
                 // Check if the length is longer than the previous one
-                if (currentLength > maxLength && currentLength >= 3)
+                if (currentLength > maxLength && currentLength >= minLength)
                 {
                     maxLength = currentLength;
                     offset = (uint)(inputDataIndex - leftIterator - 1);
@@ -100,8 +102,10 @@ namespace ReFrontier.jpk
 
         /// <summary>
         /// Write data and flag to the stream.
+        /// 
+        /// Reset <cref>m_flag</cref> and <cref>m_indexToWrite</cref>.
         /// </summary>
-        /// <param name="final">If true, prevent writing flags.</param>
+        /// <param name="final">If true, prevent writing <cref>m_flag</cref>.</param>
         private void FlushFlag(bool final)
         {
             // Write current flag to the stream, and reset it
@@ -117,18 +121,22 @@ namespace ReFrontier.jpk
         /// <summary>
         /// Accumulate data in <cref>m_flag</cref> and flush every 8 bytes.
         /// </summary>
-        /// <param name="value">Byte to write.</param>
-        private void SetFlag(byte value)
+        /// <param name="value">If true, write a 1 at current index.</param>
+        private void SetFlag(bool value)
         {
-            m_shiftIndex--;
             // On eigth byte, write to stream
-            if (m_shiftIndex < 0)
+            if (m_shiftIndex <= 0)
             {
-                m_shiftIndex = 7;
                 FlushFlag(false);
+                m_shiftIndex = 7;
             }
-            // Accumulate in <cref>m_flag</cref>
-            m_flag |= (byte)(value << m_shiftIndex);
+            else 
+            {
+                m_shiftIndex--;
+            }
+            // Push value at the right index in <cref>m_flag</cref>
+            if (value)
+                m_flag |= (byte)(1 << m_shiftIndex);
         }
 
         /// <summary>
@@ -140,7 +148,7 @@ namespace ReFrontier.jpk
         {
             for (int i = count - 1; i >= 0; i--)
             {
-                SetFlag((byte)((value >> i) & 1));
+                SetFlag(((value >> i) & 1) == 1);
             }
         }
 
@@ -179,23 +187,23 @@ namespace ReFrontier.jpk
                 
                 if (repetitionLength == 0)
                 {
-                    SetFlag(0);
+                    SetFlag(false);
                     m_toWrite[m_indexToWrite++] = inBuffer[m_bufferIndex];
                     m_bufferIndex++;
                 }
                 else
                 {
-                    SetFlag(1);
+                    SetFlag(true);
                     if (repetitionLength <= 6 && repetitionOffset <= 0xff)
                     {
-                        SetFlag(0);
+                        SetFlag(false);
                         SetFlagsReverse((byte)(repetitionLength - 3), 2);
                         m_toWrite[m_indexToWrite++] = (byte)repetitionOffset;
                         m_bufferIndex += repetitionLength;
                     }
                     else
                     {
-                        SetFlag(1);
+                        SetFlag(true);
                         ushort u16 = (ushort)repetitionOffset;
                         // Check if repetitionLength is below 3 bits
                         if (repetitionLength <= 9)
@@ -207,12 +215,12 @@ namespace ReFrontier.jpk
                         {
                             if (repetitionLength <= 25)
                             {
-                                SetFlag(0);
+                                SetFlag(false);
                                 SetFlagsReverse((byte)(repetitionLength - 10), 4);
                             }
                             else
                             {
-                                SetFlag(1);
+                                SetFlag(true);
                                 m_toWrite[m_indexToWrite++] = (byte)(repetitionLength - 0x1a);
                             }
                         }
