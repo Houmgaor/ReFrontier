@@ -3,7 +3,8 @@
 FrontierTextTool let's you read, edit and write game texts using a custom CSV format.
 Both command generate a "CSV" separated by tabulation (`\t`), and encoded in shift-jis.
 
->[!WARNING] By Houmgaor: if you want to work on text data, I recommend using [FrontierTextHandler](https://github.com/Houmgaor/FrontierTextHandler). It is a simple Python tool that is more reliable than this project with less bloating.
+> [!WARNING]
+> By Houmgaor: if you want to work on text data, I recommend using [FrontierTextHandler](https://github.com/Houmgaor/FrontierTextHandler). It is a simple Python tool that is more reliable than this project with less bloating.
 
 ## Usage
 
@@ -12,3 +13,20 @@ Both command generate a "CSV" separated by tabulation (`\t`), and encoded in shi
 3. Change the original file with ``./FrontierTextTool.exe insert mhfdat.bin mhfdat.bin.csv --verbose --close``.
 
 This file includes a "--help" command with detailed explanations on each command.
+
+## Extract data
+
+Use ``dump <file> [start offset] [end offset]`` if you know which portion of the file to extract.
+Otherwise use ``fulldump <file> --trueOffsets --nullStrings``.
+This second command will find all text, but will output many unreadable text as a side effect.
+
+The result of both command will be a CSV with name pattern "\<file\>.csv".
+
+## Insert back
+
+Use ``insert <file> <csvFile>``.
+You can add some verbosity with ``--verbose``.
+
+## Merge two CSV
+
+Use ``merge <old CSV> <new CSV>``.

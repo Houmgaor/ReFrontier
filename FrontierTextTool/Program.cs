@@ -37,12 +37,12 @@ namespace FrontierTextTool
                     "=========================\n" +
                     "General commands\n" +
                     "================\n" +
-                    "dump [file] [startIndex] [endIndex] [--trueOffsets] [--nullStrings]: dump data from file to CSV.\n" +
-                    "fulldump [file] [--trueOffsets] [--nullStrings]: dump all data from file.\n" +
-                    "insert [output file] [input CSV] [--verbose] [--trueOffsets]: add data from CSV to file.\n" +
-                    "merge [old CSV] [new CSV]: merge two CSV files\n" +
-                    "cleanTrados [file]: clean-up ill-encoded characters in file.\n" +
-                    "insertCAT [file] [csvFile]: insert CAT file to CSV file.\n" +
+                    "dump <file> <startIndex> <endIndex> [--trueOffsets] [--nullStrings]: dump data from file to CSV.\n" +
+                    "fulldump <file> [--trueOffsets] [--nullStrings]: dump all data from file.\n" +
+                    "insert <output file> <input CSV> [--verbose] [--trueOffsets]: add data from CSV to file.\n" +
+                    "merge <old CSV> <new CSV>: merge two CSV files\n" +
+                    "cleanTrados <file>: clean-up ill-encoded characters in file.\n" +
+                    "insertCAT <file> <csvFile>: insert CAT file to CSV file.\n" +
                     "Options\n" +
                     "===============\n" +
                     "--trueOffsets: correct the value of string offsets. It is recommended to use it with --nullStrings.\n" +
@@ -170,8 +170,8 @@ namespace FrontierTextTool
                     {
                         Offset = csv.GetField<uint>("Offset"),
                         Hash = csv.GetField<uint>("Hash"),
-                        EString = csv.GetField("eString"),
-                        JString = csv.GetField("jString")
+                        EString = csv.GetField("EString"),
+                        JString = csv.GetField("JString")
                     };
                     stringDb.Add(record);
                 }
@@ -258,7 +258,7 @@ namespace FrontierTextTool
                     {
                         Offset = csv.GetField<uint>("Offset"),
                         Hash = csv.GetField<uint>("Hash"),
-                        EString = csv.GetField("eString").
+                        EString = csv.GetField("EString").
                         Replace("<TAB>", "\t"). // Replace tab
                         Replace("<CLINE>", "\r\n"). // Replace carriage return
                         Replace("<NLINE>", "\n") // Replace new line
@@ -520,7 +520,7 @@ namespace FrontierTextTool
                     var record = new StringDatabase
                     {
                         Hash = csv.GetField<uint>("Hash"),
-                        EString = csv.GetField("eString")
+                        EString = csv.GetField("EString")
                     };
                     stringDbOld.Add(record);
                 }
@@ -538,8 +538,8 @@ namespace FrontierTextTool
                     {
                         Offset = csv.GetField<uint>("Offset"),
                         Hash = csv.GetField<uint>("Hash"),
-                        EString = csv.GetField("eString"),
-                        JString = csv.GetField("jString")
+                        EString = csv.GetField("EString"),
+                        JString = csv.GetField("JString")
                     };
                     stringDbNew.Add(record);
                 }
