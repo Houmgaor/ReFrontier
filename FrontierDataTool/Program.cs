@@ -8,7 +8,7 @@ using System.Text;
 using CsvHelper;
 using CsvHelper.Configuration;
 
-using FrontierDataTool.structs;
+using FrontierDataTool.Structs;
 using LibReFrontier;
 
 namespace FrontierDataTool

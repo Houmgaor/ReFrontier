@@ -1,6 +1,6 @@
 ﻿using System.IO;
 
-namespace ReFrontier.jpk
+namespace ReFrontier.Jpk
 {
     /// <summary>
     /// Decode a JPK the same as JPKDecodeLz,

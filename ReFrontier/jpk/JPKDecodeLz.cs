@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace ReFrontier.jpk
+namespace ReFrontier.Jpk
 {
     /// <summary>
     /// Base class for LZ decompression.

@@ -2,7 +2,7 @@
 using System.IO;
 using System.Linq;
 
-namespace ReFrontier.jpk
+namespace ReFrontier.Jpk
 {
     /// <summary>
     /// LZ77 encoding but with an extra layer.

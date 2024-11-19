@@ -1,6 +1,6 @@
 ﻿using System.IO;
 
-namespace ReFrontier.jpk
+namespace ReFrontier.Jpk
 {
     internal class JPKEncodeRW : IJPKEncode
     {

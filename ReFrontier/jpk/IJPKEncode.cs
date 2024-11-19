@@ -1,6 +1,6 @@
 ﻿using System.IO;
 
-namespace ReFrontier.jpk
+namespace ReFrontier.Jpk
 {
   public delegate void ShowProgress(long perc);
 

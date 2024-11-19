@@ -1,8 +1,9 @@
-﻿using LibReFrontier;
-using ReFrontier.jpk;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
+
+using LibReFrontier;
+using ReFrontier.Jpk;
 
 namespace ReFrontier
 {

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace ReFrontier.jpk
+namespace ReFrontier.Jpk
 {
     /// <summary>
     /// Variant of the LZ77 compression algorithm.

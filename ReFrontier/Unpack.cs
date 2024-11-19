@@ -3,7 +3,7 @@ using System.IO;
 using System.Text;
 
 using LibReFrontier;
-using ReFrontier.jpk;
+using ReFrontier.Jpk;
 
 namespace ReFrontier
 {

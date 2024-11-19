@@ -1,4 +1,4 @@
-namespace FrontierDataTool.structs
+namespace FrontierDataTool.Structs
 {
     /// <summary>
     /// Ranged weapon data.
