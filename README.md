@@ -94,7 +94,7 @@ To decompress such a file:
 Once the files are decrypted and decompressed, you can edit them.
 You can use the tools in the [see also](#see-also) section.
 
-This project also includes FrontierTextText and FrontierDataTools to extract text and data from the files respectively.
+This solution also includes [FrontierTextTool](./FrontierTextTool/README.md) and [FrontierDataTool](./FrontierDataTool/README.md) to extract text and data from the files respectively.
 
 ### Compress
 

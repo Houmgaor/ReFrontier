@@ -18,7 +18,6 @@ To get help, use:
 
 Any command will leave the terminal open until you press enter.
 Use ``--close`` to close the terminal after running ReFrontier.
-
 Use ``--help`` to display the CLI help.
 
 ### Decrypt
@@ -43,7 +42,6 @@ The decryption options are:
 
 Decompressing a file *replaces* the old file by its new format, don't forget to backup important data.
 You can recognized a compressed file by its "JKR" header (in the file first bytes).
-To decompress such a file:
 
 The unpacking options are:
 
@@ -57,11 +55,15 @@ The unpacking options are:
 
 ### Data edition
 
-This project also includes FrontierTextText and FrontierDataTools to extract text and data from the files respectively.
+This solution also includes [FrontierTextTool](../FrontierTextTool/README.md) and [FrontierDataTool](../FrontierDataTool/README.md) to extract text and data from the files respectively.
 
 ### Compress
 
-To compress it again JPK type 4, with maximal (100) compression use:
+You can compress back to supported formats.
+Neither the compression type nor level are really important, since the game will figure out how to decompress from the file header.
+
+A good match is JPK type 3, with any compression level from 50 to 90.
+You can declare compression up to "100%", but the compression efficiency frops sharply at "81.91".
 
 The options are:
 
