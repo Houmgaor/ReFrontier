@@ -13,7 +13,7 @@ namespace LibReFrontier
     public class FileOperations
     {
         /// <summary>
-        /// Read null-terminated string
+        /// Read bytes from position until meeting null (0x00) or end-of-file.
         /// </summary>
         /// <param name="brInput">Reader to read from, we stop at the first null termination.</param>
         /// <param name="encoding">Encoding to use.</param>
