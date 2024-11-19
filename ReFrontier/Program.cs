@@ -34,18 +34,20 @@ namespace ReFrontier
             var parsedArgs = ArgumentsParser.ParseArguments(args);
 
             var assembly = Assembly.GetExecutingAssembly();
-            var fileVersionAttribute = assembly.GetCustomAttribute<AssemblyFileVersionAttribute>();
+            var fileVersionAttribute = assembly.GetCustomAttribute<AssemblyFileVersionAttribute>().Version;
             var argKeys = parsedArgs.Keys;
 
             if (argKeys.Contains("--version"))
             {
-                Console.WriteLine("v" + fileVersionAttribute.Version);
+                Console.WriteLine("v" + fileVersionAttribute);
                 return;
             }
 
             ArgumentsParser.Print(
-                $"ReFrontier v{fileVersionAttribute.Version} - " + 
-                "A tool for editing Monster Hunter Frontier files, by MHVuze",
+                assembly.GetCustomAttribute<AssemblyProductAttribute>().Product +
+                $" v{fileVersionAttribute} - " + 
+                assembly.GetCustomAttribute<AssemblyDescriptionAttribute>().Description + 
+                ", by MHVuze",
                 false
             );
 

@@ -6,7 +6,13 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <AssemblyTitle>FrontierTextTool</AssemblyTitle>
     <Product>FrontierTextTool</Product>
+    <Description>Extract and edit Monster Hunter Frontier game texts</Description>
     <Copyright>Copyright ©  2019</Copyright>
+    <Version>1.0.0</Version>
+    <FileVersion>1.0.0</FileVersion>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Authors>Vuze</Authors>
+    <RepositoryUrl>https://github.com/Houmgaor/ReFrontier</RepositoryUrl>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />

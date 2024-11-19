@@ -7,9 +7,13 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <AssemblyTitle>ReFrontier</AssemblyTitle>
     <Product>ReFrontier</Product>
+    <Description>Decompress/recompress Monster Hunter Frontier game files</Description>
     <Copyright>Copyright ©  2016</Copyright>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/Houmgaor/ReFrontier</RepositoryUrl>
     <Version>1.0.1</Version>
     <FileVersion>1.0.1</FileVersion>
+    <Authors>Vuze</Authors>
   </PropertyGroup>
 
   <ItemGroup>

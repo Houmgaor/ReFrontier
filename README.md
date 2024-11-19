@@ -56,6 +56,8 @@ To get help, use:
 ./ReFrontier.exe --help
 ```
 
+For each command, detailed explanations are available at [ReFrontier/README.md](./ReFrontier/README.md).
+
 ### General arguments
 
 Any command will leave the terminal open until you press enter.
@@ -77,14 +79,6 @@ If you file is named "mhfdat.bin", the meta file will be mhfdat.bin.meta.
 ./ReFrontier.exe mhfdat.bin --log --decryptOnly  # Decrypt mhfdat.bin, create mhfdat.bin.meta, do not decompress mhfdat.bin
 ```
 
-The decryption options are:
-
-```text
---log: Write log file (required for crypting back)
---decryptOnly: Decrypt ECD files without unpacking
---noDecryption: Don't decrypt ECD files, no unpacking
-```
-
 ### Decompress
 
 Decompressing a file *replaces* the old file by its new format, don't forget to backup important data.
@@ -93,16 +87,6 @@ To decompress such a file:
 
 ```commandline
 ./ReFrontier.exe mhfdat.bin  # If mhdat.bin is already decrypted, decompress it
-```
-
-The unpacking options are:
-
-```text
---cleanUp: Delete simple archives after unpacking
---stageContainer: Unpack file as stage-specific container
---autoStage: Automatically attempt to unpack containers that might be stage-specific
---nonRecursive: Do not unpack recursively
---ignoreJPK: Do not decompress JPK files
 ```
 
 ### Data edition
@@ -120,26 +104,7 @@ To compress it again JPK type 4, with maximal (100) compression use:
 ./ReFrontier.exe mhfdat.bin --compress=4,100
 ```
 
-The options are:
-
-```text
---pack: Repack directory (requires log file  - double check file extensions therein and make sure you account for encryption, compression)
---compress=[type],[level]: Pack file with jpk [type] at compression [level] (example: --compress=3,10)
-```
-
 The output will be a file, or a folder with the same name in the `output/` directory.
-
-It has the following output on vanilla mhfdat.bin:
-
-```text
-File compressed using type 4 (level 1): 9453891 bytes (64,26 % saved) in 0:04.48
-File compressed using type 4 (level 2): 8589271 bytes (67,53 % saved) in 0:06.84
-
-[...]
-
-File compressed using type 4 (level 100): 6045761 bytes (77,15 % saved) in 2:05.03
-Vanilla file from COG with type 4       : 5363764 bytes (79,72 % saved)
-```
 
 ### Encrypt
 
@@ -162,8 +127,8 @@ You need .NET to build this project.
 ```commandline
 git clone https://github.com/Houmgaor/ReFrontier.git
 cd ReFrontier
-# Use --configuration Release for faster execution
-dotnet build
+# Remove configuration for debugging
+dotnet build --configuration Release
 ```
 
 You should find the executable "ReFrontier.exe" in `./Refrontier/bin/Release/net8.0/` (or similar path).

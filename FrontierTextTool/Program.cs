@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 
 using CsvHelper;
@@ -25,11 +26,38 @@ namespace FrontierTextTool
         private static void Main(string[] args)
         {
             var parsedArgs = ArgumentsParser.ParseArguments(args);
-            if (parsedArgs.Count < 2) {
-                throw new ArgumentException($"Too few arguments. {parsedArgs.Count}, need at least 2 arguments.");
+            var keyArgs = parsedArgs.Keys;
+
+            if (keyArgs.Contains("--help"))
+            {
+                var assembly = Assembly.GetExecutingAssembly();
+                var fileVersionAttribute = assembly.GetCustomAttribute<AssemblyFileVersionAttribute>().Version;
+                ArgumentsParser.Print(
+                    $"FrontierTextTool v{fileVersionAttribute} - extract and edit text data.\n" +
+                    "=========================\n" +
+                    "General commands\n" +
+                    "================\n" +
+                    "dump [file] [startIndex] [endIndex] [--trueOffsets] [--nullStrings]: dump data from file to CSV.\n" +
+                    "fulldump [file] [--trueOffsets] [--nullStrings]: dump all data from file.\n" +
+                    "insert [output file] [input CSV] [--verbose] [--trueOffsets]: add data from CSV to file.\n" +
+                    "merge [old CSV] [new CSV]: merge two CSV files\n" +
+                    "cleanTrados [file]: clean-up ill-encoded characters in file.\n" +
+                    "insertCAT [file] [csvFile]: insert CAT file to CSV file.\n" +
+                    "Options\n" +
+                    "===============\n" +
+                    "--trueOffsets: correct the value of string offsets. It is recommended to use it with --nullStrings.\n" +
+                    "--nullStrings: check if strings are valid before outputing them.\n" +
+                    "--verbose: more verbosity.\n" + 
+                    "--close: close the terminal after command.\n" +
+                    "--help: display this message.",
+                    false
+                );
+                return;
             }
 
-            var keyArgs = parsedArgs.Keys;
+            if (parsedArgs.Count < 2) {
+                throw new ArgumentException($"Too few arguments: {parsedArgs.Count}. Need at least 2 arguments.");
+            }
 
             bool verbose = keyArgs.Contains("--verbose") || keyArgs.Contains("-verbose");
             bool autoClose = keyArgs.Contains("--close") || keyArgs.Contains("-close");
@@ -168,7 +196,7 @@ namespace FrontierTextTool
             if (File.Exists(fileName))
                 File.Delete(fileName);
             StreamWriter txtOutput = new(fileName, true, Encoding.GetEncoding("shift-jis"));
-            txtOutput.WriteLine("Offset\tHash\tjString\teString");
+            txtOutput.WriteLine("Offset\tHash\tJString\tEString");
             foreach (var obj in stringDb)
                 txtOutput.WriteLine($"{obj.Offset}\t{obj.Hash}\t{obj.JString}\t{obj.EString}");
             txtOutput.Close();
@@ -537,9 +565,9 @@ namespace FrontierTextTool
             if (File.Exists(fileName))
                 File.Delete(fileName);
             StreamWriter txtOutput = new(fileName, true, Encoding.GetEncoding("shift-jis"));
-            txtOutput.WriteLine("Offset\tHash\tJString\tEString");
             // Note from v1.1.0: CsvHelpers may escape too many characters
             using (var csvOutput = new CsvWriter(txtOutput, csvConf)) {
+                csvOutput.WriteHeader<StringDatabase>();
                 csvOutput.WriteRecords(stringDbNew);
             }
             txtOutput.Close();

@@ -129,8 +129,9 @@ namespace FrontierDataTool
                             "You must provide 5 positional arguments with 'dump':\n" + 
                             "dump [suffix] [mhfpac.bin] [mhfdat.bin] [mhfinf.bin]"
                         );
-                    } 
-                    DumpData(args[1], args[2], args[3], args[4]);  // suffix, mhfpac.bin, mhfdat.bin, mhfinf.bin
+                    }
+                    // suffix, mhfpac.bin, mhfdat.bin, mhfinf.bin
+                    DumpData(args[1], args[2], args[3], args[4]);
                     break;
                 case "modshop":
                     if (args.Length < 2) {
@@ -741,7 +742,6 @@ namespace FrontierDataTool
             // Generate shop array
             count = 16700;
             byte[] shopArray = new byte[(count * 8) + 5 * 32];
-            int blockSize = count / 5 * 8;
 
             for (int i = 0; i < count; i++)
             {
@@ -773,9 +773,11 @@ namespace FrontierDataTool
                     patchedPointer.Reverse();
                     Array.Copy(patchedPointer, 0, outputArray, offsetPointer, patchedPointer.Length);                    
                 }
-                else Console.WriteLine("Could not find shop pointer, please check manually and correct code.");
+                else
+                    Console.WriteLine("Could not find shop pointer, please check manually and correct code.");
             }
-            else Console.WriteLine("Could not find shop needle, please check manually and correct code.");
+            else
+                Console.WriteLine("Could not find shop needle, please check manually and correct code.");
 
             // Find and modify Hunter Pearl Skill unlocks
             needle = [01, 00, 01, 00, 00, 00, 00, 00, 0x25, 00, 0x25, 00, 0x25, 00, 0x25, 00, 0x25, 00, 0x25, 00, 0x25, 00];
@@ -787,7 +789,8 @@ namespace FrontierDataTool
                 for (int i = 0; i < 108; i++)
                     Array.Copy(pearlPatch, 0, outputArray, offsetData + (i * 0x30) + 8, pearlPatch.Length);                
             }
-            else Console.WriteLine("Could not find pearl skill needle, please check manually and correct code.");
+            else
+                Console.WriteLine("Could not find pearl skill needle, please check manually and correct code.");
 
             // Write to file
             File.WriteAllBytes(file, outputArray);
