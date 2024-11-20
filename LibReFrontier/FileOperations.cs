@@ -1,7 +1,7 @@
-﻿using Force.Crc32;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Hashing;
 using System.Linq;
 using System.Text;
 
@@ -73,7 +73,7 @@ namespace LibReFrontier
             string dateHex2 = date.Subtract(new DateTime(1601, 1, 1)).Ticks.ToString("X16")[..8];
             string dateHex1 = date.Subtract(new DateTime(1601, 1, 1)).Ticks.ToString("X16")[8..];
             byte[] repackData = File.ReadAllBytes(fileName);
-            uint crc32 = Crc32Algorithm.Compute(repackData);
+            uint crc32 = Crc32.HashToUInt32(repackData);
             Console.WriteLine($"{crc32:X8},{dateHex1},{dateHex2},{fileName.Replace("output", "dat")},{repackData.Length},0");
             return $"{crc32:X8},{dateHex1},{dateHex2},{fileName},{repackData.Length},0";
         }
