@@ -6,18 +6,28 @@ Huge thank you to enler for their help!
 
 ## In this fork (Houmgaor/)
 
-This fork is 100% compatible with mhvuze/ReFrontier.
+This fork is 100% compatible with [mhvuze/ReFrontier](https://github.com/mhvuze/ReFrontier) and [chakratos/ReFrontier](https://github.com/Chakratos/ReFrontier).
 Yet it brings many improvements.
+
+General improvements:
 
 - Compatibility with Linux/Mac.
 - 4x times faster.
 - Interface standardization.
-- Compress and encrypt in one command.
-- Better parsing for CSV files.
-- Removes outdated/unused libraries.
-- Removes memory-unsafe code.
 - User documentation.
 - Linting.
+
+Compared to mhvuze/ReFrontier:
+
+- Compress and encrypt in one command.
+- Removes outdated/unused libraries.
+- Removes memory-unsafe code.
+
+Compared to Chakratos/ReFrontier, in FrontierTextTool:
+
+- Better parsing for CSV files.
+- "fulldump" creates less garbage text.
+- Fixes compression level using "insert".
 
 ## Install
 
