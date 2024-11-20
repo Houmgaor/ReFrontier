@@ -1,5 +1,5 @@
-﻿using Force.Crc32;
-using System;
+﻿using System;
+using System.IO.Hashing;
 
 namespace LibReFrontier
 {
@@ -105,7 +105,7 @@ namespace LibReFrontier
         {
             // Update meta data
             int payloadSize = buffer.Length;
-            uint crc32w = Crc32Algorithm.Compute(buffer);
+            uint crc32w = Crc32.HashToUInt32(buffer);
             int index = BitConverter.ToUInt16(bufferMeta, 4);
 
             // Write meta data
@@ -215,7 +215,7 @@ namespace LibReFrontier
         /// <returns>CRC32 bits hash</returns>
         public static uint GetCrc32(byte[] array)
         {
-            return Crc32Algorithm.Compute(array);
+            return Crc32.HashToUInt32(array);
         }
     }
 }

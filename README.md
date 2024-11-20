@@ -6,7 +6,7 @@ Huge thank you to enler for their help!
 
 ## In this fork (Houmgaor/)
 
-This fork is 100% compatible with [mhvuze/ReFrontier](https://github.com/mhvuze/ReFrontier) and [chakratos/ReFrontier](https://github.com/Chakratos/ReFrontier).
+This fork is 100% compatible with [mhvuze/ReFrontier](https://github.com/mhvuze/ReFrontier) and [Chakratos/ReFrontier](https://github.com/Chakratos/ReFrontier).
 Yet it brings many improvements.
 
 General improvements:
