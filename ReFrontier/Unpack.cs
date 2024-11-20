@@ -103,7 +103,7 @@ namespace ReFrontier
                 byte[] header = new byte[4];
                 Array.Copy(entryData, header, 4);
                 uint headerInt = BitConverter.ToUInt32(header, 0);
-                string extension = Enum.GetName(typeof(ByteOperations.Extensions), headerInt);
+                string extension = Enum.GetName(typeof(FileExtension), headerInt);
                 extension ??= ByteOperations.CheckForMagic(headerInt, entryData);
                 extension ??= "bin";
 
@@ -197,13 +197,14 @@ namespace ReFrontier
             {
                 ms.Seek(0x2, SeekOrigin.Current);
                 int type = br.ReadUInt16();
-                Console.WriteLine($"JPK Type: {type}");
-                IJPKDecode decoder = type switch
+                var compressionType = Enum.GetValues<CompressionType>()[type];
+                Console.WriteLine($"JPK {compressionType} (type {type})");
+                IJPKDecode decoder = compressionType switch
                 {
-                    0 => new JPKDecodeRW(),
-                    2 => new JPKDecodeHFIRW(),
-                    3 => new JPKDecodeLz(),
-                    4 => new JPKDecodeHFI(),
+                    CompressionType.RW => new JPKDecodeRW(),
+                    CompressionType.HFIRW => new JPKDecodeHFIRW(),
+                    CompressionType.LZ => new JPKDecodeLz(),
+                    CompressionType.HFI => new JPKDecodeHFI(),
                     _ => throw new NotImplementedException($"JPK type {type} is not supported."),
                 };
 
@@ -218,7 +219,7 @@ namespace ReFrontier
                 byte[] header = new byte[4];
                 Array.Copy(outBuffer, header, 4);
                 uint headerInt = BitConverter.ToUInt32(header, 0);                    
-                string extension = Enum.GetName(typeof(ByteOperations.Extensions), headerInt);
+                string extension = Enum.GetName(typeof(FileExtension), headerInt);
                 extension ??= ByteOperations.CheckForMagic(headerInt, outBuffer);
                 extension ??= "bin";
 
@@ -268,7 +269,7 @@ namespace ReFrontier
                 byte[] header = new byte[4];
                 Array.Copy(data, header, 4);
                 uint headerInt = BitConverter.ToUInt32(header, 0);
-                string extension = Enum.GetName(typeof(ByteOperations.Extensions), headerInt);
+                string extension = Enum.GetName(typeof(FileExtension), headerInt);
                 extension ??= ByteOperations.CheckForMagic(headerInt, data);
                 extension ??= "bin";
 
@@ -315,7 +316,7 @@ namespace ReFrontier
                 byte[] header = new byte[4];
                 Array.Copy(data, header, 4);
                 uint headerInt = BitConverter.ToUInt32(header, 0);
-                string extension = Enum.GetName(typeof(ByteOperations.Extensions), headerInt);
+                string extension = Enum.GetName(typeof(FileExtension), headerInt);
                 extension ??= ByteOperations.CheckForMagic(headerInt, data);
                 extension ??= "bin";
 

@@ -38,33 +38,6 @@ namespace LibReFrontier
 
 
         /// <summary>
-        /// From file header magic number to corresponding file extensions
-        /// </summary>
-        public enum Extensions
-        {
-            dds = 542327876,
-            /// <summary>
-            /// Custom extension
-            /// </summary>
-            ftxt = 0x000B0000,
-            /// <summary>
-            /// WiiU texture
-            /// </summary>
-            gfx2 = 846751303,
-            jkr = 0x1A524B4A,
-            ogg = 0x5367674F,
-            /// <summary>
-            /// iOS MHFU model
-            /// </summary>
-            pmo = 7302512,
-            png = 0x474e5089,
-            /// <summary>
-            /// iOS MHFU texture
-            /// </summary>
-            tmh = 1213027374
-        }
-
-        /// <summary>
         /// Get file extension for files without unique 4-byte magic
         /// </summary>
         /// <param name="headerInt"></param>
@@ -94,5 +67,32 @@ namespace LibReFrontier
 
             return extension;
         }
+    }
+
+    /// <summary>
+    /// From file header magic number to corresponding file extensions
+    /// </summary>
+    public enum FileExtension
+    {
+        dds = 542327876,
+        /// <summary>
+        /// Custom extension
+        /// </summary>
+        ftxt = 0x000B0000,
+        /// <summary>
+        /// WiiU texture
+        /// </summary>
+        gfx2 = 846751303,
+        jkr = 0x1A524B4A,
+        ogg = 0x5367674F,
+        /// <summary>
+        /// iOS MHFU model
+        /// </summary>
+        pmo = 7302512,
+        png = 0x474e5089,
+        /// <summary>
+        /// iOS MHFU texture
+        /// </summary>
+        tmh = 1213027374
     }
 }

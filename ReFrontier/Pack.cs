@@ -237,11 +237,10 @@ namespace ReFrontier
         /// <summary>
         /// Compress a JPK file to a JKR type
         /// </summary>
-        /// <param name="atype">JPK type, between 0 and 4</param>
+        /// <param name="compression">Compression to use.</param>
         /// <param name="inPath">Input file path.</param>
         /// <param name="otPath">Output file path.</param>
-        /// <param name="level">Compression level between 0 and 10000.</param>
-        public static void JPKEncode(int atype, string inPath, string otPath, int level)
+        public static void JPKEncode(Compression compression, string inPath, string otPath)
         {
             Directory.CreateDirectory("output");
 
@@ -250,41 +249,40 @@ namespace ReFrontier
             if (File.Exists(otPath))
                 File.Delete(otPath);
             Console.WriteLine(
-                $"Starting file compression, type {atype}, level {level / 100} to {otPath}"
+                $"Starting file compression, type {compression.type}, level {compression.level} to {otPath}"
             );
             FileStream fsot = File.Create(otPath);
             BinaryWriter br = new(fsot);
             // JKR header
             br.Write((uint) 0x1A524B4A);
             br.Write((ushort) 0x108);
-            br.Write((ushort) atype);
+            br.Write((ushort) compression.type);
             br.Write((uint) 0x10);
             br.Write(insize);
             IJPKEncode encoder;
-            switch (atype)
+            switch (compression.type)
             {
-                case 0:
+                case CompressionType.RW:
                     encoder = new JPKEncodeRW();
                     break;
-                case 3:
+                case CompressionType.LZ:
                     encoder = new JPKEncodeLz();
                     break;
-                case 4:
+                case CompressionType.HFI:
                     encoder = new JPKEncodeHFI();
                     break;
                 default:
-                    // For level 2 encoding use: encoder = new JPKEncodeHFIRW();
                     fsot.Close();
                     File.Delete(otPath);
-                    throw new InvalidOperationException("Unsupported/invalid type: " + atype);
+                    throw new InvalidOperationException("Unsupported/invalid type: " + compression.type);
             }
 
             DateTime start, finnish;
             start = DateTime.Now;
-            encoder.ProcessOnEncode(buffer, fsot, level, null);
+            encoder.ProcessOnEncode(buffer, fsot, compression.level * 100, null);
             finnish = DateTime.Now;
             ArgumentsParser.Print(
-                $"File compressed using type {atype} (level {level / 100}): " + 
+                $"File compressed using type {compression.type} (level {compression.level}): " + 
                 $"{fsot.Length} bytes ({1 - (decimal)fsot.Length / insize:P} saved) in {finnish - start:%m\\:ss\\.ff}",
                 false
             );

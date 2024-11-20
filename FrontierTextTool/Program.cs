@@ -382,7 +382,12 @@ namespace FrontierTextTool
             File.WriteAllBytes(outputFile, updatedBytes);
 
             // Pack with jpk type 0 and encrypt file with ecd
-            Pack.JPKEncode(0, outputFile, outputFile, 15);
+            Compression compression = new()
+            {
+                type = CompressionType.RW,
+                level = 15
+            };
+            Pack.JPKEncode(compression, outputFile, outputFile);
             byte[] buffer = File.ReadAllBytes(outputFile);
             if (File.Exists($"{outputFile}.meta")) {
                 throw new FileNotFoundException(

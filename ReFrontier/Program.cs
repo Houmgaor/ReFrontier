@@ -105,23 +105,12 @@ namespace ReFrontier
             bool autoClose = argKeys.Contains("--close") || argKeys.Contains("-close");
 
             // For compression level we need a bit of text parsing
-            int compressType = -1, compressLevel = -1;
+            Compression compression = new();
             if (argKeys.Contains("--compress") || argKeys.Contains("-compress"))
             {
                 if (argKeys.Contains("--compress"))
                 {
-                    var matches = parsedArgs["--compress"].Split(",");
-                    if (matches.Length != 2)
-                    {
-                        throw new ArgumentException(
-                            "Check the input of compress! Received: " +
-                            parsedArgs["--compress"] + ". " +
-                            "Cannot split as compression [type],[level]. " +
-                            "Example: --compress=3,50"
-                        );
-                    }
-                    compressType = int.Parse(matches[0]);
-                    compressLevel = int.Parse(matches[1]);
+                    compression = ArgumentsParser.ParseCompression(parsedArgs["--compress"]);
                 }
                 else
                 {
@@ -137,16 +126,14 @@ namespace ReFrontier
                         );
                     }
                     var match = matches[0];
-                    compressType = int.Parse(match.Groups[1].Value);
-                    compressLevel = int.Parse(match.Groups[2].Value);
-                }
-                if (compressType == 0 || compressLevel == 0) {
-                    throw new Exception("Check compression level and type!");
+                    compression = ArgumentsParser.ParseCompression(
+                        match.Groups[1].Value + "," + match.Groups[2].Value
+                    );
                 }
             }
 
             // Start input processing
-            StartProcessing(input, encrypt, repack, compressType, compressLevel);
+            StartProcessing(input, encrypt, repack, compression);
             Console.WriteLine("Done.");
             if (!autoClose)
                 Console.Read();
@@ -209,15 +196,14 @@ namespace ReFrontier
         /// <param name="input">File or directory path.</param>
         /// <param name="encrypt">True if input file should be encrypted.</param>
         /// <param name="repack">True if input directory should be packed as a file.</param>
-        /// <param name="compressType">Compression type, -1 means no compression.</param>
-        /// <param name="compressLevel">Compression level</param>
+        /// <param name="compression">Compression to use.</param>
         /// <exception cref="InvalidOperationException">Thrown if the arguments are not coherent with the input.</exception>
-        private static void StartProcessing(string input, bool encrypt, bool repack, int compressType = -1, int compressLevel = -1)
+        private static void StartProcessing(string input, bool encrypt, bool repack, Compression compression)
         {
             if (File.GetAttributes(input).HasFlag(FileAttributes.Directory))
             {
                 // Directory
-                if (compressType != -1)
+                if (compression.level != 0)
                     throw new InvalidOperationException("Cannot compress a directory.");
                 if (encrypt)
                     throw new InvalidOperationException("Cannot encrypt a directory.");
@@ -238,23 +224,19 @@ namespace ReFrontier
                 if (repack)
                     throw new InvalidOperationException("A single file cannot be used while in repacking mode.");
                 
-                if (compressType != -1)
+                if (compression.level != 0)
                 {
                     Pack.JPKEncode(
-                        compressType, input, $"output/{Path.GetFileName(input)}", compressLevel * 100
+                        compression, input, $"output/{Path.GetFileName(input)}"
                     );
                 }
                 
                 if (encrypt)
-                {
                     EncryptEcdFile(input, $"{input}.meta");
-                }
 
-                if (compressType == -1 && !encrypt) 
-                {
-                    // Try to depile the file as multiple files
-                    ProcessMultipleLevels([input], _recursive, _noDecryption);                    
-                }
+                // Try to depack the file as multiple files
+                if (compression.level == 0 && !encrypt) 
+                    ProcessMultipleLevels([input], _recursive, _noDecryption);
             }
         }
 
