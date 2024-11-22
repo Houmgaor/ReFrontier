@@ -159,6 +159,21 @@ namespace FrontierDataTool
         /// <param name="mhfinf">Path to mhfinf</param>
         private static void DumpData(string suffix, string mhfpac, string mhfdat, string mhfinf)
         {
+            var skillId = DumpSkillSystem(mhfpac, suffix);
+
+            DumpSkillData(mhfpac, suffix);
+
+            DumpItemData(mhfdat, suffix);
+
+            DumpEquipementData(mhfdat, suffix, skillId);
+
+            DumpWeaponData(mhfdat);
+
+            DumpQuestData(mhfinf);
+        }
+
+        private static List<KeyValuePair<int, string>> DumpSkillSystem(string mhfpac, string suffix)
+        {
             #region SkillSystem
             // Get and dump skill system dictionary
             Console.WriteLine("Dumping skill tree names.");
@@ -179,18 +194,28 @@ namespace FrontierDataTool
                 id++;
             }
 
+            // Dump skill system data
             string textName = $"mhsx_SkillSys_{suffix}.txt";
             using (StreamWriter file = new(textName, false, Encoding.UTF8))
                 foreach (KeyValuePair<int, string> entry in skillId)
                     file.WriteLine("{0}", entry.Value);
+
+            return skillId;
             #endregion
+        }
+
+        private static void DumpSkillData(string mhfpac, string suffix)
+        {
+            MemoryStream msInput = new(File.ReadAllBytes(mhfpac));
+            BinaryReader brInput = new(msInput);
+
 
             #region ActiveSkill
             Console.WriteLine("Dumping active skill names.");
             brInput.BaseStream.Seek(soStringSkillActivate, SeekOrigin.Begin);
-            sOffset = brInput.ReadInt32();
+            int sOffset = brInput.ReadInt32();
             brInput.BaseStream.Seek(eoStringSkillActivate, SeekOrigin.Begin);
-            eOffset = brInput.ReadInt32();
+            int eOffset = brInput.ReadInt32();
 
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
             List<string> activeSkill = [];
@@ -200,7 +225,7 @@ namespace FrontierDataTool
                 activeSkill.Add(name);
             }
 
-            textName = $"mhsx_SkillActivate_{suffix}.txt";
+            string textName = $"mhsx_SkillActivate_{suffix}.txt";
             using (StreamWriter file = new(textName, false, Encoding.UTF8))
                 foreach (string entry in activeSkill)
                     file.WriteLine("{0}", entry);
@@ -247,15 +272,18 @@ namespace FrontierDataTool
                 foreach (string entry in zSkill)
                     file.WriteLine("{0}", entry);
             #endregion
+        }
 
+        private static void DumpItemData(string mhfdat, string suffix)
+        {   
             #region Items
             Console.WriteLine("Dumping item names.");
-            msInput = new MemoryStream(File.ReadAllBytes(mhfdat));
-            brInput = new BinaryReader(msInput);            
+            var msInput = new MemoryStream(File.ReadAllBytes(mhfdat));
+            var brInput = new BinaryReader(msInput);
             brInput.BaseStream.Seek(soStringItem, SeekOrigin.Begin);
-            sOffset = brInput.ReadInt32();
+            int sOffset = brInput.ReadInt32();
             brInput.BaseStream.Seek(eoStringItem, SeekOrigin.Begin);
-            eOffset = brInput.ReadInt32();
+            int eOffset = brInput.ReadInt32();
 
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
             List<string> items = [];
@@ -265,7 +293,7 @@ namespace FrontierDataTool
                 items.Add(name);
             }
 
-            textName = $"mhsx_Items_{suffix}.txt";
+            string textName = $"mhsx_Items_{suffix}.txt";
             using (StreamWriter file = new(textName, false, Encoding.UTF8))
                 foreach (string entry in items)
                     file.WriteLine("{0}", entry);
@@ -289,10 +317,18 @@ namespace FrontierDataTool
                 foreach (string entry in itemsDesc)
                     file.WriteLine("{0}", entry);
             #endregion
+        }   
 
+        private static void DumpEquipementData(
+            string mhfdat, string suffix, List<KeyValuePair<int, string>> skillId
+        )
+        {
             #region EquipmentData
             // Dump armor data
             int totalCount = 0;
+            int sOffset, eOffset;
+            var msInput = new MemoryStream(File.ReadAllBytes(mhfdat));
+            var brInput = new BinaryReader(msInput);
             for (int i = 0; i < 5; i++)
             {
                 // Get raw data
@@ -415,18 +451,23 @@ namespace FrontierDataTool
             }
 
             // Write armor txt
-            textName = $"mhsx_Armor_{suffix}.txt";
-            using (StreamWriter file = new(textName, false, Encoding.UTF8))
-                foreach (var entry in armorEntries)
-                    file.WriteLine("{0}", entry.Name);
+            string textName = $"mhsx_Armor_{suffix}.txt";
+            using StreamWriter file = new(textName, false, Encoding.UTF8);
+            foreach (var entry in armorEntries)
+                file.WriteLine("{0}", entry.Name);
             #endregion
+        }
 
+        private static void DumpWeaponData(string mhfdat)
+        {
             #region WeaponData
             // Dump melee weapon data
+            var msInput = new MemoryStream(File.ReadAllBytes(mhfdat));
+            var brInput = new BinaryReader(msInput);
             brInput.BaseStream.Seek(soMelee, SeekOrigin.Begin);
-            sOffset = brInput.ReadInt32();
+            int sOffset = brInput.ReadInt32();
             brInput.BaseStream.Seek(eoMelee, SeekOrigin.Begin);
-            eOffset = brInput.ReadInt32();
+            int eOffset = brInput.ReadInt32();
 
             int entryCountMelee = (eOffset - sOffset) / 0x34;
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
@@ -591,17 +632,21 @@ namespace FrontierDataTool
             }
             #endregion
 
+        }
+
+        private static void DumpQuestData(string mhfinf)
+        {
             #region QuestData
             // Dump inf quest data
-            msInput = new MemoryStream(File.ReadAllBytes(mhfinf));
-            brInput = new BinaryReader(msInput);
+            var msInput = new MemoryStream(File.ReadAllBytes(mhfinf));
+            var brInput = new BinaryReader(msInput);
 
-            totalCount = 0;
+            int totalCount = 0;
             for (int j = 0; j < offsetInfQuestData.Count; j++)
                 totalCount += offsetInfQuestData[j].Value;
             QuestData[] quests = new QuestData[totalCount];
 
-            currentCount = 0;
+            int currentCount = 0;
             for (int j = 0; j < offsetInfQuestData.Count; j++)
             {
                 brInput.BaseStream.Seek(offsetInfQuestData[j].Key, SeekOrigin.Begin);                
@@ -675,15 +720,13 @@ namespace FrontierDataTool
             }
 
             // Write csv
-            using (var textWriter = new StreamWriter("InfQuests.csv", false, Encoding.GetEncoding("shift-jis")))
+            using var textWriter = new StreamWriter("InfQuests.csv", false, Encoding.GetEncoding("shift-jis"));
+            var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
             {
-                var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
-                {
-                    Delimiter = "\t",
-                };
-                var writer = new CsvWriter(textWriter, configuration);
-                writer.WriteRecords(quests);
-            }
+                Delimiter = "\t",
+            };
+            var writer = new CsvWriter(textWriter, configuration);
+            writer.WriteRecords(quests);
             #endregion
         }
 

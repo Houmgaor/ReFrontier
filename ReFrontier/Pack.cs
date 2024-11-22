@@ -282,7 +282,7 @@ namespace ReFrontier
             encoder.ProcessOnEncode(buffer, fsot, compression.level * 100, null);
             finnish = DateTime.Now;
             ArgumentsParser.Print(
-                $"File compressed using type {compression.type} (level {compression.level}): " + 
+                $"File compressed using {compression.type} compression level {compression.level}: " + 
                 $"{fsot.Length} bytes ({1 - (decimal)fsot.Length / insize:P} saved) in {finnish - start:%m\\:ss\\.ff}",
                 false
             );
