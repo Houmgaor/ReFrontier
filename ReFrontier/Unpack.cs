@@ -18,7 +18,7 @@ namespace ReFrontier
         /// </summary>
         /// <param name="input">Input file name to read from.</param>
         /// <param name="brInput">Binary reader to the input file.</param>
-        /// <param name="magicSize"></param>
+        /// <param name="magicSize">File magic size, depends on file type.</param>
         /// <param name="createLog">true is a log file should be created.</param>
         /// <param name="cleanUp">Remove the initial input file.</param>
         /// <param name="autoStage">Unpack stage container if true.</param>
@@ -31,7 +31,7 @@ namespace ReFrontier
             string outputDir = $"{fileInfo.DirectoryName}/{Path.GetFileNameWithoutExtension(input)}";
 
             // Abort if too small
-            if (fileInfo.Length < 12)
+            if (fileInfo.Length < 16)
             {
                 Console.WriteLine("File is too small. Skipping.");
                 return;
@@ -41,21 +41,15 @@ namespace ReFrontier
 
             // Calculate complete size of extracted data to avoid extracting plausible files that aren't archives
             int completeSize = magicSize;
-            try
+            for (int i = 0; i < count; i++)
             {
-                for (int i = 0; i < count; i++)
+                brInput.BaseStream.Seek(magicSize, SeekOrigin.Current);
+                if (brInput.BaseStream.Position + 4 >= brInput.BaseStream.Length)
                 {
-                    brInput.BaseStream.Seek(magicSize, SeekOrigin.Current);
-                    int entrySize = brInput.ReadInt32();
-                    completeSize += entrySize;
+                    Console.WriteLine($"File terminated early in simple container check.");
+                    break;
                 }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(
-                    "Caught file-based error during simple container check. " +
-                    e
-                );
+                completeSize += brInput.ReadInt32();
             }
 
             // Very fragile check for stage container
@@ -102,8 +96,14 @@ namespace ReFrontier
                 int entryOffset = brInput.ReadInt32();
                 int entrySize = brInput.ReadInt32();
 
-                // Skip if size is zero
-                if (entrySize == 0)
+                const int headerSize = 4;
+
+                // Check bad entries
+                if (
+                    entrySize < 0 ||
+                    entryOffset + entrySize >= brInput.BaseStream.Length ||
+                    entrySize < headerSize
+                )
                 {
                     Console.WriteLine($"Offset: 0x{entryOffset:X8}, Size: 0x{entrySize:X8} (SKIPPED)");
                     if (createLog)
@@ -116,8 +116,8 @@ namespace ReFrontier
                 byte[] entryData = brInput.ReadBytes(entrySize);
 
                 // Check file header and get extension
-                byte[] header = new byte[4];
-                Array.Copy(entryData, header, 4);
+                byte[] header = new byte[headerSize];
+                Array.Copy(entryData, header, headerSize);
                 uint headerInt = BitConverter.ToUInt32(header, 0);
                 string extension = Enum.GetName(typeof(FileExtension), headerInt);
                 extension ??= ByteOperations.CheckForMagic(headerInt, entryData);

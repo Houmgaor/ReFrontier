@@ -289,11 +289,7 @@ namespace ReFrontier
             if (_stageContainer)
             {
                 brInput.BaseStream.Seek(0, SeekOrigin.Begin);
-                try {
-                    Unpack.UnpackStageContainer(input, brInput, createLog, _cleanUp); 
-                } catch (Exception error) {
-                    Console.WriteLine(error);
-                }
+                Unpack.UnpackStageContainer(input, brInput, createLog, _cleanUp);
             }
             else if (fileMagic == 0x4F4D4F4D)
             {
@@ -356,15 +352,9 @@ namespace ReFrontier
             {
                 // Try to unpack as simple container: i.e. txb, bin, pac, gab
                 brInput.BaseStream.Seek(0, SeekOrigin.Begin);
-                try {
-                    Unpack.UnpackSimpleArchive(
-                        input, brInput, 4, createLog, _cleanUp, _autoStage
-                    );
-                }
-                catch (Exception error)
-                {
-                    Console.WriteLine(error);
-                }
+                Unpack.UnpackSimpleArchive(
+                    input, brInput, 4, createLog, _cleanUp, _autoStage
+                );
             }
 
             Console.WriteLine("==============================");
