@@ -2,6 +2,7 @@
 using System.IO;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 using LibReFrontier;
 
@@ -12,6 +13,11 @@ namespace ReFrontier
     /// </summary>
     internal class Program
     {
+        /// <summary>
+        /// Number of parallel processes on reading folders.
+        /// </summary>
+        const int MAX_PARALLEL_PROCESSES = 4;
+
         private static bool _createLog = false;
         private static bool _decryptOnly = false;
         private static bool _cleanUp = false;
@@ -379,35 +385,56 @@ namespace ReFrontier
         /// <param name="decryptOnly">Decrypt file without depacking.</param>
         private static void ProcessMultipleLevels(string[] inputFiles, bool recursive, bool noDecryption, bool decryptOnly)
         {
+            // Limit file search to these patterns
             string[] patterns = ["*.bin", "*.jkr", "*.ftxt", "*.snd"];
             
-            foreach (string inputFile in inputFiles)
+            var parallelOptions = new ParallelOptions() {
+                MaxDegreeOfParallelism = MAX_PARALLEL_PROCESSES
+            };
+
+            Parallel.ForEach(inputFiles, parallelOptions, inputFile =>
             {
-                ProcessFile(inputFile, noDecryption, decryptOnly, _createLog);
+                if (!inputFile.Contains("ryoudan/"))
+                {
+                    ProcessFile(inputFile, noDecryption, decryptOnly, _createLog);
+                }
+                else
+                {
+                    // "ryoudan/file" may not be found since
+                    // it has a file and a directory with the same name
+                    if (File.Exists(inputFile))
+                    {
+                        ProcessFile(inputFile, noDecryption, decryptOnly, _createLog);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"{inputFile} was not found.");
+                    }
+                }
+
 
                 // Disable stage processing files unpacked from parent
                 if (_stageContainer)
                     _stageContainer = false;
 
-                FileInfo fileInfo = new(inputFile);
+                if (!recursive)
+                    return;
+
+                string baseDir = new FileInfo(inputFile).DirectoryName;
+
+                // Newly created directory
                 string directory = Path.Join(
-                    fileInfo.DirectoryName, 
+                    baseDir,
                     Path.GetFileNameWithoutExtension(inputFile)
                 );
 
-                if (!Directory.Exists(directory) || !recursive)
-                {
-                    continue;
-                }
+                if (!Directory.Exists(directory))
+                    return;
 
                 // Recursively go to next levels if a directory was created from file
-                ProcessMultipleLevels(
-                    FileOperations.GetFiles(directory, patterns, SearchOption.TopDirectoryOnly),
-                    recursive,
-                    noDecryption,
-                    decryptOnly
-                );
-            }
+                string[] nextFiles = FileOperations.GetFiles(directory, patterns, SearchOption.TopDirectoryOnly);
+                ProcessMultipleLevels(nextFiles, recursive, noDecryption, decryptOnly);
+            });
         }
     }
 }
