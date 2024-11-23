@@ -13,9 +13,7 @@ namespace ReFrontier
     internal class Program
     {
         private static bool _createLog = false;
-        private static bool _recursive = true;
         private static bool _decryptOnly = false;
-        private static bool _noDecryption = false;
         private static bool _cleanUp = false;
         private static bool _ignoreJPK = false;
         private static bool _stageContainer = false;
@@ -90,11 +88,11 @@ namespace ReFrontier
 
             // Assign arguments
             _createLog = argKeys.Contains("--log") || argKeys.Contains("-log");
-            _recursive = !argKeys.Contains("--nonRecursive") && !argKeys.Contains("-nonRecursive");
+            bool recursive = !argKeys.Contains("--nonRecursive") && !argKeys.Contains("-nonRecursive");
             bool repack = argKeys.Contains("--pack") || argKeys.Contains("-pack");
             _decryptOnly = argKeys.Contains("--decryptOnly") || argKeys.Contains("-decryptOnly");
             
-            _noDecryption = argKeys.Contains("--noDecryption") || argKeys.Contains("-noDecryption");
+            bool noDecryption = argKeys.Contains("--noDecryption") || argKeys.Contains("-noDecryption");
             bool encrypt = argKeys.Contains("--encrypt") || argKeys.Contains("-encrypt");
             _cleanUp = argKeys.Contains("--cleanUp") || argKeys.Contains("-cleanUp");
             
@@ -133,11 +131,27 @@ namespace ReFrontier
             }
 
             // Start input processing
-            StartProcessing(input, encrypt, repack, compression);
+            if (File.GetAttributes(input).HasFlag(FileAttributes.Directory))
+            {
+                // Input is directory
+                if (compression.level != 0)
+                    throw new InvalidOperationException("Cannot compress a directory.");
+                if (encrypt)
+                    throw new InvalidOperationException("Cannot encrypt a directory.");
+                ProcessDirectory(input, repack, recursive, noDecryption);
+            }
+            else
+            {
+                // Input is a file
+                if (repack)
+                    throw new InvalidOperationException("A single file cannot be used while in repacking mode.");
+                ProcessSingleFile(input, encrypt, compression, recursive, noDecryption);
+            }
             Console.WriteLine("Done.");
             if (!autoClose)
                 Console.Read();
         }
+
 
         /// <summary>
         /// Encrypt a single file using 
@@ -190,54 +204,51 @@ namespace ReFrontier
         }
 
 
+
         /// <summary>
-        /// Start the input processing.
+        /// Start the directory processing.
         /// </summary>
-        /// <param name="input">File or directory path.</param>
-        /// <param name="encrypt">True if input file should be encrypted.</param>
+        /// <param name="input">Directory path.</param>
         /// <param name="repack">True if input directory should be packed as a file.</param>
-        /// <param name="compression">Compression to use.</param>
-        /// <exception cref="InvalidOperationException">Thrown if the arguments are not coherent with the input.</exception>
-        private static void StartProcessing(string input, bool encrypt, bool repack, Compression compression)
+        /// <param name="recursive">Recursive decompression flag.</param>
+        /// <param name="noDecryption">Do not decrypt file flag.</param>
+        private static void ProcessDirectory(string input, bool repack, bool recursive, bool noDecryption)
         {
-            if (File.GetAttributes(input).HasFlag(FileAttributes.Directory))
-            {
-                // Directory
-                if (compression.level != 0)
-                    throw new InvalidOperationException("Cannot compress a directory.");
-                if (encrypt)
-                    throw new InvalidOperationException("Cannot encrypt a directory.");
-                if (repack)
-                    Pack.ProcessPackInput(input);
-                else
-                {
-                    // Decompress each file
-                    string[] inputFiles = Directory.GetFiles(
-                        input, "*.*", SearchOption.AllDirectories
-                    );
-                    ProcessMultipleLevels(inputFiles, _recursive, _noDecryption);
-                }
-            }
+            if (repack)
+                Pack.ProcessPackInput(input);
             else
             {
-                // Single file
-                if (repack)
-                    throw new InvalidOperationException("A single file cannot be used while in repacking mode.");
-                
-                if (compression.level != 0)
-                {
-                    Pack.JPKEncode(
-                        compression, input, $"output/{Path.GetFileName(input)}"
-                    );
-                }
-                
-                if (encrypt)
-                    EncryptEcdFile(input, $"{input}.meta");
-
-                // Try to depack the file as multiple files
-                if (compression.level == 0 && !encrypt) 
-                    ProcessMultipleLevels([input], _recursive, _noDecryption);
+                // Decompress each file
+                string[] inputFiles = Directory.GetFiles(
+                    input, "*.*", SearchOption.AllDirectories
+                );
+                ProcessMultipleLevels(inputFiles, recursive, noDecryption, _decryptOnly);
             }
+        }
+
+        /// <summary>
+        /// Start the input processing for a file.
+        /// </summary>
+        /// <param name="input">File path.</param>
+        /// <param name="encrypt">True if input file should be encrypted.</param>
+        /// <param name="compression">Compression to use.</param>
+        /// <param name="recursive">Recursive decompression flag.</param>
+        /// <param name="noDecryption">Do not decrypt file flag.</param>
+        private static void ProcessSingleFile(string input, bool encrypt, Compression compression, bool recursive, bool noDecryption)
+        {
+            if (compression.level != 0)
+            {
+                Pack.JPKEncode(
+                    compression, input, $"output/{Path.GetFileName(input)}"
+                );
+            }
+            
+            if (encrypt)
+                EncryptEcdFile(input, $"{input}.meta");
+
+            // Try to depack the file as multiple files
+            if (compression.level == 0 && !encrypt) 
+                ProcessMultipleLevels([input], recursive, noDecryption, _decryptOnly);
         }
 
 
@@ -355,13 +366,14 @@ namespace ReFrontier
         /// <param name="inputFiles">Files to process.</param>
         /// <param name="recursive">True to process newly created files recursively.</param>
         /// <param name="noDecryption">Do not decrypt ECD files.</param>
-        private static void ProcessMultipleLevels(string[] inputFiles, bool recursive, bool noDecryption)
+        /// <param name="decryptOnly">Decrypt file without depacking.</param>
+        private static void ProcessMultipleLevels(string[] inputFiles, bool recursive, bool noDecryption, bool decryptOnly)
         {
             string[] patterns = ["*.bin", "*.jkr", "*.ftxt", "*.snd"];
             // CurrentLevel        
             foreach (string inputFile in inputFiles)
             {
-                ProcessFile(inputFile, noDecryption, _decryptOnly);
+                ProcessFile(inputFile, noDecryption, decryptOnly);
 
                 // Disable stage processing files unpacked from parent
                 if (_stageContainer)
@@ -382,7 +394,8 @@ namespace ReFrontier
                 ProcessMultipleLevels(
                     FileOperations.GetFiles(directory, patterns, SearchOption.TopDirectoryOnly),
                     recursive,
-                    noDecryption
+                    noDecryption,
+                    decryptOnly
                 );
             }
         }
