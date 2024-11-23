@@ -27,6 +27,7 @@ namespace ReFrontier
         /// <exception cref="FileNotFoundException">The input does not exist.</exception>
         /// <exception cref="ArgumentException">Compression argument are ill-formed.</exception>
         /// <exception cref="Exception">For wrong compression format.</exception>
+        /// <exception cref="InvalidOperationException">Forbidden operation for this input.</exception>
         private static void Main(string[] args)
         {
             var parsedArgs = ArgumentsParser.ParseArguments(args);
@@ -138,14 +139,14 @@ namespace ReFrontier
                     throw new InvalidOperationException("Cannot compress a directory.");
                 if (encrypt)
                     throw new InvalidOperationException("Cannot encrypt a directory.");
-                ProcessDirectory(input, repack, recursive, noDecryption);
+                StartProcessingDirectory(input, repack, recursive, noDecryption);
             }
             else
             {
                 // Input is a file
                 if (repack)
                     throw new InvalidOperationException("A single file cannot be used while in repacking mode.");
-                ProcessSingleFile(input, encrypt, compression, recursive, noDecryption);
+                StartProcessingFile(input, encrypt, compression, recursive, noDecryption);
             }
             Console.WriteLine("Done.");
             if (!autoClose)
@@ -206,59 +207,66 @@ namespace ReFrontier
 
 
         /// <summary>
-        /// Start the directory processing.
+        /// Lauches a directory processing.
+        /// 
+        /// It can either pack the directory as a file, or uncompress the content.
         /// </summary>
-        /// <param name="input">Directory path.</param>
+        /// <param name="inputDir">Directory path.</param>
         /// <param name="repack">True if input directory should be packed as a file.</param>
         /// <param name="recursive">Recursive decompression flag.</param>
         /// <param name="noDecryption">Do not decrypt file flag.</param>
-        private static void ProcessDirectory(string input, bool repack, bool recursive, bool noDecryption)
+        private static void StartProcessingDirectory(string inputDir, bool repack, bool recursive, bool noDecryption)
         {
             if (repack)
-                Pack.ProcessPackInput(input);
+                Pack.ProcessPackInput(inputDir);
             else
             {
                 // Decompress each file
                 string[] inputFiles = Directory.GetFiles(
-                    input, "*.*", SearchOption.AllDirectories
+                    inputDir, "*.*", SearchOption.AllDirectories
                 );
                 ProcessMultipleLevels(inputFiles, recursive, noDecryption, _decryptOnly);
             }
         }
 
         /// <summary>
-        /// Start the input processing for a file.
+        /// Start the processing for a file.
+        /// 
+        /// It will either compress the file, encrypt it or depack it as many files.
         /// </summary>
-        /// <param name="input">File path.</param>
+        /// <param name="filePath">File path.</param>
         /// <param name="encrypt">True if input file should be encrypted.</param>
         /// <param name="compression">Compression to use.</param>
         /// <param name="recursive">Recursive decompression flag.</param>
         /// <param name="noDecryption">Do not decrypt file flag.</param>
-        private static void ProcessSingleFile(string input, bool encrypt, Compression compression, bool recursive, bool noDecryption)
+        private static void StartProcessingFile(string filePath, bool encrypt, Compression compression, bool recursive, bool noDecryption)
         {
             if (compression.level != 0)
             {
                 Pack.JPKEncode(
-                    compression, input, $"output/{Path.GetFileName(input)}"
+                    compression, filePath, $"output/{Path.GetFileName(filePath)}"
                 );
             }
             
             if (encrypt)
-                EncryptEcdFile(input, $"{input}.meta");
+                EncryptEcdFile(filePath, $"{filePath}.meta");
 
             // Try to depack the file as multiple files
             if (compression.level == 0 && !encrypt) 
-                ProcessMultipleLevels([input], recursive, noDecryption, _decryptOnly);
+                ProcessMultipleLevels([filePath], recursive, noDecryption, _decryptOnly);
         }
 
 
         /// <summary>
-        /// Decode a single file.
+        /// Unpack or (decrypt and decompress) a single file.
+        /// 
+        /// If the file was an ECD, decompress it as well.
         /// </summary>
         /// <param name="input">Input file path.</param>
         /// <param name="noDecryption">Do not decrypt ECD files.</param>
-        /// <param name="decryptOnly">Decrypt file without decompressing..</param>
-        private static void ProcessFile(string input, bool noDecryption, bool decryptOnly)
+        /// <param name="decryptOnly">Decrypt file without decompressing.</param>
+        /// <param name="createLog">Add to log file flag.</param>
+        private static void ProcessFile(string input, bool noDecryption, bool decryptOnly, bool createLog)
         {
             ArgumentsParser.Print($"Processing {input}", false);
 
@@ -276,7 +284,7 @@ namespace ReFrontier
             {
                 brInput.BaseStream.Seek(0, SeekOrigin.Begin);
                 try {
-                    Unpack.UnpackStageContainer(input, brInput, _createLog, _cleanUp); 
+                    Unpack.UnpackStageContainer(input, brInput, createLog, _cleanUp); 
                 } catch (Exception error) {
                     Console.WriteLine(error);
                 }
@@ -286,7 +294,7 @@ namespace ReFrontier
                 // MOMO Header: snp, snd
                 Console.WriteLine("MOMO Header detected.");
                 Unpack.UnpackSimpleArchive(
-                    input, brInput, 8, _createLog, _cleanUp, _autoStage
+                    input, brInput, 8, createLog, _cleanUp, _autoStage
                 );
             }
             else if (fileMagic == 0x1A646365)
@@ -298,9 +306,9 @@ namespace ReFrontier
                     ArgumentsParser.Print("Not decrypting due to flag.", false);
                     return;
                 }
-                DecryptEcdFile(input, _createLog);
+                DecryptEcdFile(input, createLog);
                 string logInfo = "";
-                if (_createLog) {
+                if (createLog) {
                     logInfo = ", log file written at [filepath].meta";
                 }
 
@@ -330,7 +338,7 @@ namespace ReFrontier
             {
                 // MHA Header
                 Console.WriteLine("MHA Header detected.");
-                Unpack.UnpackMHA(input, brInput, _createLog);
+                Unpack.UnpackMHA(input, brInput, createLog);
             }
             else if (fileMagic == 0x000B0000)
             {
@@ -344,9 +352,11 @@ namespace ReFrontier
                 brInput.BaseStream.Seek(0, SeekOrigin.Begin);
                 try {
                     Unpack.UnpackSimpleArchive(
-                        input, brInput, 4, _createLog, _cleanUp, _autoStage
+                        input, brInput, 4, createLog, _cleanUp, _autoStage
                     );
-                } catch (Exception error) {
+                }
+                catch (Exception error)
+                {
                     Console.WriteLine(error);
                 }
             }
@@ -354,7 +364,7 @@ namespace ReFrontier
             Console.WriteLine("==============================");
             // Decompress file if it was an ECD (encypted)
             if (fileMagic == 0x1A646365 && !decryptOnly) {
-                ProcessFile(input, noDecryption, decryptOnly);
+                ProcessFile(input, noDecryption, decryptOnly, createLog);
             }
         }
 
@@ -370,10 +380,10 @@ namespace ReFrontier
         private static void ProcessMultipleLevels(string[] inputFiles, bool recursive, bool noDecryption, bool decryptOnly)
         {
             string[] patterns = ["*.bin", "*.jkr", "*.ftxt", "*.snd"];
-            // CurrentLevel        
+            
             foreach (string inputFile in inputFiles)
             {
-                ProcessFile(inputFile, noDecryption, decryptOnly);
+                ProcessFile(inputFile, noDecryption, decryptOnly, _createLog);
 
                 // Disable stage processing files unpacked from parent
                 if (_stageContainer)
@@ -390,7 +400,7 @@ namespace ReFrontier
                     continue;
                 }
 
-                //Process All Successive Levels
+                // Recursively go to next levels if a directory was created from file
                 ProcessMultipleLevels(
                     FileOperations.GetFiles(directory, patterns, SearchOption.TopDirectoryOnly),
                     recursive,
