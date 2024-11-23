@@ -7,8 +7,21 @@ using ReFrontier.Jpk;
 
 namespace ReFrontier
 {
+    /// <summary>
+    /// File unpacking: multiple file from one.
+    /// </summary>
     internal class Unpack
     {
+        
+        /// <summary>
+        /// Unpack a simple archive file container.
+        /// </summary>
+        /// <param name="input">Input file name to read from.</param>
+        /// <param name="brInput">Binary reader to the input file.</param>
+        /// <param name="magicSize"></param>
+        /// <param name="createLog">true is a log file should be created.</param>
+        /// <param name="cleanUp">Remove the initial input file.</param>
+        /// <param name="autoStage">Unpack stage container if true.</param>
         public static void UnpackSimpleArchive(
             string input, BinaryReader brInput, int magicSize, bool createLog, 
             bool cleanUp, bool autoStage
@@ -58,7 +71,10 @@ namespace ReFrontier
                 }
                 else
                 {
-                    Console.WriteLine($"Skipping. Not a valid simple container, but could be stage-specific. Try:\nReFrontier.exe {fileInfo.FullName} -stageContainer");
+                    Console.WriteLine(
+                        "Skipping. Not a valid simple container, but could be stage-specific. Try:\n" +
+                        $"ReFrontier.exe {fileInfo.FullName} --stageContainer"
+                    );
                 }
                 return;
             }
@@ -126,6 +142,12 @@ namespace ReFrontier
                 File.Delete(input);
         }
 
+        /// <summary>
+        /// Unpack a MHA file container.
+        /// </summary>
+        /// <param name="input">Input file name to read from.</param>
+        /// <param name="brInput">Binary reader to the input file.</param>
+        /// <param name="createLog">true is a log file should be created.</param>
         public static void UnpackMHA(string input, BinaryReader brInput, bool createLog)
         {
             FileInfo fileInfo = new(input);
@@ -232,6 +254,13 @@ namespace ReFrontier
             ms.Close();
         }
 
+        /// <summary>
+        /// Unpack a stage file container.
+        /// </summary>
+        /// <param name="input">Input file name to read from.</param>
+        /// <param name="brInput">Binary reader to the input file.</param>
+        /// <param name="createLog">true is a log file should be created.</param>
+        /// <param name="cleanUp">Remove the initial input file.</param>
         public static void UnpackStageContainer(string input, BinaryReader brInput, bool createLog, bool cleanUp)
         {
             Console.WriteLine("Trying to unpack as stage-specific container.");
