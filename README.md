@@ -20,6 +20,7 @@ General improvements:
 Changes to ReFrontier main project:
 
 - Multiprocessing for fast depacking.
+- Fix issue where files with the same names could be decompressed ([#5](https://github.com/Houmgaor/ReFrontier/issues/5)).
 - Compress and encrypt in one command.
 - Removes outdated/unused libraries.
 - Removes memory-unsafe code.
