@@ -22,19 +22,20 @@ namespace ReFrontier
         /// <param name="createLog">true is a log file should be created.</param>
         /// <param name="cleanUp">Remove the initial input file.</param>
         /// <param name="autoStage">Unpack stage container if true.</param>
-        public static void UnpackSimpleArchive(
+        /// <returns>Output folder path.</returns>
+        public static string UnpackSimpleArchive(
             string input, BinaryReader brInput, int magicSize, bool createLog, 
             bool cleanUp, bool autoStage
         )
         {
             FileInfo fileInfo = new(input);
-            string outputDir = $"{fileInfo.DirectoryName}/{Path.GetFileNameWithoutExtension(input)}";
+            string outputDir = $"{input}.unpacked";
 
             // Abort if too small
             if (fileInfo.Length < 16)
             {
                 Console.WriteLine("File is too small. Skipping.");
-                return;
+                return null;
             }
 
             uint count = brInput.ReadUInt32();
@@ -70,13 +71,13 @@ namespace ReFrontier
                         $"ReFrontier.exe {fileInfo.FullName} --stageContainer"
                     );
                 }
-                return;
+                return null;
             }
 
             if (completeSize > fileInfo.Length || count == 0 || count > 9999)
             {
                 Console.WriteLine("Skipping. Not a valid simple container.");
-                return;
+                return null;
             }
 
             Console.WriteLine("Trying to unpack as generic simple container.");
@@ -84,7 +85,7 @@ namespace ReFrontier
 
             // Write to log file if desired; needs some other solution because it creates useless logs even if !createLog
             Directory.CreateDirectory(outputDir);
-            StreamWriter logOutput = new($"{outputDir}/{Path.GetFileNameWithoutExtension(input)}.log");
+            StreamWriter logOutput = new($"{input}.log");
             if (createLog) {
                 logOutput.WriteLine("SimpleArchive");
                 logOutput.WriteLine(input.Remove(0, input.LastIndexOf('/') + 1));
@@ -137,9 +138,10 @@ namespace ReFrontier
             // Clean up
             logOutput.Close();
             if (!createLog)
-                File.Delete($"{outputDir}/{Path.GetFileNameWithoutExtension(input)}.log");
+                File.Delete($"{input}.log");
             if (cleanUp)
                 File.Delete(input);
+            return outputDir;
         }
 
         /// <summary>
@@ -148,13 +150,13 @@ namespace ReFrontier
         /// <param name="input">Input file name to read from.</param>
         /// <param name="brInput">Binary reader to the input file.</param>
         /// <param name="createLog">true is a log file should be created.</param>
-        public static void UnpackMHA(string input, BinaryReader brInput, bool createLog)
+        /// <returns>Output folder path.</returns>
+        public static string UnpackMHA(string input, BinaryReader brInput, bool createLog)
         {
-            FileInfo fileInfo = new(input);
-            string outputDir = $"{fileInfo.DirectoryName}/{Path.GetFileNameWithoutExtension(input)}";
+            string outputDir = $"{input}.unpacked";
             Directory.CreateDirectory(outputDir);
 
-            StreamWriter logOutput = new($"{outputDir}/{Path.GetFileNameWithoutExtension(input)}.log");
+            StreamWriter logOutput = new($"{input}.log");
             if (createLog) {
                 logOutput.WriteLine("MHA");
                 logOutput.WriteLine(input.Remove(0, input.LastIndexOf('/') + 1));
@@ -202,18 +204,21 @@ namespace ReFrontier
 
             logOutput.Close();
             if (!createLog)
-                File.Delete($"{outputDir}/{Path.GetFileNameWithoutExtension(input)}.log");
+                File.Delete($"{input}.log");
+            return outputDir;
         }
 
         /// <summary>
         /// Unpack, decompress, a JPK file.
         /// </summary>
         /// <param name="input">Input file path.</param>
-        public static void UnpackJPK(string input)
+        /// <returns>Output folder path.</returns>
+        public static string UnpackJPK(string input)
         {
             byte[] buffer = File.ReadAllBytes(input);
             MemoryStream ms = new(buffer);
             BinaryReader br = new(ms);
+            string output = null;
             // Check for JKR header
             if (br.ReadUInt32() == 0x1A524B4A)
             {
@@ -245,13 +250,13 @@ namespace ReFrontier
                 extension ??= ByteOperations.CheckForMagic(headerInt, outBuffer);
                 extension ??= "bin";
 
-                FileInfo fileInfo = new(input);
-                string output = $"{fileInfo.DirectoryName}/{Path.GetFileNameWithoutExtension(input)}.{extension}";
+                output = $"{input}.{extension}";
                 File.Delete(input);
                 File.WriteAllBytes(output, outBuffer);
             }
             br.Close();
             ms.Close();
+            return output;
         }
 
         /// <summary>
@@ -261,15 +266,15 @@ namespace ReFrontier
         /// <param name="brInput">Binary reader to the input file.</param>
         /// <param name="createLog">true is a log file should be created.</param>
         /// <param name="cleanUp">Remove the initial input file.</param>
-        public static void UnpackStageContainer(string input, BinaryReader brInput, bool createLog, bool cleanUp)
+        /// <returns>Output folder path.</returns>
+        public static string UnpackStageContainer(string input, BinaryReader brInput, bool createLog, bool cleanUp)
         {
             Console.WriteLine("Trying to unpack as stage-specific container.");
 
-            FileInfo fileInfo = new(input);
-            string outputDir = $"{fileInfo.DirectoryName}/{Path.GetFileNameWithoutExtension(input)}";
+            string outputDir = $"{input}.unpacked";
             Directory.CreateDirectory(outputDir);
 
-            StreamWriter logOutput = new($"{outputDir}/{Path.GetFileNameWithoutExtension(input)}.log");
+            StreamWriter logOutput = new($"{input}.log");
             if (createLog) {
                 logOutput.WriteLine("StageContainer");
                 logOutput.WriteLine(input.Remove(0, input.LastIndexOf('/') + 1));
@@ -321,7 +326,8 @@ namespace ReFrontier
             // Rest
             int restCount = brInput.ReadInt32();
             int unkHeader = brInput.ReadInt32();
-            if (createLog) logOutput.WriteLine(restCount + "," + unkHeader);
+            if (createLog)
+                logOutput.WriteLine(restCount + "," + unkHeader);
             for (int i = 3; i < restCount + 3; i++)
             {
                 int offset = brInput.ReadInt32();
@@ -364,9 +370,10 @@ namespace ReFrontier
             // Clean up
             logOutput.Close();
             if (!createLog)
-                File.Delete($"{outputDir}/{Path.GetFileNameWithoutExtension(input)}.log");
+                File.Delete($"{input}.log");
             if (cleanUp)
                 File.Delete(input);
+            return outputDir;
         }
 
         /// <summary>
@@ -374,13 +381,14 @@ namespace ReFrontier
         /// </summary>
         /// <param name="input">Input ftxt file, usually has MHF header.</param>
         /// <param name="brInput">Binary reader to the file.</param>
-        public static void PrintFTXT(string input, BinaryReader brInput)
+        /// <returns>Output file path.</returns>
+        public static string PrintFTXT(string input, BinaryReader brInput)
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-            FileInfo fileInfo = new(input);
-            string outputPath = $"{fileInfo.DirectoryName}/{Path.GetFileNameWithoutExtension(input)}.txt";
-            if (File.Exists(outputPath)) File.Delete(outputPath);
+            string outputPath = $"{input}.txt";
+            if (File.Exists(outputPath))
+                File.Delete(outputPath);
             StreamWriter txtOutput = new(outputPath, true, Encoding.GetEncoding("shift-jis"));
 
             // Read header
@@ -395,6 +403,7 @@ namespace ReFrontier
             }
 
             txtOutput.Close();
+            return outputPath;
         }
     }
 }

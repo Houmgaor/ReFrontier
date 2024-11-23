@@ -262,7 +262,6 @@ namespace ReFrontier
                 ProcessMultipleLevels([filePath], recursive, noDecryption, _decryptOnly);
         }
 
-
         /// <summary>
         /// Unpack or (decrypt and decompress) a single file.
         /// 
@@ -272,16 +271,18 @@ namespace ReFrontier
         /// <param name="noDecryption">Do not decrypt ECD files.</param>
         /// <param name="decryptOnly">Decrypt file without decompressing.</param>
         /// <param name="createLog">Add to log file flag.</param>
-        private static void ProcessFile(string input, bool noDecryption, bool decryptOnly, bool createLog)
+        /// <returns>Output path, can be file or folder.</returns>
+        private static string ProcessFile(string input, bool noDecryption, bool decryptOnly, bool createLog)
         {
             ArgumentsParser.Print($"Processing {input}", false);
 
             // Read file to memory
             MemoryStream msInput = new(File.ReadAllBytes(input));
             BinaryReader brInput = new(msInput);
+            string outputPath;
             if (msInput.Length == 0) {
                 Console.WriteLine("File is empty. Skipping.");
-                return;
+                return null;
             }
             int fileMagic = brInput.ReadInt32();
 
@@ -289,13 +290,13 @@ namespace ReFrontier
             if (_stageContainer)
             {
                 brInput.BaseStream.Seek(0, SeekOrigin.Begin);
-                Unpack.UnpackStageContainer(input, brInput, createLog, _cleanUp);
+                outputPath = Unpack.UnpackStageContainer(input, brInput, createLog, _cleanUp);
             }
             else if (fileMagic == 0x4F4D4F4D)
             {
                 // MOMO Header: snp, snd
                 Console.WriteLine("MOMO Header detected.");
-                Unpack.UnpackSimpleArchive(
+                outputPath = Unpack.UnpackSimpleArchive(
                     input, brInput, 8, createLog, _cleanUp, _autoStage
                 );
             }
@@ -306,9 +307,10 @@ namespace ReFrontier
                 if (noDecryption) 
                 {
                     ArgumentsParser.Print("Not decrypting due to flag.", false);
-                    return;
+                    return null;
                 }
                 DecryptEcdFile(input, createLog);
+                outputPath = input;
                 string logInfo = "";
                 if (createLog) {
                     logInfo = ", log file written at [filepath].meta";
@@ -326,13 +328,15 @@ namespace ReFrontier
                 Array.Copy(buffer, 0x10, bufferStripped, 0, buffer.Length - 0x10);
                 File.WriteAllBytes(input, bufferStripped);
                 Console.WriteLine("File decrypted.");
+                outputPath = input;
             }
             else if (fileMagic == 0x1A524B4A)
             {
                 // JKR Header
                 Console.WriteLine("JKR Header detected.");
+                outputPath = input;
                 if (!_ignoreJPK) {
-                    Unpack.UnpackJPK(input);
+                    outputPath = Unpack.UnpackJPK(input);
                     Console.WriteLine("File decompressed.");
                 }
             }
@@ -340,19 +344,19 @@ namespace ReFrontier
             {
                 // MHA Header
                 Console.WriteLine("MHA Header detected.");
-                Unpack.UnpackMHA(input, brInput, createLog);
+                outputPath = Unpack.UnpackMHA(input, brInput, createLog);
             }
             else if (fileMagic == 0x000B0000)
             {
                 // MHF Text file
                 Console.WriteLine("MHF Text file detected.");
-                Unpack.PrintFTXT(input, brInput);
+                outputPath = Unpack.PrintFTXT(input, brInput);
             }
             else
             {
                 // Try to unpack as simple container: i.e. txb, bin, pac, gab
                 brInput.BaseStream.Seek(0, SeekOrigin.Begin);
-                Unpack.UnpackSimpleArchive(
+                outputPath = Unpack.UnpackSimpleArchive(
                     input, brInput, 4, createLog, _cleanUp, _autoStage
                 );
             }
@@ -361,7 +365,9 @@ namespace ReFrontier
             // Decompress file if it was an ECD (encypted)
             if (fileMagic == 0x1A646365 && !decryptOnly) {
                 ProcessFile(input, noDecryption, decryptOnly, createLog);
+                outputPath = input;
             }
+            return outputPath;
         }
 
         /// <summary>
@@ -384,24 +390,7 @@ namespace ReFrontier
 
             Parallel.ForEach(inputFiles, parallelOptions, inputFile =>
             {
-                if (!inputFile.Contains("ryoudan/"))
-                {
-                    ProcessFile(inputFile, noDecryption, decryptOnly, _createLog);
-                }
-                else
-                {
-                    // "ryoudan/file" may not be found since
-                    // it has a file and a directory with the same name
-                    if (File.Exists(inputFile))
-                    {
-                        ProcessFile(inputFile, noDecryption, decryptOnly, _createLog);
-                    }
-                    else
-                    {
-                        Console.WriteLine($"{inputFile} was not found.");
-                    }
-                }
-
+                string outputPath = ProcessFile(inputFile, noDecryption, decryptOnly, _createLog);
 
                 // Disable stage processing files unpacked from parent
                 if (_stageContainer)
@@ -410,19 +399,12 @@ namespace ReFrontier
                 if (!recursive)
                     return;
 
-                string baseDir = new FileInfo(inputFile).DirectoryName;
-
-                // Newly created directory
-                string directory = Path.Join(
-                    baseDir,
-                    Path.GetFileNameWithoutExtension(inputFile)
-                );
-
-                if (!Directory.Exists(directory))
+                // Check if a new directory was created
+                if (!Directory.Exists(outputPath))
                     return;
 
                 // Recursively go to next levels if a directory was created from file
-                string[] nextFiles = FileOperations.GetFiles(directory, patterns, SearchOption.TopDirectoryOnly);
+                string[] nextFiles = FileOperations.GetFiles(outputPath, patterns, SearchOption.TopDirectoryOnly);
                 ProcessMultipleLevels(nextFiles, recursive, noDecryption, decryptOnly);
             });
         }

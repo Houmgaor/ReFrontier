@@ -17,13 +17,14 @@ General improvements:
 - User documentation.
 - Linting.
 
-Compared to mhvuze/ReFrontier:
+Changes to ReFrontier main project:
 
+- Multiprocessing for fast depacking.
 - Compress and encrypt in one command.
 - Removes outdated/unused libraries.
 - Removes memory-unsafe code.
 
-Compared to Chakratos/ReFrontier, in FrontierTextTool:
+Chages to FrontierTextTool, compared to Chakratos/ReFrontier:
 
 - Better parsing for CSV files.
 - "fulldump" creates less garbage text.
