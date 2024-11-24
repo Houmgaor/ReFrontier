@@ -19,16 +19,19 @@ namespace ReFrontier
         /// 
         /// It needs a log file to work.
         /// </summary>
-        /// <param name="input">Input directory path.</param>
+        /// <param name="inputDir">Input directory path.</param>
         /// <exception cref="FileNotFoundException">The log file does not exist.</exception>
         /// <exception cref="NotImplementedException">The packing format does not exist.</exception>
-        public static void ProcessPackInput(string input)
+        public static void ProcessPackInput(string inputDir)
         {
-            string logFile = $"{input}/{input.Remove(0, input.LastIndexOf('/') + 1)}.log";
+            string logFile = Path.Join(
+                inputDir,
+                $"{inputDir[(inputDir.LastIndexOf('/') + 1)..]}.log"
+            );
             if (!File.Exists(logFile))
             {
                 string tempLog = logFile;
-                logFile = $"{input}.log";
+                logFile = inputDir[..inputDir.LastIndexOf('.')] + ".log";
                 if (!File.Exists(logFile))
                     throw new FileNotFoundException(
                         $"Neither log files {tempLog} nor {logFile} exist."
@@ -39,13 +42,13 @@ namespace ReFrontier
             switch (logContent[0])
             {
                 case "SimpleArchive":
-                    PackSimpleArchive(logContent, input);
+                    PackSimpleArchive(logContent, inputDir);
                     break;
                 case "MHA":
-                    PackMHA(logContent, input);
+                    PackMHA(logContent, inputDir);
                     break;
                 case "StageContainer":
-                    PackStageContainer(logContent, input);
+                    PackStageContainer(logContent, inputDir);
                     break;
                 default:
                     throw new NotImplementedException("Unknown container type: " + logContent[0]);
