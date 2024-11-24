@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -17,7 +18,7 @@ namespace ReFrontier
         /// <summary>
         /// Number of parallel processes on reading folders.
         /// </summary>
-        const int MAX_PARALLEL_PROCESSES = 16;
+        const int MAX_PARALLEL_PROCESSES = 4;
 
         private static bool _createLog = false;
         private static bool _decryptOnly = false;
@@ -232,7 +233,7 @@ namespace ReFrontier
                 string[] inputFiles = Directory.GetFiles(
                     inputDir, "*.*", SearchOption.AllDirectories
                 );
-                ProcessMultipleLevels(inputFiles, recursive, noDecryption, _decryptOnly);
+                ProcessMultipleLevels(inputFiles, recursive, noDecryption, _decryptOnly, _stageContainer);
             }
         }
 
@@ -266,7 +267,7 @@ namespace ReFrontier
 
             // Try to depack the file as multiple files
             if (compression.level == 0 && !encrypt) 
-                ProcessMultipleLevels([filePath], recursive, noDecryption, _decryptOnly);
+                ProcessMultipleLevels([filePath], recursive, noDecryption, _decryptOnly, _autoStage);
         }
 
         /// <summary>
@@ -279,7 +280,7 @@ namespace ReFrontier
         /// <param name="decryptOnly">Decrypt file without decompressing.</param>
         /// <param name="createLog">Add to log file flag.</param>
         /// <returns>Output path, can be file or folder.</returns>
-        private static string ProcessFile(string input, bool noDecryption, bool decryptOnly, bool createLog)
+        private static string ProcessFile(string input, bool noDecryption, bool decryptOnly, bool createLog, bool stageContainer)
         {
             ArgumentsParser.Print($"Processing {input}", false);
 
@@ -294,7 +295,7 @@ namespace ReFrontier
             int fileMagic = brInput.ReadInt32();
 
             // Since stage containers have no file magic, check for them first
-            if (_stageContainer)
+            if (stageContainer)
             {
                 brInput.BaseStream.Seek(0, SeekOrigin.Begin);
                 outputPath = Unpack.UnpackStageContainer(input, brInput, createLog, _cleanUp);
@@ -370,7 +371,7 @@ namespace ReFrontier
             Console.WriteLine("==============================");
             // Decompress file if it was an ECD (encypted)
             if (fileMagic == 0x1A646365 && !decryptOnly) {
-                outputPath = ProcessFile(input, noDecryption, decryptOnly, createLog);
+                outputPath = ProcessFile(input, noDecryption, decryptOnly, createLog, stageContainer);
             }
             return outputPath;
         }
@@ -384,11 +385,8 @@ namespace ReFrontier
         /// <param name="recursive">True to process newly created files recursively.</param>
         /// <param name="noDecryption">Do not decrypt ECD files.</param>
         /// <param name="decryptOnly">Decrypt file without depacking.</param>
-        private static void ProcessMultipleLevels(string[] inputFiles, bool recursive, bool noDecryption, bool decryptOnly)
+        private static void ProcessMultipleLevels(string[] inputFiles, bool recursive, bool noDecryption, bool decryptOnly, bool stageContainer)
         {
-            // Limit file search to these patterns
-            string[] patterns = ["*.bin", "*.jkr", "*.ftxt", "*.snd"];
-
             var parallelOptions = new ParallelOptions()
             {
                 MaxDegreeOfParallelism = MAX_PARALLEL_PROCESSES
@@ -397,29 +395,51 @@ namespace ReFrontier
             // Use a concurrent queue to manage files/directories to process
             ConcurrentQueue<string> filesToProcess = new(inputFiles);
 
-            Parallel.Invoke(parallelOptions, () =>
+            // Consume (process) input files
+            while (!filesToProcess.IsEmpty)
             {
-                while (filesToProcess.TryDequeue(out string inputFile))
+                // Ugly way to have a functional forEach on expanding Queue
+                // The TPL library may be better suited
+                List<string> fileWorkers = [];
+                while (filesToProcess.TryDequeue(out string tempInputFile))
                 {
-                    string outputPath = ProcessFile(inputFile, noDecryption, decryptOnly, _createLog);
+                    fileWorkers.Add(tempInputFile);
+                }
+
+                Parallel.ForEach(fileWorkers, parallelOptions, inputFile => {
+                    string outputPath = ProcessFile(inputFile, noDecryption, decryptOnly, _createLog, stageContainer);
 
                     // Disable stage processing files unpacked from parent
-                    if (_stageContainer)
-                        _stageContainer = false;
+                    if (stageContainer)
+                        stageContainer = false;
 
                     // Check if a new directory was created
                     if (recursive && Directory.Exists(outputPath))
                     {
-                        // ProcessParallelDirectory(outputPath, patterns, filesToProcess);
-                        var nextFiles = FileOperations.GetFiles(outputPath, patterns, SearchOption.TopDirectoryOnly);
-                        
-                        foreach (var nextFile in nextFiles)
-                        {
-                            filesToProcess.Enqueue(nextFile);
-                        }
+                        AddNewFiles(outputPath, filesToProcess);
                     }
-                }
-            });
+                });
+            }
+        }
+
+        /// <summary>
+        /// Add new files in the directory to <paramref name="filesQueue" />.
+        /// 
+        /// It is a task producer in Task Parallel Library paradigm.
+        /// </summary>
+        /// <param name="directoryPath">Directory to search into.</param>
+        /// <param name="filesQueue">Thread-safe queue where to add files to.</param>
+        private static void AddNewFiles(string directoryPath, ConcurrentQueue<string> filesQueue)
+        {
+            // Limit file search to these patterns
+            string[] patterns = ["*.bin", "*.jkr", "*.ftxt", "*.snd"];
+
+            var nextFiles = FileOperations.GetFiles(directoryPath, patterns, SearchOption.TopDirectoryOnly);
+            
+            foreach (var nextFile in nextFiles)
+            {
+                filesQueue.Enqueue(nextFile);
+            }
         }
     }
 }
