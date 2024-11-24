@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -17,7 +17,7 @@ namespace ReFrontier
         /// <summary>
         /// Number of parallel processes on reading folders.
         /// </summary>
-        const int MAX_PARALLEL_PROCESSES = 4;
+        const int MAX_PARALLEL_PROCESSES = 16;
 
         private static bool _createLog = false;
         private static bool _decryptOnly = false;
@@ -388,37 +388,38 @@ namespace ReFrontier
         {
             // Limit file search to these patterns
             string[] patterns = ["*.bin", "*.jkr", "*.ftxt", "*.snd"];
-            
-            var parallelOptions = new ParallelOptions() {
+
+            var parallelOptions = new ParallelOptions()
+            {
                 MaxDegreeOfParallelism = MAX_PARALLEL_PROCESSES
             };
 
-            // Use a queue to manage files/directories to process
-            Queue<string> filesToProcess = new(inputFiles);
+            // Use a concurrent queue to manage files/directories to process
+            ConcurrentQueue<string> filesToProcess = new(inputFiles);
 
-            while (filesToProcess.Count > 0)
+            Parallel.Invoke(parallelOptions, () =>
             {
-                string inputFile = filesToProcess.Dequeue();
-
-                string outputPath = ProcessFile(inputFile, noDecryption, decryptOnly, _createLog);
-
-                // Disable stage processing files unpacked from parent
-                if (_stageContainer)
-                    _stageContainer = false;
-
-                // Check if a new directory was created
-                if (!recursive || !Directory.Exists(outputPath))
-                    continue;
-
-                // Recursively go to next levels if a directory was created from file
-                string[] nextFiles = FileOperations.GetFiles(outputPath, patterns, SearchOption.TopDirectoryOnly);
-                
-                // Add them to the queue for processing
-                foreach (var nextFile in nextFiles)
+                while (filesToProcess.TryDequeue(out string inputFile))
                 {
-                    filesToProcess.Enqueue(nextFile);
+                    string outputPath = ProcessFile(inputFile, noDecryption, decryptOnly, _createLog);
+
+                    // Disable stage processing files unpacked from parent
+                    if (_stageContainer)
+                        _stageContainer = false;
+
+                    // Check if a new directory was created
+                    if (recursive && Directory.Exists(outputPath))
+                    {
+                        // ProcessParallelDirectory(outputPath, patterns, filesToProcess);
+                        var nextFiles = FileOperations.GetFiles(outputPath, patterns, SearchOption.TopDirectoryOnly);
+                        
+                        foreach (var nextFile in nextFiles)
+                        {
+                            filesToProcess.Enqueue(nextFile);
+                        }
+                    }
                 }
-            };
+            });
         }
     }
 }

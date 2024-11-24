@@ -39,6 +39,7 @@ namespace ReFrontier
             }
 
             uint count = brInput.ReadUInt32();
+            uint tempCount = count;
 
             // Calculate complete size of extracted data to avoid extracting plausible files that aren't archives
             int completeSize = magicSize;
@@ -48,6 +49,7 @@ namespace ReFrontier
                 if (brInput.BaseStream.Position + 4 > brInput.BaseStream.Length)
                 {
                     Console.WriteLine($"File terminated early ({i}/{count}) in simple container check.");
+                    count = (uint) i;
                     break;
                 }
                 completeSize += brInput.ReadInt32();
@@ -75,7 +77,7 @@ namespace ReFrontier
                 return null;
             }
 
-            if (completeSize > fileInfo.Length || count == 0 || count > 9999)
+            if (completeSize > fileInfo.Length || tempCount == 0 || tempCount > 9999)
             {
                 Console.WriteLine("Skipping. Not a valid simple container.");
                 return null;
@@ -102,6 +104,7 @@ namespace ReFrontier
                 // Check bad entries
                 if (
                     entrySize < headerSize ||
+                    entryOffset < headerSize ||
                     entryOffset + entrySize > brInput.BaseStream.Length
                 )
                 {
