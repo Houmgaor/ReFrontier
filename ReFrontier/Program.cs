@@ -166,12 +166,12 @@ namespace ReFrontier
         /// <param name="input">Input file to encrypt.</param>
         /// <param name="metaFile">Data to use for encryption.</param>
         /// <exception cref="FileNotFoundException">Thrown if the meta file does not exist.</exception>
-        private static void EncryptEcdFile(string input, string metaFile)
+        private static string EncryptEcdFile(string input, string metaFile)
         {
             byte[] buffer = File.ReadAllBytes(input);
             if (!File.Exists(metaFile)) {
                 throw new FileNotFoundException(
-                    $"META file {input}.meta does not exist, " +
+                    $"META file {metaFile} does not exist, " +
                     $"cannot encryt {input}." +
                     "Make sure to decryt the initial file with the -log option, " +
                     "and to place the generate meta file in the same folder as the file " +
@@ -183,6 +183,7 @@ namespace ReFrontier
             File.WriteAllBytes(input, buffer);
             ArgumentsParser.Print($"File encrypted to {input}.", false);
             FileOperations.GetUpdateEntry(input);
+            return input;
         }
 
         /// <summary>
@@ -205,9 +206,8 @@ namespace ReFrontier
             if (createLog) {
                 string metaFile = $"{inputFile}.meta";
                 File.WriteAllBytes(metaFile, ecdHeader);
-                return metaFile;
             }
-            return null;
+            return inputFile;
         }
 
 
@@ -227,7 +227,7 @@ namespace ReFrontier
                 Pack.ProcessPackInput(inputDir);
             else
             {
-                // Decompress each file
+                // Process each element in directory
                 string[] inputFiles = Directory.GetFiles(
                     inputDir, "*.*", SearchOption.AllDirectories
                 );
@@ -255,7 +255,13 @@ namespace ReFrontier
             }
             
             if (encrypt)
-                EncryptEcdFile(filePath, $"{filePath}.meta");
+            {
+                string metaFile = Path.Join(
+                    Path.GetDirectoryName(filePath),
+                    Path.GetFileNameWithoutExtension(filePath) + ".meta"
+                );
+                EncryptEcdFile(filePath, metaFile);
+            }
 
             // Try to depack the file as multiple files
             if (compression.level == 0 && !encrypt) 
@@ -309,14 +315,13 @@ namespace ReFrontier
                     ArgumentsParser.Print("Not decrypting due to flag.", false);
                     return null;
                 }
-                DecryptEcdFile(input, createLog);
-                outputPath = input;
+                outputPath = DecryptEcdFile(input, createLog);
                 string logInfo = "";
                 if (createLog) {
-                    logInfo = ", log file written at [filepath].meta";
+                    logInfo = $", log file written at {input}.meta";
                 }
 
-                Console.WriteLine($"File decrypted to {input}{logInfo}.");
+                Console.WriteLine($"File decrypted to {outputPath}{logInfo}.");
             }
             else if (fileMagic == 0x1A667865)
             {
@@ -337,7 +342,7 @@ namespace ReFrontier
                 outputPath = input;
                 if (!_ignoreJPK) {
                     outputPath = Unpack.UnpackJPK(input);
-                    Console.WriteLine("File decompressed.");
+                    Console.WriteLine($"File decompressed to {outputPath}.");
                 }
             }
             else if (fileMagic == 0x0161686D)
@@ -364,14 +369,13 @@ namespace ReFrontier
             Console.WriteLine("==============================");
             // Decompress file if it was an ECD (encypted)
             if (fileMagic == 0x1A646365 && !decryptOnly) {
-                ProcessFile(input, noDecryption, decryptOnly, createLog);
-                outputPath = input;
+                outputPath = ProcessFile(input, noDecryption, decryptOnly, createLog);
             }
             return outputPath;
         }
 
         /// <summary>
-        /// Process file(s) on multiple container level.
+        /// Process files on multiple container level recursively.
         /// 
         /// Try to use each file is considered a container of multiple files.
         /// </summary>
@@ -396,11 +400,8 @@ namespace ReFrontier
                 if (_stageContainer)
                     _stageContainer = false;
 
-                if (!recursive)
-                    return;
-
                 // Check if a new directory was created
-                if (!Directory.Exists(outputPath))
+                if (!recursive || !Directory.Exists(outputPath))
                     return;
 
                 // Recursively go to next levels if a directory was created from file
