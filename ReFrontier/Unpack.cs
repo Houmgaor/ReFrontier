@@ -45,16 +45,17 @@ namespace ReFrontier
             for (int i = 0; i < count; i++)
             {
                 brInput.BaseStream.Seek(magicSize, SeekOrigin.Current);
-                if (brInput.BaseStream.Position + 4 >= brInput.BaseStream.Length)
+                if (brInput.BaseStream.Position + 4 > brInput.BaseStream.Length)
                 {
-                    Console.WriteLine($"File terminated early in simple container check.");
+                    Console.WriteLine($"File terminated early ({i}/{count}) in simple container check.");
                     break;
                 }
                 completeSize += brInput.ReadInt32();
             }
 
             // Very fragile check for stage container
-            brInput.BaseStream.Seek(4, SeekOrigin.Begin);
+            const int headerSize = 4;
+            brInput.BaseStream.Seek(headerSize, SeekOrigin.Begin);
             int checkUnk = brInput.ReadInt32();
             long checkZero = brInput.ReadInt64();
             if (checkUnk < 9999 && checkZero == 0)
@@ -83,7 +84,8 @@ namespace ReFrontier
             Console.WriteLine("Trying to unpack as generic simple container.");
             brInput.BaseStream.Seek(magicSize, SeekOrigin.Begin);
 
-            // Write to log file if desired; needs some other solution because it creates useless logs even if !createLog
+            // Write to log file if desired
+            // Needs some other solution because it creates useless logs even if !createLog
             Directory.CreateDirectory(outputDir);
             StreamWriter logOutput = new($"{input}.log");
             if (createLog) {
@@ -97,13 +99,10 @@ namespace ReFrontier
                 int entryOffset = brInput.ReadInt32();
                 int entrySize = brInput.ReadInt32();
 
-                const int headerSize = 4;
-
                 // Check bad entries
                 if (
-                    entrySize < 0 ||
-                    entryOffset + entrySize >= brInput.BaseStream.Length ||
-                    entrySize < headerSize
+                    entrySize < headerSize ||
+                    entryOffset + entrySize > brInput.BaseStream.Length
                 )
                 {
                     Console.WriteLine($"Offset: 0x{entryOffset:X8}, Size: 0x{entrySize:X8} (SKIPPED)");

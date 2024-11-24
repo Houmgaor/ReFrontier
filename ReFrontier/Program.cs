@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -375,7 +376,7 @@ namespace ReFrontier
         }
 
         /// <summary>
-        /// Process files on multiple container level recursively.
+        /// Process files on multiple container level.
         /// 
         /// Try to use each file is considered a container of multiple files.
         /// </summary>
@@ -392,8 +393,13 @@ namespace ReFrontier
                 MaxDegreeOfParallelism = MAX_PARALLEL_PROCESSES
             };
 
-            Parallel.ForEach(inputFiles, parallelOptions, inputFile =>
+            // Use a queue to manage files/directories to process
+            Queue<string> filesToProcess = new(inputFiles);
+
+            while (filesToProcess.Count > 0)
             {
+                string inputFile = filesToProcess.Dequeue();
+
                 string outputPath = ProcessFile(inputFile, noDecryption, decryptOnly, _createLog);
 
                 // Disable stage processing files unpacked from parent
@@ -402,12 +408,17 @@ namespace ReFrontier
 
                 // Check if a new directory was created
                 if (!recursive || !Directory.Exists(outputPath))
-                    return;
+                    continue;
 
                 // Recursively go to next levels if a directory was created from file
                 string[] nextFiles = FileOperations.GetFiles(outputPath, patterns, SearchOption.TopDirectoryOnly);
-                ProcessMultipleLevels(nextFiles, recursive, noDecryption, decryptOnly);
-            });
+                
+                // Add them to the queue for processing
+                foreach (var nextFile in nextFiles)
+                {
+                    filesToProcess.Enqueue(nextFile);
+                }
+            };
         }
     }
 }
