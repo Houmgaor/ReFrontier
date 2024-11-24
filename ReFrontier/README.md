@@ -20,7 +20,15 @@ Any command will leave the terminal open until you press enter.
 Use ``--close`` to close the terminal after running ReFrontier.
 Use ``--help`` to display the CLI help.
 
-### Decrypt
+Use ``--cleanUp`` to delete the initial file or any intermediary file.
+
+### Single file
+
+This is a file format used by most game data.
+In binary, it starts with an ECD magic keyword.
+You will find it in many ".bin" files such as "mhfdat.bin", "mhfpac.bin", etc.
+
+#### Decrypt
 
 ReFrontier does decryption (ECD → JPK) then decompression by default.
 
@@ -38,26 +46,18 @@ The decryption options are:
 --noDecryption: Don't decrypt ECD files, no unpacking
 ```
 
-### Decompress
+#### Decompress
 
 Decompressing a file *replaces* the old file by its new format, don't forget to backup important data.
 You can recognized a compressed file by its "JKR" header (in the file first bytes).
 
-The unpacking options are:
+You can add ``--cleanUp`` to delete the initial file.
 
-```text
---cleanUp: Delete simple archives after unpacking
---stageContainer: Unpack file as stage-specific container
---autoStage: Automatically attempt to unpack containers that might be stage-specific
---nonRecursive: Do not unpack recursively
---ignoreJPK: Do not decompress JPK files
-```
-
-### Data edition
+#### Data edition
 
 This solution also includes [FrontierTextTool](../FrontierTextTool/README.md) and [FrontierDataTool](../FrontierDataTool/README.md) to extract text and data from the files respectively.
 
-### Compress
+#### Compress
 
 You can compress back to supported formats.
 Neither the compression type nor level are really important, since the game will figure out how to decompress from the file header.
@@ -68,7 +68,6 @@ You can declare compression up to "100%", but the compression efficiency frops s
 The options are:
 
 ```text
---pack: Repack directory (requires log file  - double check file extensions therein and make sure you account for encryption, compression)
 --compress=[type],[level]: Pack file with jpk [type] at compression [level] (example: --compress=3,10)
 ```
 
@@ -86,7 +85,7 @@ File compressed using type 4 (level 100): 6045761 bytes (77,15 % saved) in 2:05.
 Vanilla file from COG with type 4       : 5363764 bytes (79,72 % saved)
 ```
 
-### Encrypt
+#### Encrypt
 
 To a encrypt a *compressed* file use ``--encrypt``.
 It encrypts the input file with the ECD algorithm.
@@ -95,3 +94,28 @@ It will implicitely look for mhfdat.bin.meta file in the same folder, see the [d
 The file can now be used in Frontier.
 
 You can compress and encrypt a file in the same command, just add both arguments.
+
+## Folder
+
+### Unpacking
+
+Monster Hunter Frontier uses a packed data format where many files can be defined in one folder.
+To depack a full folder, you can drag-and-drop it to the executable.
+
+The decompression options are the following:
+
+```text
+--stageContainer: Unpack file as stage-specific container
+--autoStage: Automatically attempt to unpack containers that might be stage-specific
+--nonRecursive: Do not unpack recursively
+--ignoreJPK: Do not decompress JPK files
+--cleanUp: Delete simple archives after unpacking
+```
+
+You can use ``--log`` to generate a log, necessary for repacking.
+
+### Repacking
+
+Repacking takes a directory as an input and generates a single file from it.
+To use it use ``--pack``.
+It requires a log file, so double check file extensions therein and make sure you account for encryption and compression.

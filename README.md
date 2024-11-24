@@ -12,7 +12,7 @@ Yet it brings many improvements.
 General improvements:
 
 - Compatibility with Linux/Mac.
-- 4x times faster.
+- 4x times faster (single thread), multithreaded unpacking.
 - Interface standardization.
 - User documentation.
 - Linting.
