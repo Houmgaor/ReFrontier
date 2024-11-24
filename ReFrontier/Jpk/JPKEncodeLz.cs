@@ -71,15 +71,15 @@ namespace ReFrontier.Jpk
             }
             // Start position to find a repeated element, minimum is 0 
             int inputStart = Math.Max(inputDataIndex - m_maxIndexDist, 0);
-            
+
             int maxLength = 0;
-            
+
             for (int leftIterator = inputStart; leftIterator < inputDataIndex; leftIterator++)
             {
                 int currentLength = 0;
-                            
+
                 while (
-                    currentLength < lengthThreshold && 
+                    currentLength < lengthThreshold &&
                     m_inputBuffer[leftIterator + currentLength] == m_inputBuffer[inputDataIndex + currentLength]
                 )
                 {
@@ -130,7 +130,7 @@ namespace ReFrontier.Jpk
                 FlushFlag(false);
                 m_shiftIndex = 7;
             }
-            else 
+            else
             {
                 m_shiftIndex--;
             }
@@ -184,7 +184,7 @@ namespace ReFrontier.Jpk
                     progress?.Invoke(perc);
                 }
                 int repetitionLength = LongestRepetition(m_bufferIndex, out uint repetitionOffset);
-                
+
                 if (repetitionLength == 0)
                 {
                     SetFlag(false);

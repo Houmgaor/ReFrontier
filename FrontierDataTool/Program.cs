@@ -117,16 +117,19 @@ namespace FrontierDataTool
         /// <exception cref="ArgumentException">For wring arguments entered.</exception>
         private static void Main(string[] args)
         {
-            if (args.Length < 2) {
+            if (args.Length < 2)
+            {
                 throw new ArgumentException($"{args.Length} arguments provided, 2 required.");
             }
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-            switch (args[0]) {
+            switch (args[0])
+            {
                 case "dump":
-                    if (args.Length < 5) {
+                    if (args.Length < 5)
+                    {
                         throw new ArgumentException(
-                            "You must provide 5 positional arguments with 'dump':\n" + 
+                            "You must provide 5 positional arguments with 'dump':\n" +
                             "dump [suffix] [mhfpac.bin] [mhfdat.bin] [mhfinf.bin]"
                         );
                     }
@@ -134,10 +137,11 @@ namespace FrontierDataTool
                     DumpData(args[1], args[2], args[3], args[4]);
                     break;
                 case "modshop":
-                    if (args.Length < 2) {
+                    if (args.Length < 2)
+                    {
                         throw new ArgumentException(
                             "You must provide the path to mhfdat.bin as a positional argument");
-                    } 
+                    }
                     // mhfdat.bin
                     ModShop(args[1]);
                     break;
@@ -179,7 +183,7 @@ namespace FrontierDataTool
             Console.WriteLine("Dumping skill tree names.");
             MemoryStream msInput = new(File.ReadAllBytes(mhfpac));
             BinaryReader brInput = new(msInput);
-            brInput.BaseStream.Seek(soStringSkillPt, SeekOrigin.Begin); 
+            brInput.BaseStream.Seek(soStringSkillPt, SeekOrigin.Begin);
             int sOffset = brInput.ReadInt32();
             brInput.BaseStream.Seek(eoStringSkillPt, SeekOrigin.Begin);
             int eOffset = brInput.ReadInt32();
@@ -275,7 +279,7 @@ namespace FrontierDataTool
         }
 
         private static void DumpItemData(string mhfdat, string suffix)
-        {   
+        {
             #region Items
             Console.WriteLine("Dumping item names.");
             var msInput = new MemoryStream(File.ReadAllBytes(mhfdat));
@@ -317,7 +321,7 @@ namespace FrontierDataTool
                 foreach (string entry in itemsDesc)
                     file.WriteLine("{0}", entry);
             #endregion
-        }   
+        }
 
         private static void DumpEquipementData(
             string mhfdat, string suffix, List<KeyValuePair<int, string>> skillId
@@ -351,7 +355,7 @@ namespace FrontierDataTool
                 sOffset = brInput.ReadInt32();
                 brInput.BaseStream.Seek(dataPointersArmor[i].Value, SeekOrigin.Begin);
                 eOffset = brInput.ReadInt32();
-                
+
                 int entryCount = (eOffset - sOffset) / 0x48;
                 brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
                 Console.WriteLine($"{aClassIds[i]} count: {entryCount}");
@@ -649,7 +653,7 @@ namespace FrontierDataTool
             int currentCount = 0;
             for (int j = 0; j < offsetInfQuestData.Count; j++)
             {
-                brInput.BaseStream.Seek(offsetInfQuestData[j].Key, SeekOrigin.Begin);                
+                brInput.BaseStream.Seek(offsetInfQuestData[j].Key, SeekOrigin.Begin);
                 for (int i = 0; i < offsetInfQuestData[j].Value; i++)
                 {
                     QuestData entry = new()
@@ -814,7 +818,7 @@ namespace FrontierDataTool
                     Console.WriteLine($"Found shop pointer at 0x{offsetPointer:X8}.");
                     byte[] patchedPointer = BitConverter.GetBytes(inputArray.Length);
                     patchedPointer.Reverse();
-                    Array.Copy(patchedPointer, 0, outputArray, offsetPointer, patchedPointer.Length);                    
+                    Array.Copy(patchedPointer, 0, outputArray, offsetPointer, patchedPointer.Length);
                 }
                 else
                     Console.WriteLine("Could not find shop pointer, please check manually and correct code.");
@@ -830,7 +834,7 @@ namespace FrontierDataTool
                 Console.WriteLine($"Found hunter pearl skill data to modify at 0x{offsetData:X8}.");
                 byte[] pearlPatch = [02, 00, 02, 00, 02, 00, 02, 00, 02, 00, 02, 00, 02, 00];
                 for (int i = 0; i < 108; i++)
-                    Array.Copy(pearlPatch, 0, outputArray, offsetData + (i * 0x30) + 8, pearlPatch.Length);                
+                    Array.Copy(pearlPatch, 0, outputArray, offsetData + (i * 0x30) + 8, pearlPatch.Length);
             }
             else
                 Console.WriteLine("Could not find pearl skill needle, please check manually and correct code.");

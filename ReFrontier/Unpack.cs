@@ -12,7 +12,7 @@ namespace ReFrontier
     /// </summary>
     internal class Unpack
     {
-        
+
         /// <summary>
         /// Unpack a simple archive file container.
         /// </summary>
@@ -24,7 +24,7 @@ namespace ReFrontier
         /// <param name="autoStage">Unpack stage container if true.</param>
         /// <returns>Output folder path.</returns>
         public static string UnpackSimpleArchive(
-            string input, BinaryReader brInput, int magicSize, bool createLog, 
+            string input, BinaryReader brInput, int magicSize, bool createLog,
             bool cleanUp, bool autoStage
         )
         {
@@ -49,7 +49,7 @@ namespace ReFrontier
                 if (brInput.BaseStream.Position + 4 > brInput.BaseStream.Length)
                 {
                     Console.WriteLine($"File terminated early ({i}/{count}) in simple container check.");
-                    count = (uint) i;
+                    count = (uint)i;
                     break;
                 }
                 completeSize += brInput.ReadInt32();
@@ -90,7 +90,8 @@ namespace ReFrontier
             // Needs some other solution because it creates useless logs even if !createLog
             Directory.CreateDirectory(outputDir);
             StreamWriter logOutput = new($"{input}.log");
-            if (createLog) {
+            if (createLog)
+            {
                 logOutput.WriteLine("SimpleArchive");
                 logOutput.WriteLine(input.Remove(0, input.LastIndexOf('/') + 1));
                 logOutput.WriteLine(count);
@@ -159,7 +160,8 @@ namespace ReFrontier
             Directory.CreateDirectory(outputDir);
 
             StreamWriter logOutput = new($"{input}.log");
-            if (createLog) {
+            if (createLog)
+            {
                 logOutput.WriteLine("MHA");
                 logOutput.WriteLine(input.Remove(0, input.LastIndexOf('/') + 1));
             }
@@ -171,7 +173,8 @@ namespace ReFrontier
             brInput.ReadInt32(); // entryNamesBlockLength
             short unk1 = brInput.ReadInt16();
             short unk2 = brInput.ReadInt16();
-            if (createLog) {
+            if (createLog)
+            {
                 logOutput.WriteLine(count);
                 logOutput.WriteLine(unk1);
                 logOutput.WriteLine(unk2);
@@ -247,7 +250,7 @@ namespace ReFrontier
                 // Get extension
                 byte[] header = new byte[4];
                 Array.Copy(outBuffer, header, 4);
-                uint headerInt = BitConverter.ToUInt32(header, 0);                    
+                uint headerInt = BitConverter.ToUInt32(header, 0);
                 string extension = Enum.GetName(typeof(FileExtension), headerInt);
                 extension ??= ByteOperations.CheckForMagic(headerInt, outBuffer);
                 extension ??= "bin";
@@ -277,13 +280,14 @@ namespace ReFrontier
             Directory.CreateDirectory(outputDir);
 
             StreamWriter logOutput = new($"{input}.log");
-            if (createLog) {
+            if (createLog)
+            {
                 logOutput.WriteLine("StageContainer");
                 logOutput.WriteLine(input.Remove(0, input.LastIndexOf('/') + 1));
             }
 
             // First three segments
-            for (int i = 0; i < 3; i ++)
+            for (int i = 0; i < 3; i++)
             {
                 int offset = brInput.ReadInt32();
                 int size = brInput.ReadInt32();

@@ -19,13 +19,13 @@ namespace ReFrontier.Jpk
 
         private byte m_bits = 0;
         private int m_bitcount = 0;
-        
+
         private void GetPaths(int strt, int lev, int pth)
         {
             int maxlev = 30;
             if (lev >= maxlev) return;
             if (lev >= m_depth) m_depth = lev;
-            
+
             if (strt < m_hfTableLen)
             {
                 int val = m_hfTable[strt];
@@ -50,7 +50,7 @@ namespace ReFrontier.Jpk
             rndseq = [.. rndseq.OrderBy(x => rnd.Next())];
             for (int i = 0; i < 0x100; i++) m_hfTable[i] = rndseq[i];
             for (int i = 0x100; i < m_hfTableLen; i++) m_hfTable[i] = (short)i;
-            
+
             GetPaths(m_hfTableLen, 0, 0);
         }
 

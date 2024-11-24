@@ -66,7 +66,7 @@ namespace LibReFrontier
             if (matches.Length != 2)
             {
                 throw new ArgumentException(
-                    $"Check the input of compress! " + 
+                    $"Check the input of compress! " +
                     $"Received: {inputArg}. " +
                     "Cannot split as compression [type],[level]. " +
                     "Example: --compress=3,50"

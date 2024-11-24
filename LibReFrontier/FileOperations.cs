@@ -55,7 +55,7 @@ namespace LibReFrontier
         )
         {
             return searchPatterns.AsParallel()
-                    .SelectMany(searchPattern => 
+                    .SelectMany(searchPattern =>
                     Directory.EnumerateFiles(path, searchPattern, searchOption)
                     )
                     .ToArray();

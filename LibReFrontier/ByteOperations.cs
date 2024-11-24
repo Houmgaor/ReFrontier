@@ -21,7 +21,7 @@ namespace LibReFrontier
                 return 0;
             // If haystack is too small
             if (haystack.Length < needle.Length)
-            return -1;
+                return -1;
 
             Span<byte> haystackSpan = haystack;
             Span<byte> needleSpan = needle;

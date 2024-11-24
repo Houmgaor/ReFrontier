@@ -15,7 +15,8 @@ namespace ReFrontier.Jpk
         /// <param name="outBuffer">Buffer to write to.</param>
         public void ProcessOnDecode(Stream inStream, byte[] outBuffer)
         {
-            for (int index = 0; index < outBuffer.Length; index++) {
+            for (int index = 0; index < outBuffer.Length; index++)
+            {
                 if (inStream.Position >= inStream.Length)
                     break;
                 outBuffer[index] = ReadByte(inStream);

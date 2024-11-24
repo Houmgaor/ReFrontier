@@ -66,7 +66,7 @@ namespace ReFrontier.Jpk
                     outBuffer[outIndex++] = ReadByte(inStream);
                     continue;
                 }
-                
+
                 int length, offset;
 
                 if (!JpkBitLz(inStream))

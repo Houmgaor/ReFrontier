@@ -24,7 +24,7 @@ namespace ReFrontier
         /// <exception cref="NotImplementedException">The packing format does not exist.</exception>
         public static void ProcessPackInput(string input)
         {
-            string logFile = $"{input}/{input.Remove(0, input.LastIndexOf('/')+1)}.log";
+            string logFile = $"{input}/{input.Remove(0, input.LastIndexOf('/') + 1)}.log";
             if (!File.Exists(logFile))
             {
                 string tempLog = logFile;
@@ -83,7 +83,8 @@ namespace ReFrontier
                 {
                     Console.WriteLine($"{input}/{listFileNames[i]}");
                     byte[] fileData = [];
-                    if (listFileNames[i] != "null") {
+                    if (listFileNames[i] != "null")
+                    {
                         fileData = File.ReadAllBytes($"{input}/{listFileNames[i]}");
                     }
                     bwOutput.BaseStream.Seek(0x04 + i * 0x08, SeekOrigin.Begin);
@@ -296,10 +297,10 @@ namespace ReFrontier
             FileStream fsot = File.Create(otPath);
             BinaryWriter br = new(fsot);
             // JKR header
-            br.Write((uint) 0x1A524B4A);
-            br.Write((ushort) 0x108);
-            br.Write((ushort) compression.type);
-            br.Write((uint) 0x10);
+            br.Write((uint)0x1A524B4A);
+            br.Write((ushort)0x108);
+            br.Write((ushort)compression.type);
+            br.Write((uint)0x10);
             br.Write(insize);
             IJPKEncode encoder;
             switch (compression.type)
@@ -324,7 +325,7 @@ namespace ReFrontier
             encoder.ProcessOnEncode(buffer, fsot, compression.level * 100, null);
             finnish = DateTime.Now;
             ArgumentsParser.Print(
-                $"File compressed using {compression.type} compression level {compression.level}: " + 
+                $"File compressed using {compression.type} compression level {compression.level}: " +
                 $"{fsot.Length} bytes ({1 - (decimal)fsot.Length / insize:P} saved) in {finnish - start:%m\\:ss\\.ff}",
                 false
             );

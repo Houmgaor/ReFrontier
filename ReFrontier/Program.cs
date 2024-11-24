@@ -52,8 +52,8 @@ namespace ReFrontier
 
             ArgumentsParser.Print(
                 assembly.GetCustomAttribute<AssemblyProductAttribute>().Product +
-                $" v{fileVersionAttribute} - " + 
-                assembly.GetCustomAttribute<AssemblyDescriptionAttribute>().Description + 
+                $" v{fileVersionAttribute} - " +
+                assembly.GetCustomAttribute<AssemblyDescriptionAttribute>().Description +
                 ", by MHVuze",
                 false
             );
@@ -64,7 +64,7 @@ namespace ReFrontier
                 ArgumentsParser.Print(
                     "Usage: ReFrontier <file> [options]\n" +
                     "\nUnpacking Options\n" +
-                    "===================\n\n" + 
+                    "===================\n\n" +
                     "--log: Write log file (required for crypting back)\n" +
                     "--cleanUp: Delete simple archives after unpacking\n" +
                     "--stageContainer: Unpack file as stage-specific container\n" +
@@ -74,13 +74,13 @@ namespace ReFrontier
                     "--noDecryption: Don't decrypt ECD files, no unpacking\n" +
                     "--ignoreJPK: Do not decompress JPK files\n" +
                     "\nPacking Options\n" +
-                    "=================\n\n" + 
+                    "=================\n\n" +
                     "--pack: Repack directory (requires log file)\n" +
                     "--compress=[type],[level]: Pack file with JPK [type] (int) at compression [level]\n" +
                     "--encrypt: Encrypt input file with ECD algorithm\n" +
                     "\nGeneral Options\n" +
                     "=================\n\n" +
-                    "--version: Show the current program version\n" + 
+                    "--version: Show the current program version\n" +
                     "--close: Close window after finishing process\n" +
                     "--help: Print this window and leave\n\n" +
                     "You can use all arguments with a single dash \"-\" " +
@@ -93,18 +93,18 @@ namespace ReFrontier
             string input = args[0];
             if (!File.Exists(input) && !Directory.Exists(input))
                 throw new FileNotFoundException($"{input} do not exist.");
-            
+
 
             // Assign arguments
             _createLog = argKeys.Contains("--log") || argKeys.Contains("-log");
             bool recursive = !argKeys.Contains("--nonRecursive") && !argKeys.Contains("-nonRecursive");
             bool repack = argKeys.Contains("--pack") || argKeys.Contains("-pack");
             _decryptOnly = argKeys.Contains("--decryptOnly") || argKeys.Contains("-decryptOnly");
-            
+
             bool noDecryption = argKeys.Contains("--noDecryption") || argKeys.Contains("-noDecryption");
             bool encrypt = argKeys.Contains("--encrypt") || argKeys.Contains("-encrypt");
             _cleanUp = argKeys.Contains("--cleanUp") || argKeys.Contains("-cleanUp");
-            
+
             _ignoreJPK = argKeys.Contains("--ignoreJPK") || argKeys.Contains("-ignoreJPK");
             _stageContainer = argKeys.Contains("--stageContainer") || argKeys.Contains("-stageContainer");
             _autoStage = argKeys.Contains("--autoStage") || argKeys.Contains("-autoStage");
@@ -182,7 +182,8 @@ namespace ReFrontier
                 Path.GetDirectoryName(inputFile),
                 Path.GetFileNameWithoutExtension(inputFile)
             );
-            if (!File.Exists(metaFile)) {
+            if (!File.Exists(metaFile))
+            {
                 throw new FileNotFoundException(
                     $"META file {metaFile} does not exist, " +
                     $"cannot encryt {inputFile}." +
@@ -224,13 +225,14 @@ namespace ReFrontier
 
             string outputFile = inputFile + ".decd";
             File.WriteAllBytes(outputFile, bufferStripped);
-            Console.Write($"File decrypted to {outputFile}.");
-            if (createLog) {
+            Console.Write($"File decrypted to {outputFile}");
+            if (createLog)
+            {
                 string metaFile = $"{inputFile}.meta";
                 File.WriteAllBytes(metaFile, ecdHeader);
                 Console.Write($", log file at {metaFile}");
             }
-            Console.Write("\n");
+            Console.Write(".\n");
             if (cleanUp)
                 File.Delete(inputFile);
 
@@ -245,17 +247,17 @@ namespace ReFrontier
         /// <returns>Output file at {inputFile}.dexf</returns>
         private static string DecryptExfFile(string inputFile, bool cleanUp)
         {
-                byte[] buffer = File.ReadAllBytes(inputFile);
-                Crypto.DecodeExf(buffer);
-                const int headerLength = 0x10;
-                byte[] bufferStripped = new byte[buffer.Length - headerLength];
-                Array.Copy(buffer, headerLength, bufferStripped, 0, buffer.Length - headerLength);
-                string outputFile = inputFile + ".dexf";
-                File.WriteAllBytes(outputFile, bufferStripped);
-                if (cleanUp)
-                    File.Delete(inputFile);
-                Console.WriteLine($"File decrypted to {outputFile}.");
-                return outputFile;
+            byte[] buffer = File.ReadAllBytes(inputFile);
+            Crypto.DecodeExf(buffer);
+            const int headerLength = 0x10;
+            byte[] bufferStripped = new byte[buffer.Length - headerLength];
+            Array.Copy(buffer, headerLength, bufferStripped, 0, buffer.Length - headerLength);
+            string outputFile = inputFile + ".dexf";
+            File.WriteAllBytes(outputFile, bufferStripped);
+            if (cleanUp)
+                File.Delete(inputFile);
+            Console.WriteLine($"File decrypted to {outputFile}.");
+            return outputFile;
         }
 
         /// <summary>
@@ -300,7 +302,7 @@ namespace ReFrontier
                     compression, filePath, $"output/{Path.GetFileNameWithoutExtension(filePath)}"
                 );
             }
-            
+
             if (encrypt)
             {
                 string decompressedFilePath = Path.Join(
@@ -315,7 +317,7 @@ namespace ReFrontier
             }
 
             // Try to depack the file as multiple files
-            if (compression.level == 0 && !encrypt) 
+            if (compression.level == 0 && !encrypt)
                 ProcessMultipleLevels([filePath], recursive, noDecryption, _decryptOnly, _autoStage);
         }
 
@@ -337,7 +339,8 @@ namespace ReFrontier
             MemoryStream msInput = new(File.ReadAllBytes(input));
             BinaryReader brInput = new(msInput);
             string outputPath;
-            if (msInput.Length == 0) {
+            if (msInput.Length == 0)
+            {
                 Console.WriteLine("File is empty. Skipping.");
                 return null;
             }
@@ -361,7 +364,7 @@ namespace ReFrontier
             {
                 // ECD Header
                 Console.WriteLine("ECD Header detected.");
-                if (noDecryption) 
+                if (noDecryption)
                 {
                     ArgumentsParser.Print("Not decrypting due to flag.", false);
                     return null;
@@ -379,7 +382,8 @@ namespace ReFrontier
                 // JKR Header
                 Console.WriteLine("JKR Header detected.");
                 outputPath = input;
-                if (!_ignoreJPK) {
+                if (!_ignoreJPK)
+                {
                     outputPath = Unpack.UnpackJPK(input);
                     Console.WriteLine($"File decompressed to {outputPath}.");
                 }
@@ -407,7 +411,8 @@ namespace ReFrontier
 
             Console.WriteLine("==============================");
             // Decompress file if it was an ECD (encypted)
-            if (fileMagic == 0x1A646365 && !decryptOnly) {
+            if (fileMagic == 0x1A646365 && !decryptOnly)
+            {
                 string decdFilePath = outputPath;
                 outputPath = ProcessFile(decdFilePath, noDecryption, decryptOnly, createLog, stageContainer);
                 if (_cleanUp)
@@ -446,7 +451,8 @@ namespace ReFrontier
                     fileWorkers.Add(tempInputFile);
                 }
 
-                Parallel.ForEach(fileWorkers, parallelOptions, inputFile => {
+                Parallel.ForEach(fileWorkers, parallelOptions, inputFile =>
+                {
                     string outputPath = ProcessFile(inputFile, noDecryption, decryptOnly, _createLog, stageContainer);
 
                     // Disable stage processing files unpacked from parent
@@ -475,7 +481,7 @@ namespace ReFrontier
             string[] patterns = ["*.bin", "*.jkr", "*.ftxt", "*.snd"];
 
             var nextFiles = FileOperations.GetFiles(directoryPath, patterns, SearchOption.TopDirectoryOnly);
-            
+
             foreach (var nextFile in nextFiles)
             {
                 filesQueue.Enqueue(nextFile);

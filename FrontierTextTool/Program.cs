@@ -47,7 +47,7 @@ namespace FrontierTextTool
                     "===============\n" +
                     "--trueOffsets: correct the value of string offsets. It is recommended to use it with --nullStrings.\n" +
                     "--nullStrings: check if strings are valid before outputing them.\n" +
-                    "--verbose: more verbosity.\n" + 
+                    "--verbose: more verbosity.\n" +
                     "--close: close the terminal after command.\n" +
                     "--help: display this message.",
                     false
@@ -55,7 +55,8 @@ namespace FrontierTextTool
                 return;
             }
 
-            if (parsedArgs.Count < 2) {
+            if (parsedArgs.Count < 2)
+            {
                 throw new ArgumentException($"Too few arguments: {parsedArgs.Count}. Need at least 2 arguments.");
             }
 
@@ -67,7 +68,8 @@ namespace FrontierTextTool
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
 
-            switch (args[0]) {
+            switch (args[0])
+            {
                 case "fulldump":
                     DumpAndHash(args[1], 0, 0, trueOffsets, nullStrings);
                     break;
@@ -96,7 +98,8 @@ namespace FrontierTextTool
                     throw new ArgumentException($"{args[0]} is not a valid argument.");
             }
 
-            if (!autoClose) {
+            if (!autoClose)
+            {
                 Console.WriteLine("Done");
                 Console.Read();
             }
@@ -192,7 +195,7 @@ namespace FrontierTextTool
             // Using this approach because csvHelper would always escape some strings
             // which might mess up in-game when copy-pasting were required
             string fileName = "csv/" + Path.GetFileName(csvFile);
-            
+
             if (File.Exists(fileName))
                 File.Delete(fileName);
             StreamWriter txtOutput = new(fileName, true, Encoding.GetEncoding("shift-jis"));
@@ -204,7 +207,7 @@ namespace FrontierTextTool
             if (!Directory.Exists("backup"))
                 Directory.CreateDirectory("backup");
             File.Move(
-                catFile, 
+                catFile,
                 $"backup/{Path.GetFileNameWithoutExtension(catFile)}_{DateTime.Now:yyyyMMdd_HHmm}.txt"
             );
         }
@@ -352,7 +355,7 @@ namespace FrontierTextTool
             byte[] updatedBytes = new byte[fileBytes.Length + eStringsLength];
             Array.Copy(fileBytes, updatedBytes, fileBytes.Length);
             Array.Copy(eStringsArray, 0, updatedBytes, fileBytes.Length, eStringsArray.Length);
-            
+
             return updatedBytes;
         }
 
@@ -389,7 +392,8 @@ namespace FrontierTextTool
             };
             Pack.JPKEncode(compression, outputFile, outputFile);
             byte[] buffer = File.ReadAllBytes(outputFile);
-            if (File.Exists($"{outputFile}.meta")) {
+            if (File.Exists($"{outputFile}.meta"))
+            {
                 throw new FileNotFoundException(
                     $"META file {outputFile}.meta does not exist, did you use '--log' during decrypting to generate it?"
                 );
@@ -467,8 +471,9 @@ namespace FrontierTextTool
                     Replace("\n", "<NLINE>"); // Replace new line
 
                 stringsDatabase.Add(
-                    new StringDatabase() {
-                        Offset = (uint) offset,
+                    new StringDatabase()
+                    {
+                        Offset = (uint)offset,
                         Hash = Crypto.GetCrc32(Encoding.GetEncoding("shift-jis").GetBytes(str)),
                         JString = str
                     }
@@ -553,7 +558,7 @@ namespace FrontierTextTool
             // Copy eStrings to new db
             for (int i = 0; i < stringDbOld.Count; i++)
             {
-                Console.Write($"\rUpdating entry {i+1}/{stringDbOld.Count}");
+                Console.Write($"\rUpdating entry {i + 1}/{stringDbOld.Count}");
                 if (stringDbOld[i].EString != "")
                 {
                     var matchedNewObjs = stringDbNew.Where(x => x.Hash.Equals(stringDbOld[i].Hash));
@@ -571,7 +576,8 @@ namespace FrontierTextTool
                 File.Delete(fileName);
             StreamWriter txtOutput = new(fileName, true, Encoding.GetEncoding("shift-jis"));
             // Note from v1.1.0: CsvHelpers may escape too many characters
-            using (var csvOutput = new CsvWriter(txtOutput, csvConf)) {
+            using (var csvOutput = new CsvWriter(txtOutput, csvConf))
+            {
                 csvOutput.WriteHeader<StringDatabase>();
                 csvOutput.WriteRecords(stringDbNew);
             }

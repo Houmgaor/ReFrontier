@@ -27,6 +27,6 @@ namespace ReFrontier.Jpk
     /// <param name="outStream">Output stream</param>
     /// <param name="level">Encoding level between 0 and 10000.</param>
     /// <param name="progress"></param>
-    void ProcessOnEncode(byte[] inBuffer, Stream outStream, int level=16, ShowProgress progress = null);
+    void ProcessOnEncode(byte[] inBuffer, Stream outStream, int level = 16, ShowProgress progress = null);
   }
 }
