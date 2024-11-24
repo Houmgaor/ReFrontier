@@ -163,18 +163,29 @@ namespace ReFrontier
 
 
         /// <summary>
-        /// Encrypt a single file using 
+        /// Encrypt a single file to a new file.
+        /// 
+        /// If <paramref name="inputFile"/> is "mhfdat.bin.decd",
+        /// <paramref name="metaFile"/> should be "mhfdat.bin.meta" and 
+        /// the output file will be "mhfdat.bin".
         /// </summary>
-        /// <param name="input">Input file to encrypt.</param>
+        /// <param name="inputFile">Input file to encrypt.</param>
         /// <param name="metaFile">Data to use for encryption.</param>
+        /// <param name="cleanUp">Remove both <paramref name="inputFile"/> and <paramref name="metaFile"/>.</param>
+        /// <returns>Encrypted file path.</returns>
         /// <exception cref="FileNotFoundException">Thrown if the meta file does not exist.</exception>
-        private static string EncryptEcdFile(string input, string metaFile)
+        private static string EncryptEcdFile(string inputFile, string metaFile, bool cleanUp)
         {
-            byte[] buffer = File.ReadAllBytes(input);
+            byte[] buffer = File.ReadAllBytes(inputFile);
+            // From mhfdat.bin.decd to mhdat.bin
+            string encryptedFilePath = Path.Join(
+                Path.GetDirectoryName(inputFile),
+                Path.GetFileNameWithoutExtension(inputFile)
+            );
             if (!File.Exists(metaFile)) {
                 throw new FileNotFoundException(
                     $"META file {metaFile} does not exist, " +
-                    $"cannot encryt {input}." +
+                    $"cannot encryt {inputFile}." +
                     "Make sure to decryt the initial file with the -log option, " +
                     "and to place the generate meta file in the same folder as the file " +
                     "to encypt."
@@ -182,37 +193,70 @@ namespace ReFrontier
             }
             byte[] bufferMeta = File.ReadAllBytes(metaFile);
             buffer = Crypto.EncodeEcd(buffer, bufferMeta);
-            File.WriteAllBytes(input, buffer);
-            ArgumentsParser.Print($"File encrypted to {input}.", false);
-            FileOperations.GetUpdateEntry(input);
-            return input;
+            File.WriteAllBytes(encryptedFilePath, buffer);
+            ArgumentsParser.Print($"File encrypted to {encryptedFilePath}.", false);
+            FileOperations.GetUpdateEntry(inputFile);
+            if (cleanUp)
+            {
+                File.Delete(inputFile);
+                File.Delete(metaFile);
+            }
+            return encryptedFilePath;
         }
 
         /// <summary>
-        /// Decrypt an ECD encoded file.
+        /// Decrypt an ECD encoded file to a new file.
         /// </summary>
         /// <param name="inputFile">Input file path.</param>
         /// <param name="createLog">True if we should create a log file with the header.</param>
-        /// <returns>Path to the meta file if created.</returns>
-        private static string DecryptEcdFile(string inputFile, bool createLog)
+        /// <param name="cleanUp">true if the original file should be deleted.</param>
+        /// <returns>Path to the decrypted file, in the form <paramref name="inputFile" />.decd</returns>
+        private static string DecryptEcdFile(string inputFile, bool createLog, bool cleanUp)
         {
             byte[] buffer = File.ReadAllBytes(inputFile);
             Crypto.DecodeEcd(buffer);
+            const int headerLength = 0x10;
 
-            byte[] ecdHeader = new byte[0x10];
-            Array.Copy(buffer, 0, ecdHeader, 0, 0x10);
-            byte[] bufferStripped = new byte[buffer.Length - 0x10];
-            Array.Copy(buffer, 0x10, bufferStripped, 0, buffer.Length - 0x10);
+            byte[] ecdHeader = new byte[headerLength];
+            Array.Copy(buffer, 0, ecdHeader, 0, headerLength);
+            byte[] bufferStripped = new byte[buffer.Length - headerLength];
+            Array.Copy(buffer, headerLength, bufferStripped, 0, buffer.Length - headerLength);
 
-            File.WriteAllBytes(inputFile, bufferStripped);
+            string outputFile = inputFile + ".decd";
+            File.WriteAllBytes(outputFile, bufferStripped);
+            Console.Write($"File decrypted to {outputFile}.");
             if (createLog) {
                 string metaFile = $"{inputFile}.meta";
                 File.WriteAllBytes(metaFile, ecdHeader);
+                Console.Write($", log file at {metaFile}");
             }
-            return inputFile;
+            Console.Write("\n");
+            if (cleanUp)
+                File.Delete(inputFile);
+
+            return outputFile;
         }
 
-
+        /// <summary>
+        /// Decrypt an Exf file.
+        /// </summary>
+        /// <param name="inputFile">Input file path.</param>
+        /// <param name="cleanUp">Should the original file be removed.</param>
+        /// <returns>Output file at {inputFile}.dexf</returns>
+        private static string DecryptExfFile(string inputFile, bool cleanUp)
+        {
+                byte[] buffer = File.ReadAllBytes(inputFile);
+                Crypto.DecodeExf(buffer);
+                const int headerLength = 0x10;
+                byte[] bufferStripped = new byte[buffer.Length - headerLength];
+                Array.Copy(buffer, headerLength, bufferStripped, 0, buffer.Length - headerLength);
+                string outputFile = inputFile + ".dexf";
+                File.WriteAllBytes(outputFile, bufferStripped);
+                if (cleanUp)
+                    File.Delete(inputFile);
+                Console.WriteLine($"File decrypted to {outputFile}.");
+                return outputFile;
+        }
 
         /// <summary>
         /// Lauches a directory processing.
@@ -251,18 +295,23 @@ namespace ReFrontier
         {
             if (compression.level != 0)
             {
+                // From mhfdat.bin.decd.bin to output/mhfdat.bin.decd
                 Pack.JPKEncode(
-                    compression, filePath, $"output/{Path.GetFileName(filePath)}"
+                    compression, filePath, $"output/{Path.GetFileNameWithoutExtension(filePath)}"
                 );
             }
             
             if (encrypt)
             {
-                string metaFile = Path.Join(
+                string decompressedFilePath = Path.Join(
                     Path.GetDirectoryName(filePath),
-                    Path.GetFileNameWithoutExtension(filePath) + ".meta"
+                    Path.GetFileNameWithoutExtension(filePath)
                 );
-                EncryptEcdFile(filePath, metaFile);
+                string metaFilePath = Path.Join(
+                    Path.GetDirectoryName(filePath),
+                    Path.GetFileNameWithoutExtension(decompressedFilePath) + ".meta"
+                );
+                EncryptEcdFile(decompressedFilePath, metaFilePath, _cleanUp);
             }
 
             // Try to depack the file as multiple files
@@ -317,25 +366,13 @@ namespace ReFrontier
                     ArgumentsParser.Print("Not decrypting due to flag.", false);
                     return null;
                 }
-                outputPath = DecryptEcdFile(input, createLog);
-                string logInfo = "";
-                if (createLog) {
-                    logInfo = $", log file written at {input}.meta";
-                }
-
-                Console.WriteLine($"File decrypted to {outputPath}{logInfo}.");
+                outputPath = DecryptEcdFile(input, createLog, _cleanUp);
             }
             else if (fileMagic == 0x1A667865)
             {
                 // EXF Header
                 Console.WriteLine("EXF Header detected.");
-                byte[] buffer = File.ReadAllBytes(input);
-                Crypto.DecodeExf(buffer);
-                byte[] bufferStripped = new byte[buffer.Length - 0x10];
-                Array.Copy(buffer, 0x10, bufferStripped, 0, buffer.Length - 0x10);
-                File.WriteAllBytes(input, bufferStripped);
-                Console.WriteLine("File decrypted.");
-                outputPath = input;
+                outputPath = DecryptExfFile(input, _cleanUp);
             }
             else if (fileMagic == 0x1A524B4A)
             {
@@ -371,7 +408,10 @@ namespace ReFrontier
             Console.WriteLine("==============================");
             // Decompress file if it was an ECD (encypted)
             if (fileMagic == 0x1A646365 && !decryptOnly) {
-                outputPath = ProcessFile(input, noDecryption, decryptOnly, createLog, stageContainer);
+                string decdFilePath = outputPath;
+                outputPath = ProcessFile(decdFilePath, noDecryption, decryptOnly, createLog, stageContainer);
+                if (_cleanUp)
+                    File.Delete(decdFilePath);
             }
             return outputPath;
         }
