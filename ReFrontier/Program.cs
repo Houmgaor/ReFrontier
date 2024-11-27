@@ -26,6 +26,10 @@ namespace ReFrontier
         private static bool _ignoreJPK = false;
         private static bool _stageContainer = false;
         private static bool _autoStage = false;
+        /// <summary>
+        /// Rewrite files after decrypting, for compatibility 
+        /// </summary>
+        private static bool _rewriteOldFile = true;
 
 
         /// <summary>
@@ -66,13 +70,14 @@ namespace ReFrontier
                     "\nUnpacking Options\n" +
                     "===================\n\n" +
                     "--log: Write log file (required for crypting back)\n" +
-                    "--cleanUp: Delete simple archives after unpacking\n" +
                     "--stageContainer: Unpack file as stage-specific container\n" +
                     "--autoStage: Automatically attempt to unpack containers that might be stage-specific\n" +
                     "--nonRecursive: Do not unpack recursively\n" +
                     "--decryptOnly: Decrypt ECD files without unpacking\n" +
                     "--noDecryption: Don't decrypt ECD files, no unpacking\n" +
                     "--ignoreJPK: Do not decompress JPK files\n" +
+                    "--noFileRewrite: avoid rewriting original files\n" +
+                    "--cleanUp: Delete simple archives after unpacking\n" +
                     "\nPacking Options\n" +
                     "=================\n\n" +
                     "--pack: Repack directory (requires log file)\n" +
@@ -110,6 +115,9 @@ namespace ReFrontier
             _autoStage = argKeys.Contains("--autoStage") || argKeys.Contains("-autoStage");
 
             bool autoClose = argKeys.Contains("--close") || argKeys.Contains("-close");
+
+            if (argKeys.Contains("--noFileRewrite"))
+                _rewriteOldFile = false;
 
             // For compression level we need a bit of text parsing
             Compression compression = new();
@@ -233,7 +241,16 @@ namespace ReFrontier
                 Console.Write($", log file at {metaFile}");
             }
             Console.Write(".\n");
-            if (cleanUp)
+            if (_rewriteOldFile)
+            {
+                File.WriteAllBytes(inputFile, bufferStripped);
+                Console.WriteLine(
+                    $"Rewriting original file {inputFile}. " +
+                    "This behavior is deprecated and will be removed in 2.0.0. " +
+                    "Use --noFileRewrite to remove this warning."
+                );
+            }
+            else if (cleanUp)
                 File.Delete(inputFile);
 
             return outputFile;
@@ -386,6 +403,13 @@ namespace ReFrontier
                 {
                     outputPath = Unpack.UnpackJPK(input);
                     Console.WriteLine($"File decompressed to {outputPath}.");
+
+                    // Replace input file, deprecated behavior, will be removed in 2.0.0 
+                    if (
+                        _rewriteOldFile && outputPath != input &&
+                        File.GetAttributes(outputPath).HasFlag(FileAttributes.Normal)
+                    )
+                        File.Copy(outputPath, input);
                 }
             }
             else if (fileMagic == 0x0161686D)
