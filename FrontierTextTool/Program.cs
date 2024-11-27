@@ -410,9 +410,6 @@ namespace FrontierTextTool
 
         /// <summary>
         /// Dump data to a file.
-        /// 
-        /// dump mhfpac.bin 4416 1278872
-        /// dump mhfdat.bin 3072 3328538
         /// </summary>
         /// <param name="input">File to read</param>
         /// <param name="startOffset">Initial offset to read file from.</param>

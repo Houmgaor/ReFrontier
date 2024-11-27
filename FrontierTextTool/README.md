@@ -22,6 +22,11 @@ This second command will find all text, but will output many unreadable text as 
 
 The result of both command will be a CSV with name pattern "\<file\>.csv".
 
+Some recommended offsets:
+
+- mhfdat.bin: 3040 3328506 or 3072 3328538
+- mhfpac.bin: 4416 1278736 (conservative) 4416 1278872 (complete)
+
 ## Insert back
 
 Use ``insert <file> <csvFile>``.
