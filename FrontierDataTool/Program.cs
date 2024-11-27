@@ -20,93 +20,54 @@ namespace FrontierDataTool
         // --- mhfdat.bin ---
         // Strings
         // Start offset armor strings
-        private static readonly int soStringHead = 0x64, soStringBody = 0x68, soStringArm = 0x6C, soStringWaist = 0x70, soStringLeg = 0x74;
+        private static readonly int _soStringHead = 0x64, _soStringBody = 0x68, _soStringArm = 0x6C, _soStringWaist = 0x70, _soStringLeg = 0x74;
 
         // End offsets armor strings
-        private static readonly int eoStringHead = 0x60, eoStringBody = 0x64, eoStringArm = 0x68, eoStringWaist = 0x6C, eoStringLeg = 0x70;
+        private static readonly int _eoStringHead = 0x60, _eoStringBody = 0x64, _eoStringArm = 0x68, _eoStringWaist = 0x6C, _eoStringLeg = 0x70;
 
         // Start offsets weapons string
-        private static readonly int soStringRanged = 0x84, soStringMelee = 0x88;
+        private static readonly int _soStringRanged = 0x84, _soStringMelee = 0x88;
 
         // End offsets weapons strings
         // static readonly int eoStringRanged = 0x88, eoStringMelee = 0x174;
 
         // Start offsets items names, descriptions
-        private static readonly int soStringItem = 0x100, soStringItemDesc = 0x12C;
+        private static readonly int _soStringItem = 0x100, _soStringItemDesc = 0x12C;
 
         // End offsets items names, descriptions
-        private static readonly int eoStringItem = 0xFC, eoStringItemDesc = 0x100;
+        private static readonly int _eoStringItem = 0xFC, _eoStringItemDesc = 0x100;
 
         // Armor
         // Start offsets armors data
-        private static readonly int soHead = 0x50, soBody = 0x54, soArm = 0x58, soWaist = 0x5C, soLeg = 0x60;
+        private static readonly int _soHead = 0x50, _soBody = 0x54, _soArm = 0x58, _soWaist = 0x5C, _soLeg = 0x60;
 
         // End offsets armors data
-        private static readonly int eoHead = 0xE8, eoBody = 0x50, eoArm = 0x54, eoWaist = 0x58, eoLeg = 0x5C;
+        private static readonly int _eoHead = 0xE8, _eoBody = 0x50, _eoArm = 0x54, _eoWaist = 0x58, _eoLeg = 0x5C;
 
         // Weapons
         // Start offsets weapons data
-        private static readonly int soRanged = 0x80, soMelee = 0x7C;
+        private static readonly int _soRanged = 0x80, _soMelee = 0x7C;
 
         // End offsets weapons data
-        private static readonly int eoRanged = 0x7C, eoMelee = 0x90;
+        private static readonly int _eoRanged = 0x7C, _eoMelee = 0x90;
 
 
         // --- mhfpac.bin ---
         // Strings
-        private static readonly int soStringSkillPt = 0xA20, soStringSkillActivate = 0xA1C, soStringZSkill = 0xFBC, soStringSkillDesc = 0xb8;
-        private static readonly int eoStringSkillPt = 0xA1C, eoStringSkillActivate = 0xBC0, eoStringZSkill = 0xFB0, eoStringSkillDesc = 0xc0;
-
-        // --- mhfinf.pac ---
-        /// <summary>
-        /// Quest data info.
-        /// </summary>
-        public static List<KeyValuePair<int, int>> offsetInfQuestData =
-        [
-            new KeyValuePair<int, int>(0x6bd60, 95),
-            new KeyValuePair<int, int>(0x74100, 62),
-            new KeyValuePair<int, int>(0x797e0, 99),
-            new KeyValuePair<int, int>(0x821a0, 98),
-            new KeyValuePair<int, int>(0x8aa00, 99),
-            new KeyValuePair<int, int>(0x933c0, 99),
-            new KeyValuePair<int, int>(0x9bd80, 99),
-            new KeyValuePair<int, int>(0xa4740, 99),
-            new KeyValuePair<int, int>(0xad100, 99),
-            new KeyValuePair<int, int>(0xb5b40, 36),
-            new KeyValuePair<int, int>(0xb8e60, 96),
-            new KeyValuePair<int, int>(0xc1400, 91),
-
-            new KeyValuePair<int, int>(0x161220, 20), // Incorrect
-        ];
+        private static readonly int _soStringSkillPt = 0xA20, _soStringSkillActivate = 0xA1C, _soStringZSkill = 0xFBC, _soStringSkillDesc = 0xb8;
+        private static readonly int _eoStringSkillPt = 0xA1C, _eoStringSkillActivate = 0xBC0, _eoStringZSkill = 0xFB0, _eoStringSkillDesc = 0xc0;
 
         /// <summary>
         /// Pointers for armors data
         /// </summary>
-        public static List<KeyValuePair<int, int>> dataPointersArmor =
+        public static List<KeyValuePair<int, int>> _dataPointersArmor =
         [
-            new KeyValuePair<int, int>(soHead, eoHead),
-            new KeyValuePair<int, int>(soBody, eoBody),
-            new KeyValuePair<int, int>(soArm, eoArm),
-            new KeyValuePair<int, int>(soWaist, eoWaist),
-            new KeyValuePair<int, int>(soLeg, eoLeg)
+            new KeyValuePair<int, int>(_soHead, _eoHead),
+            new KeyValuePair<int, int>(_soBody, _eoBody),
+            new KeyValuePair<int, int>(_soArm, _eoArm),
+            new KeyValuePair<int, int>(_soWaist, _eoWaist),
+            new KeyValuePair<int, int>(_soLeg, _eoLeg)
         ];
-
-        /// <summary>
-        /// Pointers for armors names.
-        /// </summary>
-        public static List<KeyValuePair<int, int>> stringPointersArmor =
-        [
-            new KeyValuePair<int, int>(soStringHead, eoStringHead),
-            new KeyValuePair<int, int>(soStringBody, eoStringBody),
-            new KeyValuePair<int, int>(soStringArm, eoStringArm),
-            new KeyValuePair<int, int>(soStringWaist, eoStringWaist),
-            new KeyValuePair<int, int>(soStringLeg, eoStringLeg)
-        ];
-
-        public static string[] elementIds = ["なし", "火", "水", "雷", "龍", "氷", "炎", "光", "雷極", "天翔", "熾凍", "黒焔", "奏", "闇", "紅魔", "風", "響", "灼零", "皇鳴"];
-        public static string[] ailmentIds = ["なし", "毒", "麻痺", "睡眠", "爆破"];
-        public static string[] wClassIds = ["大剣", "ヘビィボウガン", "ハンマー", "ランス", "片手剣", "ライトボウガン", "双剣", "太刀", "狩猟笛", "ガンランス", "弓", "穿龍棍", "スラッシュアックスＦ", "マグネットスパイク"];
-        public static string[] aClassIds = ["頭", "胴", "腕", "腰", "脚"];
 
         // Unused: public enum EqType { 通常 = 0, ＳＰ = 1, 剛種 = 2, 進化 = 4, ＨＣ = 8 };
 
@@ -183,9 +144,9 @@ namespace FrontierDataTool
             Console.WriteLine("Dumping skill tree names.");
             MemoryStream msInput = new(File.ReadAllBytes(mhfpac));
             BinaryReader brInput = new(msInput);
-            brInput.BaseStream.Seek(soStringSkillPt, SeekOrigin.Begin);
+            brInput.BaseStream.Seek(_soStringSkillPt, SeekOrigin.Begin);
             int sOffset = brInput.ReadInt32();
-            brInput.BaseStream.Seek(eoStringSkillPt, SeekOrigin.Begin);
+            brInput.BaseStream.Seek(_eoStringSkillPt, SeekOrigin.Begin);
             int eOffset = brInput.ReadInt32();
 
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
@@ -216,9 +177,9 @@ namespace FrontierDataTool
 
             #region ActiveSkill
             Console.WriteLine("Dumping active skill names.");
-            brInput.BaseStream.Seek(soStringSkillActivate, SeekOrigin.Begin);
+            brInput.BaseStream.Seek(_soStringSkillActivate, SeekOrigin.Begin);
             int sOffset = brInput.ReadInt32();
-            brInput.BaseStream.Seek(eoStringSkillActivate, SeekOrigin.Begin);
+            brInput.BaseStream.Seek(_eoStringSkillActivate, SeekOrigin.Begin);
             int eOffset = brInput.ReadInt32();
 
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
@@ -237,9 +198,9 @@ namespace FrontierDataTool
 
             #region SkillDescription
             Console.WriteLine("Dumping active skill descriptions.");
-            brInput.BaseStream.Seek(soStringSkillDesc, SeekOrigin.Begin);
+            brInput.BaseStream.Seek(_soStringSkillDesc, SeekOrigin.Begin);
             sOffset = brInput.ReadInt32();
-            brInput.BaseStream.Seek(eoStringSkillDesc, SeekOrigin.Begin);
+            brInput.BaseStream.Seek(_eoStringSkillDesc, SeekOrigin.Begin);
             eOffset = brInput.ReadInt32();
 
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
@@ -258,9 +219,9 @@ namespace FrontierDataTool
 
             #region ZSkill
             Console.WriteLine("Dumping Z skill names.");
-            brInput.BaseStream.Seek(soStringZSkill, SeekOrigin.Begin);
+            brInput.BaseStream.Seek(_soStringZSkill, SeekOrigin.Begin);
             sOffset = brInput.ReadInt32();
-            brInput.BaseStream.Seek(eoStringZSkill, SeekOrigin.Begin);
+            brInput.BaseStream.Seek(_eoStringZSkill, SeekOrigin.Begin);
             eOffset = brInput.ReadInt32();
 
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
@@ -284,9 +245,9 @@ namespace FrontierDataTool
             Console.WriteLine("Dumping item names.");
             var msInput = new MemoryStream(File.ReadAllBytes(mhfdat));
             var brInput = new BinaryReader(msInput);
-            brInput.BaseStream.Seek(soStringItem, SeekOrigin.Begin);
+            brInput.BaseStream.Seek(_soStringItem, SeekOrigin.Begin);
             int sOffset = brInput.ReadInt32();
-            brInput.BaseStream.Seek(eoStringItem, SeekOrigin.Begin);
+            brInput.BaseStream.Seek(_eoStringItem, SeekOrigin.Begin);
             int eOffset = brInput.ReadInt32();
 
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
@@ -303,9 +264,9 @@ namespace FrontierDataTool
                     file.WriteLine("{0}", entry);
 
             Console.WriteLine("Dumping item descriptions.");
-            brInput.BaseStream.Seek(soStringItemDesc, SeekOrigin.Begin);
+            brInput.BaseStream.Seek(_soStringItemDesc, SeekOrigin.Begin);
             sOffset = brInput.ReadInt32();
-            brInput.BaseStream.Seek(eoStringItemDesc, SeekOrigin.Begin);
+            brInput.BaseStream.Seek(_eoStringItemDesc, SeekOrigin.Begin);
             eOffset = brInput.ReadInt32();
 
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
@@ -327,6 +288,18 @@ namespace FrontierDataTool
             string mhfdat, string suffix, List<KeyValuePair<int, string>> skillId
         )
         {
+            string[] aClassIds = ["頭", "胴", "腕", "腰", "脚"];
+
+            // Pointers for armor
+            List<KeyValuePair<int, int>> stringPointersArmor =
+            [
+                new KeyValuePair<int, int>(_soStringHead, _eoStringHead),
+                new KeyValuePair<int, int>(_soStringBody, _eoStringBody),
+                new KeyValuePair<int, int>(_soStringArm, _eoStringArm),
+                new KeyValuePair<int, int>(_soStringWaist, _eoStringWaist),
+                new KeyValuePair<int, int>(_soStringLeg, _eoStringLeg)
+            ];
+
             #region EquipmentData
             // Dump armor data
             int totalCount = 0;
@@ -336,9 +309,9 @@ namespace FrontierDataTool
             for (int i = 0; i < 5; i++)
             {
                 // Get raw data
-                brInput.BaseStream.Seek(dataPointersArmor[i].Key, SeekOrigin.Begin);
+                brInput.BaseStream.Seek(_dataPointersArmor[i].Key, SeekOrigin.Begin);
                 sOffset = brInput.ReadInt32();
-                brInput.BaseStream.Seek(dataPointersArmor[i].Value, SeekOrigin.Begin);
+                brInput.BaseStream.Seek(_dataPointersArmor[i].Value, SeekOrigin.Begin);
                 eOffset = brInput.ReadInt32();
 
                 int entryCount = (eOffset - sOffset) / 0x48;
@@ -351,9 +324,9 @@ namespace FrontierDataTool
             for (int i = 0; i < 5; i++)
             {
                 // Get raw data
-                brInput.BaseStream.Seek(dataPointersArmor[i].Key, SeekOrigin.Begin);
+                brInput.BaseStream.Seek(_dataPointersArmor[i].Key, SeekOrigin.Begin);
                 sOffset = brInput.ReadInt32();
-                brInput.BaseStream.Seek(dataPointersArmor[i].Value, SeekOrigin.Begin);
+                brInput.BaseStream.Seek(_dataPointersArmor[i].Value, SeekOrigin.Begin);
                 eOffset = brInput.ReadInt32();
 
                 int entryCount = (eOffset - sOffset) / 0x48;
@@ -369,7 +342,7 @@ namespace FrontierDataTool
                         ModelIdFemale = brInput.ReadInt16()
                     };
                     byte bitfield = brInput.ReadByte();
-                    entry.IsMaleEquip = (bitfield & (1 << 1 - 1)) != 0;
+                    entry.IsMaleEquip = (bitfield & (1 << 1 - 1)) != 0; // brInput.ReadBoolean();
                     entry.IsFemaleEquip = (bitfield & (1 << 2 - 1)) != 0;
                     entry.IsBladeEquip = (bitfield & (1 << 3 - 1)) != 0;
                     entry.IsGunnerEquip = (bitfield & (1 << 4 - 1)) != 0;
@@ -464,13 +437,18 @@ namespace FrontierDataTool
 
         private static void DumpWeaponData(string mhfdat)
         {
+
+            string[] ailmentIds = ["なし", "毒", "麻痺", "睡眠", "爆破"];
+            string[] wClassIds = ["大剣", "ヘビィボウガン", "ハンマー", "ランス", "片手剣", "ライトボウガン", "双剣", "太刀", "狩猟笛", "ガンランス", "弓", "穿龍棍", "スラッシュアックスＦ", "マグネットスパイク"];
+            string[] elementIds = ["なし", "火", "水", "雷", "龍", "氷", "炎", "光", "雷極", "天翔", "熾凍", "黒焔", "奏", "闇", "紅魔", "風", "響", "灼零", "皇鳴"];
+
             #region WeaponData
             // Dump melee weapon data
             var msInput = new MemoryStream(File.ReadAllBytes(mhfdat));
             var brInput = new BinaryReader(msInput);
-            brInput.BaseStream.Seek(soMelee, SeekOrigin.Begin);
+            brInput.BaseStream.Seek(_soMelee, SeekOrigin.Begin);
             int sOffset = brInput.ReadInt32();
-            brInput.BaseStream.Seek(eoMelee, SeekOrigin.Begin);
+            brInput.BaseStream.Seek(_eoMelee, SeekOrigin.Begin);
             int eOffset = brInput.ReadInt32();
 
             int entryCountMelee = (eOffset - sOffset) / 0x34;
@@ -517,7 +495,7 @@ namespace FrontierDataTool
             }
 
             // Get strings
-            brInput.BaseStream.Seek(soStringMelee, SeekOrigin.Begin);
+            brInput.BaseStream.Seek(_soStringMelee, SeekOrigin.Begin);
             sOffset = brInput.ReadInt32();
 
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
@@ -539,9 +517,9 @@ namespace FrontierDataTool
             }
 
             // Dump ranged weapon data
-            brInput.BaseStream.Seek(soRanged, SeekOrigin.Begin);
+            brInput.BaseStream.Seek(_soRanged, SeekOrigin.Begin);
             sOffset = brInput.ReadInt32();
-            brInput.BaseStream.Seek(eoRanged, SeekOrigin.Begin);
+            brInput.BaseStream.Seek(_eoRanged, SeekOrigin.Begin);
             eOffset = brInput.ReadInt32();
 
             int entryCountRanged = (eOffset - sOffset) / 0x3C;
@@ -614,7 +592,7 @@ namespace FrontierDataTool
             }
 
             // Get strings
-            brInput.BaseStream.Seek(soStringRanged, SeekOrigin.Begin);
+            brInput.BaseStream.Seek(_soStringRanged, SeekOrigin.Begin);
             sOffset = brInput.ReadInt32();
 
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
@@ -640,6 +618,25 @@ namespace FrontierDataTool
 
         private static void DumpQuestData(string mhfinf)
         {
+            // Quest data info
+            List<KeyValuePair<int, int>> offsetInfQuestData =
+            [
+                new KeyValuePair<int, int>(0x6bd60, 95),
+                new KeyValuePair<int, int>(0x74100, 62),
+                new KeyValuePair<int, int>(0x797e0, 99),
+                new KeyValuePair<int, int>(0x821a0, 98),
+                new KeyValuePair<int, int>(0x8aa00, 99),
+                new KeyValuePair<int, int>(0x933c0, 99),
+                new KeyValuePair<int, int>(0x9bd80, 99),
+                new KeyValuePair<int, int>(0xa4740, 99),
+                new KeyValuePair<int, int>(0xad100, 99),
+                new KeyValuePair<int, int>(0xb5b40, 36),
+                new KeyValuePair<int, int>(0xb8e60, 96),
+                new KeyValuePair<int, int>(0xc1400, 91),
+
+                new KeyValuePair<int, int>(0x161220, 20), // Incorrect
+            ];
+
             #region QuestData
             // Dump inf quest data
             var msInput = new MemoryStream(File.ReadAllBytes(mhfinf));
@@ -769,9 +766,9 @@ namespace FrontierDataTool
             // Patch equip prices
             for (int i = 0; i < 5; i++)
             {
-                brInput.BaseStream.Seek(dataPointersArmor[i].Key, SeekOrigin.Begin);
+                brInput.BaseStream.Seek(_dataPointersArmor[i].Key, SeekOrigin.Begin);
                 sOffset = brInput.ReadInt32();
-                brInput.BaseStream.Seek(dataPointersArmor[i].Value, SeekOrigin.Begin);
+                brInput.BaseStream.Seek(_dataPointersArmor[i].Value, SeekOrigin.Begin);
                 eOffset = brInput.ReadInt32();
 
                 count = (eOffset - sOffset) / 0x48;

@@ -25,7 +25,7 @@ Changes to ReFrontier main project:
 - Removes outdated/unused libraries.
 - Removes memory-unsafe code.
 
-Chages to FrontierTextTool, compared to Chakratos/ReFrontier:
+Changes to FrontierTextTool, compared to Chakratos/ReFrontier:
 
 - Better parsing for CSV files.
 - "fulldump" creates less garbage text.
