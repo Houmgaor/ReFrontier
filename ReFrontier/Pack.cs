@@ -325,7 +325,7 @@ namespace ReFrontier
 
             DateTime start, finnish;
             start = DateTime.Now;
-            encoder.ProcessOnEncode(buffer, fsot, compression.level * 100, null);
+            encoder.ProcessOnEncode(buffer, fsot, compression.level * 100);
             finnish = DateTime.Now;
             ArgumentsParser.Print(
                 $"File compressed using {compression.type} compression level {compression.level}: " +

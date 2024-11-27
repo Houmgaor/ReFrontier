@@ -158,12 +158,8 @@ namespace ReFrontier.Jpk
         /// <param name="inBuffer">Input bytes buffer.</param>
         /// <param name="outStream">Stream to write to.</param>
         /// <param name="level">Compression level. Level will be truncated between 6 and 8191.</param>
-        /// <param name="progress">Progress bar object.</param>
-        public virtual void ProcessOnEncode(byte[] inBuffer, Stream outStream, int level = 1000, ShowProgress progress = null)
+        public virtual void ProcessOnEncode(byte[] inBuffer, Stream outStream, int level = 1000)
         {
-            long perc;
-            long percbord = 0;
-            progress?.Invoke(0);
             m_shiftIndex = 8;
             m_indexToWrite = 0;
             m_outStream = outStream;
@@ -172,17 +168,9 @@ namespace ReFrontier.Jpk
             m_compressionLevel = Math.Min(Math.Max(level, 6), 280);
             // Compression distance between 50 and 0x1fff (8191)
             m_maxIndexDist = Math.Min(Math.Max(level, 50), 0x1fff);
-            long perc0 = percbord;
-            progress?.Invoke(percbord);
             m_bufferIndex = 0;
             while (m_bufferIndex < inBuffer.Length)
             {
-                perc = percbord + (100 - percbord) * m_bufferIndex / inBuffer.Length;
-                if (perc > perc0)
-                {
-                    perc0 = perc;
-                    progress?.Invoke(perc);
-                }
                 int repetitionLength = LongestRepetition(m_bufferIndex, out uint repetitionOffset);
 
                 if (repetitionLength == 0)
@@ -228,17 +216,16 @@ namespace ReFrontier.Jpk
                 }
             }
             FlushFlag(true);
-            progress?.Invoke(100);
         }
 
         /// <summary>
-        /// Write a single byte directly from inputByte to stream.
+        /// Write a single byte directly from <paramref name="inByte"/> to <paramref name="outStream"/>.
         /// </summary>
-        /// <param name="stream">Stream to write to</param>
-        /// <param name="inputByte">byte to write</param>
-        public virtual void WriteByte(Stream stream, byte inputByte)
+        /// <param name="outStream">Stream to write to</param>
+        /// <param name="inByte">byte to write</param>
+        public virtual void WriteByte(Stream outStream, byte inByte)
         {
-            stream.WriteByte(inputByte);
+            outStream.WriteByte(inByte);
         }
     }
 }

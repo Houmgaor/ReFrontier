@@ -2,27 +2,33 @@
 
 namespace ReFrontier.Jpk
 {
+    /// <summary>
+    /// "Raw Writing" format, do not apply any compression. 
+    /// </summary>
     internal class JPKEncodeRW : IJPKEncode
     {
-        public void ProcessOnEncode(byte[] inBuffer, Stream outStream, int level = 16, ShowProgress progress = null)
+        /// <summary>
+        /// Copy bytes from <paramref name="inBuffer"/> to <paramref name="outStream"/>.
+        /// </summary>
+        /// <param name="inBuffer">Input bytes buffer.</param>
+        /// <param name="outStream">Stream to write to.</param>
+        /// <param name="level">Compression level. Level will be truncated between 6 and 8191.</param>
+        public void ProcessOnEncode(byte[] inBuffer, Stream outStream, int level = 16)
         {
-            long perc, perc0 = 0;
-            progress?.Invoke(0);
-            for (int iin = 0; iin < inBuffer.Length; iin++)
+            for (int i = 0; i < inBuffer.Length; i++)
             {
-                perc = 100 * iin / inBuffer.Length;
-                if (perc > perc0)
-                {
-                    perc0 = perc;
-                    progress?.Invoke(perc);
-                }
-                WriteByte(outStream, inBuffer[iin]);
+                WriteByte(outStream, inBuffer[i]);
             }
-            progress?.Invoke(100);
         }
-        public void WriteByte(Stream s, byte b)
+
+        /// <summary>
+        /// Write a single byte directly from <paramref name="inByte"/> to <paramref name="outStream"/>.
+        /// </summary>
+        /// <param name="stream">Stream to write to</param>
+        /// <param name="inputByte">byte to write</param>
+        public void WriteByte(Stream outStream, byte inByte)
         {
-            s.WriteByte(b);
+            outStream.WriteByte(inByte);
         }
     }
 }
