@@ -159,8 +159,8 @@ namespace FrontierTextTool
             var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
             {
                 Delimiter = "\t",
-                MissingFieldFound = null,
-                IgnoreQuotes = true,
+                // 1.0.1: replaces "IgnoreQuotes", necessity?
+                Mode = CsvMode.Escape
             };
             using (var reader = new StreamReader(csvFile, Encoding.GetEncoding("shift-jis")))
             {
@@ -247,8 +247,8 @@ namespace FrontierTextTool
             var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
             {
                 Delimiter = "\t",
-                MissingFieldFound = null,
-                IgnoreQuotes = true,
+                // 1.0.1: replaces "IgnoreQuotes", necessity?
+                Mode = CsvMode.Escape
             };
             using (var reader = new StreamReader(inputCsv, Encoding.GetEncoding("shift-jis")))
             {
@@ -512,8 +512,8 @@ namespace FrontierTextTool
             var csvConf = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
             {
                 Delimiter = "\t",
-                MissingFieldFound = null,
-                IgnoreQuotes = true,
+                // 1.0.1: replaces "IgnoreQuotes", necessity?
+                Mode = CsvMode.Escape
             };
             // Read csv
             var stringDbOld = new List<StringDatabase>();
