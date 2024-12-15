@@ -11,6 +11,28 @@ using LibReFrontier;
 namespace ReFrontier
 {
     /// <summary>
+    /// Main accepted arguments from the CLI of ReFrontier.
+    /// </summary>
+    public struct InputArguments
+    {
+        public bool createLog;
+        public bool recursive;
+        public bool repack;
+        public bool decryptOnly;
+        public bool noDecryption;
+        public bool encrypt;
+        public bool cleanUp;
+        public bool ignoreJPK;
+        public bool stageContainer;
+        public bool autoStage;
+        /// <summary>
+        /// Rewrite files after decrypting, for compatibility 
+        /// </summary>
+        public bool rewriteOldFile;
+        public Compression compression;
+    }
+
+    /// <summary>
     /// Main program for ReFrontier to pack and depack game files.
     /// </summary>
     internal class Program
@@ -19,18 +41,6 @@ namespace ReFrontier
         /// Number of parallel processes on reading folders.
         /// </summary>
         const int MAX_PARALLEL_PROCESSES = 4;
-
-        private static bool _createLog = false;
-        private static bool _decryptOnly = false;
-        private static bool _cleanUp = false;
-        private static bool _ignoreJPK = false;
-        private static bool _stageContainer = false;
-        private static bool _autoStage = false;
-        /// <summary>
-        /// Rewrite files after decrypting, for compatibility 
-        /// </summary>
-        private static bool _rewriteOldFile = true;
-
 
         /// <summary>
         /// Main interface to start the program.
@@ -99,25 +109,23 @@ namespace ReFrontier
             if (!File.Exists(input) && !Directory.Exists(input))
                 throw new FileNotFoundException($"{input} do not exist.");
 
-
             // Assign arguments
-            _createLog = argKeys.Contains("--log") || argKeys.Contains("-log");
-            bool recursive = !argKeys.Contains("--nonRecursive") && !argKeys.Contains("-nonRecursive");
-            bool repack = argKeys.Contains("--pack") || argKeys.Contains("-pack");
-            _decryptOnly = argKeys.Contains("--decryptOnly") || argKeys.Contains("-decryptOnly");
-
-            bool noDecryption = argKeys.Contains("--noDecryption") || argKeys.Contains("-noDecryption");
-            bool encrypt = argKeys.Contains("--encrypt") || argKeys.Contains("-encrypt");
-            _cleanUp = argKeys.Contains("--cleanUp") || argKeys.Contains("-cleanUp");
-
-            _ignoreJPK = argKeys.Contains("--ignoreJPK") || argKeys.Contains("-ignoreJPK");
-            _stageContainer = argKeys.Contains("--stageContainer") || argKeys.Contains("-stageContainer");
-            _autoStage = argKeys.Contains("--autoStage") || argKeys.Contains("-autoStage");
+            InputArguments inputArguments = new()
+            {
+                createLog = argKeys.Contains("--log") || argKeys.Contains("-log"),
+                recursive = !argKeys.Contains("--nonRecursive") && !argKeys.Contains("-nonRecursive"),
+                repack = argKeys.Contains("--pack") || argKeys.Contains("-pack"),
+                decryptOnly = argKeys.Contains("--decryptOnly") || argKeys.Contains("-decryptOnly"),
+                noDecryption = argKeys.Contains("--noDecryption") || argKeys.Contains("-noDecryption"),
+                encrypt = argKeys.Contains("--encrypt") || argKeys.Contains("-encrypt"),
+                cleanUp = argKeys.Contains("--cleanUp") || argKeys.Contains("-cleanUp"),
+                ignoreJPK = argKeys.Contains("--ignoreJPK") || argKeys.Contains("-ignoreJPK"),
+                stageContainer = argKeys.Contains("--stageContainer") || argKeys.Contains("-stageContainer"),
+                autoStage = argKeys.Contains("--autoStage") || argKeys.Contains("-autoStage"),
+                rewriteOldFile = !argKeys.Contains("--noFileRewrite"),
+            };
 
             bool autoClose = argKeys.Contains("--close") || argKeys.Contains("-close");
-
-            if (argKeys.Contains("--noFileRewrite"))
-                _rewriteOldFile = false;
 
             // For compression level we need a bit of text parsing
             Compression compression = new();
@@ -146,6 +154,8 @@ namespace ReFrontier
                     );
                 }
             }
+            if (compression.level != 0)
+                inputArguments.compression = compression;
 
             // Start input processing
             if (File.GetAttributes(input).HasFlag(FileAttributes.Directory))
@@ -153,16 +163,16 @@ namespace ReFrontier
                 // Input is directory
                 if (compression.level != 0)
                     throw new InvalidOperationException("Cannot compress a directory.");
-                if (encrypt)
+                if (inputArguments.encrypt)
                     throw new InvalidOperationException("Cannot encrypt a directory.");
-                StartProcessingDirectory(input, repack, recursive, noDecryption);
+                StartProcessingDirectory(input, inputArguments);
             }
             else
             {
                 // Input is a file
-                if (repack)
+                if (inputArguments.repack)
                     throw new InvalidOperationException("A single file cannot be used while in repacking mode.");
-                StartProcessingFile(input, encrypt, compression, recursive, noDecryption);
+                StartProcessingFile(input, inputArguments);
             }
             Console.WriteLine("Done.");
             if (!autoClose)
@@ -219,8 +229,9 @@ namespace ReFrontier
         /// <param name="inputFile">Input file path.</param>
         /// <param name="createLog">True if we should create a log file with the header.</param>
         /// <param name="cleanUp">true if the original file should be deleted.</param>
+        /// <param name="rewriteOldFile">Should we overwrite <paramref name="inputFile"/>.</param>
         /// <returns>Path to the decrypted file, in the form <paramref name="inputFile" />.decd</returns>
-        private static string DecryptEcdFile(string inputFile, bool createLog, bool cleanUp)
+        private static string DecryptEcdFile(string inputFile, bool createLog, bool cleanUp, bool rewriteOldFile)
         {
             byte[] buffer = File.ReadAllBytes(inputFile);
             Crypto.DecodeEcd(buffer);
@@ -241,7 +252,7 @@ namespace ReFrontier
                 Console.Write($", log file at {metaFile}");
             }
             Console.Write(".\n");
-            if (_rewriteOldFile)
+            if (rewriteOldFile)
             {
                 File.WriteAllBytes(inputFile, bufferStripped);
                 Console.WriteLine(
@@ -282,21 +293,19 @@ namespace ReFrontier
         /// 
         /// It can either pack the directory as a file, or uncompress the content.
         /// </summary>
-        /// <param name="inputDir">Directory path.</param>
-        /// <param name="repack">True if input directory should be packed as a file.</param>
-        /// <param name="recursive">Recursive decompression flag.</param>
-        /// <param name="noDecryption">Do not decrypt file flag.</param>
-        private static void StartProcessingDirectory(string inputDir, bool repack, bool recursive, bool noDecryption)
+        /// <param name="directoryPath">Directory path.</param>
+        /// <param name="inputArguments">Configuration arguments from CLI.</param>
+        private static void StartProcessingDirectory(string directoryPath, InputArguments inputArguments)
         {
-            if (repack)
-                Pack.ProcessPackInput(inputDir);
+            if (inputArguments.repack)
+                Pack.ProcessPackInput(directoryPath);
             else
             {
                 // Process each element in directory
                 string[] inputFiles = Directory.GetFiles(
-                    inputDir, "*.*", SearchOption.AllDirectories
+                    directoryPath, "*.*", SearchOption.AllDirectories
                 );
-                ProcessMultipleLevels(inputFiles, recursive, noDecryption, _decryptOnly, _stageContainer);
+                ProcessMultipleLevels(inputFiles, inputArguments);
             }
         }
 
@@ -306,21 +315,18 @@ namespace ReFrontier
         /// It will either compress the file, encrypt it or depack it as many files.
         /// </summary>
         /// <param name="filePath">File path.</param>
-        /// <param name="encrypt">True if input file should be encrypted.</param>
-        /// <param name="compression">Compression to use.</param>
-        /// <param name="recursive">Recursive decompression flag.</param>
-        /// <param name="noDecryption">Do not decrypt file flag.</param>
-        private static void StartProcessingFile(string filePath, bool encrypt, Compression compression, bool recursive, bool noDecryption)
+        /// <param name="inputArguments">Configuration arguments from CLI.</param>
+        private static void StartProcessingFile(string filePath, InputArguments inputArguments)
         {
-            if (compression.level != 0)
+            if (inputArguments.compression.level != 0)
             {
                 // From mhfdat.bin.decd.bin to output/mhfdat.bin.decd
                 Pack.JPKEncode(
-                    compression, filePath, $"output/{Path.GetFileNameWithoutExtension(filePath)}"
+                    inputArguments.compression, filePath, $"output/{Path.GetFileNameWithoutExtension(filePath)}"
                 );
             }
 
-            if (encrypt)
+            if (inputArguments.encrypt)
             {
                 string decompressedFilePath = Path.Join(
                     Path.GetDirectoryName(filePath),
@@ -330,12 +336,12 @@ namespace ReFrontier
                     Path.GetDirectoryName(filePath),
                     Path.GetFileNameWithoutExtension(decompressedFilePath) + ".meta"
                 );
-                EncryptEcdFile(decompressedFilePath, metaFilePath, _cleanUp);
+                EncryptEcdFile(decompressedFilePath, metaFilePath, inputArguments.cleanUp);
             }
 
             // Try to depack the file as multiple files
-            if (compression.level == 0 && !encrypt)
-                ProcessMultipleLevels([filePath], recursive, noDecryption, _decryptOnly, _autoStage);
+            if (inputArguments.compression.level == 0 && !inputArguments.encrypt)
+                ProcessMultipleLevels([filePath], inputArguments);
         }
 
         /// <summary>
@@ -343,17 +349,15 @@ namespace ReFrontier
         /// 
         /// If the file was an ECD, decompress it as well.
         /// </summary>
-        /// <param name="input">Input file path.</param>
-        /// <param name="noDecryption">Do not decrypt ECD files.</param>
-        /// <param name="decryptOnly">Decrypt file without decompressing.</param>
-        /// <param name="createLog">Add to log file flag.</param>
+        /// <param name="filePath">Input file path.</param>
+        /// <param name="inputArguments">Configuration arguments from CLI.</param>
         /// <returns>Output path, can be file or folder.</returns>
-        private static string ProcessFile(string input, bool noDecryption, bool decryptOnly, bool createLog, bool stageContainer)
+        private static string ProcessFile(string filePath, InputArguments inputArguments)
         {
-            ArgumentsParser.Print($"Processing {input}", false);
+            ArgumentsParser.Print($"Processing {filePath}", false);
 
             // Read file to memory
-            MemoryStream msInput = new(File.ReadAllBytes(input));
+            MemoryStream msInput = new(File.ReadAllBytes(filePath));
             BinaryReader brInput = new(msInput);
             string outputPath;
             if (msInput.Length == 0)
@@ -364,82 +368,87 @@ namespace ReFrontier
             int fileMagic = brInput.ReadInt32();
 
             // Since stage containers have no file magic, check for them first
-            if (stageContainer)
+            if (inputArguments.stageContainer)
             {
                 brInput.BaseStream.Seek(0, SeekOrigin.Begin);
-                outputPath = Unpack.UnpackStageContainer(input, brInput, createLog, _cleanUp);
+                outputPath = Unpack.UnpackStageContainer(filePath, brInput, inputArguments.createLog, inputArguments.cleanUp);
             }
             else if (fileMagic == 0x4F4D4F4D)
             {
                 // MOMO Header: snp, snd
                 Console.WriteLine("MOMO Header detected.");
                 outputPath = Unpack.UnpackSimpleArchive(
-                    input, brInput, 8, createLog, _cleanUp, _autoStage
+                    filePath, brInput, 8, inputArguments.createLog, inputArguments.cleanUp, inputArguments.autoStage
                 );
             }
             else if (fileMagic == 0x1A646365)
             {
                 // ECD Header
                 Console.WriteLine("ECD Header detected.");
-                if (noDecryption)
+                if (inputArguments.noDecryption)
                 {
                     ArgumentsParser.Print("Not decrypting due to flag.", false);
                     return null;
                 }
-                outputPath = DecryptEcdFile(input, createLog, _cleanUp);
+                outputPath = DecryptEcdFile(
+                    filePath,
+                    inputArguments.createLog,
+                    inputArguments.cleanUp,
+                    inputArguments.rewriteOldFile
+                );
             }
             else if (fileMagic == 0x1A667865)
             {
                 // EXF Header
                 Console.WriteLine("EXF Header detected.");
-                outputPath = DecryptExfFile(input, _cleanUp);
+                outputPath = DecryptExfFile(filePath, inputArguments.cleanUp);
             }
             else if (fileMagic == 0x1A524B4A)
             {
                 // JKR Header
                 Console.WriteLine("JKR Header detected.");
-                outputPath = input;
-                if (!_ignoreJPK)
+                outputPath = filePath;
+                if (!inputArguments.ignoreJPK)
                 {
-                    outputPath = Unpack.UnpackJPK(input);
+                    outputPath = Unpack.UnpackJPK(filePath);
                     Console.WriteLine($"File decompressed to {outputPath}.");
 
                     // Replace input file, deprecated behavior, will be removed in 2.0.0 
                     if (
-                        _rewriteOldFile && outputPath != input &&
+                        inputArguments.rewriteOldFile && outputPath != filePath &&
                         File.GetAttributes(outputPath).HasFlag(FileAttributes.Normal)
                     )
-                        File.Copy(outputPath, input);
+                        File.Copy(outputPath, filePath);
                 }
             }
             else if (fileMagic == 0x0161686D)
             {
                 // MHA Header
                 Console.WriteLine("MHA Header detected.");
-                outputPath = Unpack.UnpackMHA(input, brInput, createLog);
+                outputPath = Unpack.UnpackMHA(filePath, brInput, inputArguments.createLog);
             }
             else if (fileMagic == 0x000B0000)
             {
                 // MHF Text file
                 Console.WriteLine("MHF Text file detected.");
-                outputPath = Unpack.PrintFTXT(input, brInput);
+                outputPath = Unpack.PrintFTXT(filePath, brInput);
             }
             else
             {
                 // Try to unpack as simple container: i.e. txb, bin, pac, gab
                 brInput.BaseStream.Seek(0, SeekOrigin.Begin);
                 outputPath = Unpack.UnpackSimpleArchive(
-                    input, brInput, 4, createLog, _cleanUp, _autoStage
+                    filePath, brInput, 4, inputArguments.createLog, inputArguments.cleanUp, inputArguments.autoStage
                 );
             }
 
             Console.WriteLine("==============================");
             // Decompress file if it was an ECD (encypted)
-            if (fileMagic == 0x1A646365 && !decryptOnly)
+            if (fileMagic == 0x1A646365 && !inputArguments.decryptOnly)
             {
                 string decdFilePath = outputPath;
-                outputPath = ProcessFile(decdFilePath, noDecryption, decryptOnly, createLog, stageContainer);
-                if (_cleanUp)
+                outputPath = ProcessFile(decdFilePath, inputArguments);
+                if (inputArguments.cleanUp)
                     File.Delete(decdFilePath);
             }
             return outputPath;
@@ -450,11 +459,9 @@ namespace ReFrontier
         /// 
         /// Try to use each file is considered a container of multiple files.
         /// </summary>
-        /// <param name="inputFiles">Files to process.</param>
-        /// <param name="recursive">True to process newly created files recursively.</param>
-        /// <param name="noDecryption">Do not decrypt ECD files.</param>
-        /// <param name="decryptOnly">Decrypt file without depacking.</param>
-        private static void ProcessMultipleLevels(string[] inputFiles, bool recursive, bool noDecryption, bool decryptOnly, bool stageContainer)
+        /// <param name="filePathes">Files to process.</param>
+        /// <param name="inputArguments">Configuration arguments from CLI.</param>
+        private static void ProcessMultipleLevels(string[] filePathes, InputArguments inputArguments)
         {
             var parallelOptions = new ParallelOptions()
             {
@@ -462,7 +469,7 @@ namespace ReFrontier
             };
 
             // Use a concurrent queue to manage files/directories to process
-            ConcurrentQueue<string> filesToProcess = new(inputFiles);
+            ConcurrentQueue<string> filesToProcess = new(filePathes);
 
             // Consume (process) input files
             while (!filesToProcess.IsEmpty)
@@ -475,16 +482,17 @@ namespace ReFrontier
                     fileWorkers.Add(tempInputFile);
                 }
 
+                bool stageContainer = inputArguments.stageContainer;
                 Parallel.ForEach(fileWorkers, parallelOptions, inputFile =>
                 {
-                    string outputPath = ProcessFile(inputFile, noDecryption, decryptOnly, _createLog, stageContainer);
+                    string outputPath = ProcessFile(inputFile, inputArguments);
 
                     // Disable stage processing files unpacked from parent
                     if (stageContainer)
                         stageContainer = false;
 
                     // Check if a new directory was created
-                    if (recursive && Directory.Exists(outputPath))
+                    if (inputArguments.recursive && Directory.Exists(outputPath))
                     {
                         AddNewFiles(outputPath, filesToProcess);
                     }
