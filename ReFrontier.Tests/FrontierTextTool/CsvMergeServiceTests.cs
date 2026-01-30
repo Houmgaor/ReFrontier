@@ -245,14 +245,14 @@ namespace ReFrontier.Tests.TextToolTests
         public void Constructor_WithNullFileSystem_ThrowsArgumentNullException()
         {
             Assert.Throws<System.ArgumentNullException>(() =>
-                new CsvMergeService(null, _logger));
+                new CsvMergeService(null!, _logger));
         }
 
         [Fact]
         public void Constructor_WithNullLogger_ThrowsArgumentNullException()
         {
             Assert.Throws<System.ArgumentNullException>(() =>
-                new CsvMergeService(_fileSystem, null));
+                new CsvMergeService(_fileSystem, null!));
         }
 
         [Fact]

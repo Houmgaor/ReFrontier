@@ -36,11 +36,7 @@ namespace ReFrontier.Tests.Services
                 testData[i] = (byte)(i % 256);
             _fileSystem.AddFile("/test/input.bin", testData);
 
-            var compression = new Compression
-            {
-                type = CompressionType.LZ,
-                level = 15
-            };
+            var compression = new Compression(CompressionType.LZ, 15);
 
             // Act
             _service.JPKEncode(compression, "/test/input.bin", "output/compressed.jkr");
@@ -66,11 +62,7 @@ namespace ReFrontier.Tests.Services
                 testData[i] = (byte)i;
             _fileSystem.AddFile("/test/input.bin", testData);
 
-            var compression = new Compression
-            {
-                type = CompressionType.RW,
-                level = 10
-            };
+            var compression = new Compression(CompressionType.RW, 10);
 
             // Act
             _service.JPKEncode(compression, "/test/input.bin", "output/compressed.jkr");
@@ -88,11 +80,7 @@ namespace ReFrontier.Tests.Services
                 testData[i] = (byte)(i % 10); // Repetitive data for better compression
             _fileSystem.AddFile("/test/input.bin", testData);
 
-            var compression = new Compression
-            {
-                type = CompressionType.HFI,
-                level = 10
-            };
+            var compression = new Compression(CompressionType.HFI, 10);
 
             // Act
             _service.JPKEncode(compression, "/test/input.bin", "output/compressed.jkr");
@@ -109,11 +97,7 @@ namespace ReFrontier.Tests.Services
             byte[] testData = new byte[50];
             _fileSystem.AddFile("/test/input.bin", testData);
 
-            var compression = new Compression
-            {
-                type = CompressionType.LZ,
-                level = 10
-            };
+            var compression = new Compression(CompressionType.LZ, 10);
 
             // Act
             _service.JPKEncode(compression, "/test/input.bin", "output/compressed.jkr");
@@ -178,11 +162,7 @@ namespace ReFrontier.Tests.Services
                 testData[i] = (byte)(i % 5);
             _fileSystem.AddFile("/test/input.bin", testData);
 
-            var compression = new Compression
-            {
-                type = CompressionType.HFIRW,
-                level = 10
-            };
+            var compression = new Compression(CompressionType.HFIRW, 10);
 
             // Act
             _service.JPKEncode(compression, "/test/input.bin", "output/compressed.jkr");
@@ -211,11 +191,7 @@ namespace ReFrontier.Tests.Services
             byte[] testData = new byte[30];
             _fileSystem.AddFile("/test/input.bin", testData);
 
-            var compression = new Compression
-            {
-                type = CompressionType.LZ,
-                level = 10
-            };
+            var compression = new Compression(CompressionType.LZ, 10);
 
             // Act
             _service.JPKEncode(compression, "/test/input.bin", "output/compressed.jkr");

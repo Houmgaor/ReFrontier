@@ -50,7 +50,7 @@ namespace LibReFrontier
                 return "bin";
 
             headerInt = BitConverter.ToUInt32(data, 0);
-            string extension = Enum.GetName(typeof(FileExtension), headerInt);
+            string? extension = Enum.GetName(typeof(FileExtension), headerInt);
             extension ??= CheckForMagic(headerInt, data);
             return extension ?? "bin";
         }
@@ -61,10 +61,10 @@ namespace LibReFrontier
         /// <param name="headerInt"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public static string CheckForMagic(uint headerInt, byte[] data)
+        public static string? CheckForMagic(uint headerInt, byte[] data)
         {
             byte[] header;
-            string extension = null;
+            string? extension = null;
 
             if (headerInt == 1)
             {

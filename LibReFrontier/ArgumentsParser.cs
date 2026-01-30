@@ -48,6 +48,7 @@ namespace LibReFrontier
         /// </summary>
         /// <param name="input">Value to print</param>
         /// <param name="printBefore">Set to true to display input before the separator.</param>
+        [Obsolete("Use PrintInstance() for testability. This static method will be removed in a future version.")]
         public static void Print(string input, bool printBefore)
         {
             DefaultLogger.PrintWithSeparator(input, printBefore);
@@ -109,11 +110,7 @@ namespace LibReFrontier
                 );
             }
 
-            return new Compression
-            {
-                type = type,
-                level = compressionLevel
-            };
+            return new Compression(type, compressionLevel);
         }
 
         /// <summary>

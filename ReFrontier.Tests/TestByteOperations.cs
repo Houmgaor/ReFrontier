@@ -144,7 +144,7 @@ namespace ReFrontier.Tests
             byte[] sizeBytes = BitConverter.GetBytes(100);
             Array.Copy(sizeBytes, 0, data, 8, 4);
 
-            string result = ByteOperations.CheckForMagic(1, data);
+            string? result = ByteOperations.CheckForMagic(1, data);
 
             Assert.Equal("fmod", result);
         }
@@ -157,7 +157,7 @@ namespace ReFrontier.Tests
             byte[] sizeBytes = BitConverter.GetBytes(50); // Wrong size
             Array.Copy(sizeBytes, 0, data, 8, 4);
 
-            string result = ByteOperations.CheckForMagic(1, data);
+            string? result = ByteOperations.CheckForMagic(1, data);
 
             Assert.Null(result);
         }
@@ -170,7 +170,7 @@ namespace ReFrontier.Tests
             byte[] sizeBytes = BitConverter.GetBytes(200);
             Array.Copy(sizeBytes, 0, data, 8, 4);
 
-            string result = ByteOperations.CheckForMagic(0xC0000000, data);
+            string? result = ByteOperations.CheckForMagic(0xC0000000, data);
 
             Assert.Equal("fskl", result);
         }
@@ -183,7 +183,7 @@ namespace ReFrontier.Tests
             byte[] sizeBytes = BitConverter.GetBytes(100); // Wrong size
             Array.Copy(sizeBytes, 0, data, 8, 4);
 
-            string result = ByteOperations.CheckForMagic(0xC0000000, data);
+            string? result = ByteOperations.CheckForMagic(0xC0000000, data);
 
             Assert.Null(result);
         }
@@ -193,7 +193,7 @@ namespace ReFrontier.Tests
         {
             byte[] data = new byte[100];
 
-            string result = ByteOperations.CheckForMagic(0x12345678, data);
+            string? result = ByteOperations.CheckForMagic(0x12345678, data);
 
             Assert.Null(result);
         }
@@ -203,7 +203,7 @@ namespace ReFrontier.Tests
         {
             byte[] data = new byte[100];
 
-            string result = ByteOperations.CheckForMagic(0, data);
+            string? result = ByteOperations.CheckForMagic(0, data);
 
             Assert.Null(result);
         }

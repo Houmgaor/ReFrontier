@@ -51,7 +51,7 @@ namespace ReFrontier.Jpk
         /// <summary>
         /// Buffer of data to compress.
         /// </summary>
-        private byte[]? m_inputBuffer;
+        private byte[] m_inputBuffer = Array.Empty<byte>();
 
         /// <summary>
         /// Compression level, between 280 and 8191 (0x1fff)
@@ -60,7 +60,7 @@ namespace ReFrontier.Jpk
 
         /// <summary>
         /// Maximum index distance in which to find repetitions.
-        /// 
+        ///
         /// Max value is 0x1fff
         /// </summary>
         private int m_maxIndexDist = 0x300;
@@ -68,7 +68,7 @@ namespace ReFrontier.Jpk
         /// <summary>
         /// Stream to write data to.
         /// </summary>
-        private Stream? m_outStream;
+        private Stream m_outStream = Stream.Null;
 
         /// <summary>
         /// Temporary buffer of data to write to 

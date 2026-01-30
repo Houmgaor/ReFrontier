@@ -44,11 +44,7 @@ namespace ReFrontier.Tests.Integration
             byte[] originalData = CreateTestData(256);
             _fileSystem.AddFile("/test/input.bin", originalData);
 
-            var compression = new Compression
-            {
-                type = compressionType,
-                level = 16
-            };
+            var compression = new Compression(compressionType, 16);
 
             // Act: Compress
             _packingService.JPKEncode(compression, "/test/input.bin", "/test/compressed.jkr");
@@ -82,11 +78,7 @@ namespace ReFrontier.Tests.Integration
                 originalData[i] = (byte)(i % 16); // Highly repetitive pattern
             _fileSystem.AddFile("/test/input.bin", originalData);
 
-            var compression = new Compression
-            {
-                type = CompressionType.LZ,
-                level = 50
-            };
+            var compression = new Compression(CompressionType.LZ, 50);
 
             // Act: Compress
             _packingService.JPKEncode(compression, "/test/input.bin", "/test/compressed.jkr");
@@ -116,11 +108,7 @@ namespace ReFrontier.Tests.Integration
                 originalData[i] = (byte)(rnd.Next(16));
             _fileSystem.AddFile("/test/input.bin", originalData);
 
-            var compression = new Compression
-            {
-                type = CompressionType.HFI,
-                level = 20
-            };
+            var compression = new Compression(CompressionType.HFI, 20);
 
             // Act: Compress then decompress
             _packingService.JPKEncode(compression, "/test/input.bin", "/test/compressed.jkr");
@@ -141,11 +129,7 @@ namespace ReFrontier.Tests.Integration
             byte[] originalData = CreateTestData(100);
             _fileSystem.AddFile("/test/input.bin", originalData);
 
-            var compression = new Compression
-            {
-                type = CompressionType.RW,
-                level = 10
-            };
+            var compression = new Compression(CompressionType.RW, 10);
 
             // Act
             _packingService.JPKEncode(compression, "/test/input.bin", "/test/compressed.jkr");
@@ -171,11 +155,7 @@ namespace ReFrontier.Tests.Integration
             byte[] originalData = CreateTestData(size);
             _fileSystem.AddFile("/test/input.bin", originalData);
 
-            var compression = new Compression
-            {
-                type = CompressionType.LZ,
-                level = 16
-            };
+            var compression = new Compression(CompressionType.LZ, 16);
 
             // Act
             _packingService.JPKEncode(compression, "/test/input.bin", "/test/compressed.jkr");
@@ -328,7 +308,7 @@ namespace ReFrontier.Tests.Integration
 
             // Step 2: Compress the encrypted file
             _fileSystem.AddFile("/test/encrypted_for_compress.bin", encryptedData);
-            var compression = new Compression { type = compressionType, level = 16 };
+            var compression = new Compression(compressionType, 16);
             _packingService.JPKEncode(compression, "/test/encrypted_for_compress.bin", "/test/compressed.jkr");
             byte[] compressedData = _fileSystem.ReadAllBytes("/test/compressed.jkr");
 
@@ -364,7 +344,7 @@ namespace ReFrontier.Tests.Integration
             _fileSystem.AddFile("/test/original.bin", originalData);
 
             // Step 1: Compress first
-            var compression = new Compression { type = CompressionType.LZ, level = 16 };
+            var compression = new Compression(CompressionType.LZ, 16);
             _packingService.JPKEncode(compression, "/test/original.bin", "/test/compressed.jkr");
             byte[] compressedData = _fileSystem.ReadAllBytes("/test/compressed.jkr");
 
@@ -408,13 +388,13 @@ namespace ReFrontier.Tests.Integration
             _fileSystem.AddFile("/test/original.bin", originalData);
 
             // Compress with LZ
-            var compression1 = new Compression { type = CompressionType.LZ, level = 16 };
+            var compression1 = new Compression(CompressionType.LZ, 16);
             _packingService.JPKEncode(compression1, "/test/original.bin", "/test/compressed1.jkr");
             byte[] compressed1 = _fileSystem.ReadAllBytes("/test/compressed1.jkr");
 
             // Compress again with HFI (nested compression)
             _fileSystem.AddFile("/test/compressed1_for_hfi.bin", compressed1);
-            var compression2 = new Compression { type = CompressionType.HFI, level = 16 };
+            var compression2 = new Compression(CompressionType.HFI, 16);
             _packingService.JPKEncode(compression2, "/test/compressed1_for_hfi.bin", "/test/compressed2.jkr");
             byte[] compressed2 = _fileSystem.ReadAllBytes("/test/compressed2.jkr");
 
@@ -443,7 +423,7 @@ namespace ReFrontier.Tests.Integration
             byte[] originalData = new byte[500];
             _fileSystem.AddFile("/test/zeros.bin", originalData);
 
-            var compression = new Compression { type = CompressionType.LZ, level = 16 };
+            var compression = new Compression(CompressionType.LZ, 16);
             _packingService.JPKEncode(compression, "/test/zeros.bin", "/test/compressed.jkr");
             byte[] compressedData = _fileSystem.ReadAllBytes("/test/compressed.jkr");
 
@@ -462,7 +442,7 @@ namespace ReFrontier.Tests.Integration
             Array.Fill<byte>(originalData, 0xFF);
             _fileSystem.AddFile("/test/ones.bin", originalData);
 
-            var compression = new Compression { type = CompressionType.LZ, level = 16 };
+            var compression = new Compression(CompressionType.LZ, 16);
             _packingService.JPKEncode(compression, "/test/ones.bin", "/test/compressed.jkr");
             byte[] compressedData = _fileSystem.ReadAllBytes("/test/compressed.jkr");
 
@@ -481,7 +461,7 @@ namespace ReFrontier.Tests.Integration
             new Random(12345).NextBytes(originalData);
             _fileSystem.AddFile("/test/random.bin", originalData);
 
-            var compression = new Compression { type = CompressionType.LZ, level = 16 };
+            var compression = new Compression(CompressionType.LZ, 16);
             _packingService.JPKEncode(compression, "/test/random.bin", "/test/compressed.jkr");
             byte[] compressedData = _fileSystem.ReadAllBytes("/test/compressed.jkr");
 

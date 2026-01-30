@@ -250,14 +250,14 @@ namespace ReFrontier.Tests.TextToolTests
         public void Constructor_WithNullFileSystem_ThrowsArgumentNullException()
         {
             Assert.Throws<System.ArgumentNullException>(() =>
-                new TextInsertionService(null, _logger));
+                new TextInsertionService(null!, _logger));
         }
 
         [Fact]
         public void Constructor_WithNullLogger_ThrowsArgumentNullException()
         {
             Assert.Throws<System.ArgumentNullException>(() =>
-                new TextInsertionService(_fileSystem, null));
+                new TextInsertionService(_fileSystem, null!));
         }
 
         [Fact]

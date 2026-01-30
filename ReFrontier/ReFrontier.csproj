@@ -3,6 +3,7 @@
     <ProjectGuid>{4FA20038-15B6-4F86-95F7-6E8EF3B8C94D}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <AssemblyTitle>ReFrontier</AssemblyTitle>

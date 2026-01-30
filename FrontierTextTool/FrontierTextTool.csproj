@@ -3,6 +3,7 @@
     <ProjectGuid>{DE2AB100-24C7-4176-9FDB-E979A97045DE}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <AssemblyTitle>FrontierTextTool</AssemblyTitle>
     <Product>FrontierTextTool</Product>

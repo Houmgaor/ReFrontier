@@ -125,7 +125,7 @@ namespace ReFrontier.Tests.Services
         public void DecodeEcd_NullBuffer_ThrowsArgumentNullException()
         {
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => Crypto.DecodeEcd(null));
+            Assert.Throws<ArgumentNullException>(() => Crypto.DecodeEcd(null!));
         }
 
         [Fact]
@@ -163,7 +163,7 @@ namespace ReFrontier.Tests.Services
         public void DecodeExf_NullBuffer_ThrowsArgumentNullException()
         {
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => Crypto.DecodeExf(null));
+            Assert.Throws<ArgumentNullException>(() => Crypto.DecodeExf(null!));
         }
 
         [Fact]
@@ -215,7 +215,7 @@ namespace ReFrontier.Tests.Services
             byte[] meta = new byte[16];
 
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => Crypto.EncodeEcd(null, meta));
+            Assert.Throws<ArgumentNullException>(() => Crypto.EncodeEcd(null!, meta));
         }
 
         [Fact]
@@ -225,7 +225,7 @@ namespace ReFrontier.Tests.Services
             byte[] buffer = new byte[10];
 
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => Crypto.EncodeEcd(buffer, null));
+            Assert.Throws<ArgumentNullException>(() => Crypto.EncodeEcd(buffer, null!));
         }
 
         [Fact]

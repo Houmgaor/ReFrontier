@@ -20,7 +20,7 @@ namespace ReFrontier
     /// <summary>
     /// Main accepted arguments from the CLI of ReFrontier.
     /// </summary>
-    public struct InputArguments
+    public struct InputArguments : IEquatable<InputArguments>
     {
         public bool createLog;
         public bool recursive;
@@ -38,14 +38,43 @@ namespace ReFrontier
         public bool rewriteOldFile;
         public Compression compression;
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            throw new NotImplementedException();
+            return obj is InputArguments other && Equals(other);
+        }
+
+        public bool Equals(InputArguments other)
+        {
+            return createLog == other.createLog
+                && recursive == other.recursive
+                && repack == other.repack
+                && decryptOnly == other.decryptOnly
+                && noDecryption == other.noDecryption
+                && encrypt == other.encrypt
+                && cleanUp == other.cleanUp
+                && ignoreJPK == other.ignoreJPK
+                && stageContainer == other.stageContainer
+                && autoStage == other.autoStage
+                && rewriteOldFile == other.rewriteOldFile
+                && compression.Equals(other.compression);
         }
 
         public override int GetHashCode()
         {
-            throw new NotImplementedException();
+            var hash = new HashCode();
+            hash.Add(createLog);
+            hash.Add(recursive);
+            hash.Add(repack);
+            hash.Add(decryptOnly);
+            hash.Add(noDecryption);
+            hash.Add(encrypt);
+            hash.Add(cleanUp);
+            hash.Add(ignoreJPK);
+            hash.Add(stageContainer);
+            hash.Add(autoStage);
+            hash.Add(rewriteOldFile);
+            hash.Add(compression);
+            return hash.ToHashCode();
         }
 
         public static bool operator ==(InputArguments left, InputArguments right)
@@ -55,7 +84,7 @@ namespace ReFrontier
 
         public static bool operator !=(InputArguments left, InputArguments right)
         {
-            return !(left == right);
+            return !left.Equals(right);
         }
     }
 
@@ -511,9 +540,10 @@ namespace ReFrontier
                 // Ugly way to have a functional forEach on expanding Queue
                 // The TPL library may be better suited
                 List<string> fileWorkers = [];
-                while (filesToProcess.TryDequeue(out string tempInputFile))
+                while (filesToProcess.TryDequeue(out string? tempInputFile))
                 {
-                    fileWorkers.Add(tempInputFile);
+                    if (tempInputFile != null)
+                        fileWorkers.Add(tempInputFile);
                 }
 
                 // Use Interlocked to safely disable stage processing after first file

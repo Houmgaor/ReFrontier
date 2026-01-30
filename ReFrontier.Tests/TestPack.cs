@@ -23,11 +23,7 @@ public class TestPack
     [Fact]
     public void JPKEncode_LZ_CompressesFile()
     {
-        Compression compression = new()
-        {
-            type = CompressionType.LZ,
-            level = 15
-        };
+        Compression compression = new(CompressionType.LZ, 15);
         string filepath = CreateTestFile("This is a random text, the number of bytes is important.");
         string outputPath = filepath + ".jpk";
 
@@ -46,11 +42,7 @@ public class TestPack
     [Fact]
     public void JPKEncode_RW_ProducesValidOutput()
     {
-        Compression compression = new()
-        {
-            type = CompressionType.RW,
-            level = 10
-        };
+        Compression compression = new(CompressionType.RW, 10);
         string filepath = CreateTestFile("Test content for RW compression");
         string outputPath = filepath + ".jpk";
 
@@ -71,11 +63,7 @@ public class TestPack
     [Fact]
     public void JPKEncode_HFI_ProducesValidOutput()
     {
-        Compression compression = new()
-        {
-            type = CompressionType.HFI,
-            level = 20
-        };
+        Compression compression = new(CompressionType.HFI, 20);
         string filepath = CreateTestFile("Test content for HFI Huffman compression encoding test.");
         string outputPath = filepath + ".jpk";
 
@@ -96,11 +84,7 @@ public class TestPack
     [Fact]
     public void JPKEncode_InvalidCompressionType_ThrowsException()
     {
-        Compression compression = new()
-        {
-            type = CompressionType.None,  // None is not a valid encoding type
-            level = 10
-        };
+        Compression compression = new(CompressionType.None, 10);  // None is not a valid encoding type
         string filepath = CreateTestFile("Test");
         string outputPath = filepath + ".jpk";
 
@@ -113,11 +97,7 @@ public class TestPack
     [Fact]
     public void JPKEncode_HFIRW_CreatesValidFile()
     {
-        Compression compression = new()
-        {
-            type = CompressionType.HFIRW,
-            level = 10
-        };
+        Compression compression = new(CompressionType.HFIRW, 10);
         string filepath = CreateTestFile("Test content for HFIRW encoding");
         string outputPath = filepath + ".jpk";
 
@@ -138,11 +118,7 @@ public class TestPack
     [Fact]
     public void JPKEncode_OverwritesExistingFile()
     {
-        Compression compression = new()
-        {
-            type = CompressionType.LZ,
-            level = 10
-        };
+        Compression compression = new(CompressionType.LZ, 10);
         string filepath = CreateTestFile("Original content");
         string outputPath = filepath + ".jpk";
 

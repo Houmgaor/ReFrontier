@@ -112,14 +112,14 @@ namespace ReFrontier.Tests.DataToolTests
         public void Constructor_WithNullFileSystem_ThrowsArgumentNullException()
         {
             Assert.Throws<System.ArgumentNullException>(() =>
-                new DataImportService(null, _logger));
+                new DataImportService(null!, _logger));
         }
 
         [Fact]
         public void Constructor_WithNullLogger_ThrowsArgumentNullException()
         {
             Assert.Throws<System.ArgumentNullException>(() =>
-                new DataImportService(_fileSystem, null));
+                new DataImportService(_fileSystem, null!));
         }
 
         [Fact]

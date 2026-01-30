@@ -33,14 +33,14 @@ namespace ReFrontier.Tests.DataToolTests
         public void Constructor_WithNullFileSystem_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>(() =>
-                new DataExtractionService(null, _logger));
+                new DataExtractionService(null!, _logger));
         }
 
         [Fact]
         public void Constructor_WithNullLogger_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>(() =>
-                new DataExtractionService(_fileSystem, null));
+                new DataExtractionService(_fileSystem, null!));
         }
 
         [Fact]

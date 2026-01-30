@@ -132,7 +132,7 @@ namespace ReFrontier.Tests.Services
             _fileSystem.AddFile("/test/original.bin", originalData);
 
             packingService.JPKEncode(
-                new Compression { type = CompressionType.LZ, level = 10 },
+                new Compression(CompressionType.LZ, 10),
                 "/test/original.bin",
                 "/test/compressed.jkr"
             );
@@ -194,7 +194,7 @@ namespace ReFrontier.Tests.Services
             _fileSystem.AddFile("/test/original.bin", originalData);
 
             packingService.JPKEncode(
-                new Compression { type = CompressionType.HFIRW, level = 10 },
+                new Compression(CompressionType.HFIRW, 10),
                 "/test/original.bin",
                 "/test/compressed.jkr"
             );
@@ -221,7 +221,7 @@ namespace ReFrontier.Tests.Services
             _fileSystem.AddFile("/test/original.bin", originalData);
 
             packingService.JPKEncode(
-                new Compression { type = CompressionType.RW, level = 10 },
+                new Compression(CompressionType.RW, 10),
                 "/test/original.bin",
                 "/test/compressed.jkr"
             );
@@ -248,7 +248,7 @@ namespace ReFrontier.Tests.Services
             _fileSystem.AddFile("/test/original.bin", originalData);
 
             packingService.JPKEncode(
-                new Compression { type = CompressionType.HFI, level = 20 },
+                new Compression(CompressionType.HFI, 20),
                 "/test/original.bin",
                 "/test/compressed.jkr"
             );

@@ -74,6 +74,7 @@ namespace LibReFrontier
         /// <param name="searchPatterns">Patterns to search for.</param>
         /// <param name="searchOption">Options</param>
         /// <returns>All files found.</returns>
+        [Obsolete("Use GetFilesInstance() for testability. This static method will be removed in a future version.")]
         public static string[] GetFiles(
             string path,
             string[] searchPatterns,
@@ -113,6 +114,7 @@ namespace LibReFrontier
         /// </summary>
         /// <param name="fileName">File that was updated</param>
         /// <returns>Modified data in custom format for MHFUP_00.DAT</returns>
+        [Obsolete("Use GetUpdateEntryInstance() for testability. This static method will be removed in a future version.")]
         public static string GetUpdateEntry(string fileName)
         {
             var instance = new FileOperations();

@@ -22,19 +22,30 @@ namespace LibReFrontier
     /// <summary>
     /// A JPK compression format defintion.
     /// </summary>
-    public struct Compression
+    public readonly struct Compression : System.IEquatable<Compression>
     {
-        public CompressionType type;
-        public int level;
+        public readonly CompressionType type;
+        public readonly int level;
 
-        public override bool Equals(object obj)
+        public Compression(CompressionType type, int level)
         {
-            throw new System.NotImplementedException();
+            this.type = type;
+            this.level = level;
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return obj is Compression other && Equals(other);
+        }
+
+        public bool Equals(Compression other)
+        {
+            return type == other.type && level == other.level;
         }
 
         public override int GetHashCode()
         {
-            throw new System.NotImplementedException();
+            return System.HashCode.Combine(type, level);
         }
 
         public static bool operator ==(Compression left, Compression right)
@@ -44,7 +55,7 @@ namespace LibReFrontier
 
         public static bool operator !=(Compression left, Compression right)
         {
-            return !(left == right);
+            return !left.Equals(right);
         }
     }
 }

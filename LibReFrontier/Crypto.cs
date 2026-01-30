@@ -205,7 +205,7 @@ namespace LibReFrontier
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer));
             if (buffer.Length < 0x10)
-                throw new DecryptionException("ECD buffer too small: minimum 16 bytes required for header.", (string)null);
+                throw new DecryptionException("ECD buffer too small: minimum 16 bytes required for header.");
 
             int ecdKey = BitConverter.ToUInt16(buffer, 4);      // Key index at offset 4
             uint payloadSize = BitConverter.ToUInt32(buffer, 8); // Payload size at offset 8
@@ -259,7 +259,7 @@ namespace LibReFrontier
             if (bufferMeta == null)
                 throw new ArgumentNullException(nameof(bufferMeta));
             if (bufferMeta.Length < 6)
-                throw new DecryptionException("ECD meta buffer too small: minimum 6 bytes required for key index.", (string)null);
+                throw new DecryptionException("ECD meta buffer too small: minimum 6 bytes required for key index.");
 
             // Update meta data
             int payloadSize = buffer.Length;
@@ -359,7 +359,7 @@ namespace LibReFrontier
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer));
             if (buffer.Length < 0x10)
-                throw new DecryptionException("EXF buffer too small: minimum 16 bytes required for header.", (string)null);
+                throw new DecryptionException("EXF buffer too small: minimum 16 bytes required for header.");
 
             byte[] header = new byte[16];
             Array.Copy(buffer, header, header.Length);

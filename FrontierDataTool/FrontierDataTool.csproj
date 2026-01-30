@@ -3,6 +3,7 @@
     <ProjectGuid>{0FAAAFE5-D49F-4C64-BE2C-0F78C13DCEEB}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <AssemblyTitle>FrontierDataTool</AssemblyTitle>
     <Product>FrontierDataTool</Product>

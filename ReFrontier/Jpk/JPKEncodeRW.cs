@@ -24,10 +24,8 @@ namespace ReFrontier.Jpk
         /// <summary>
         /// Write a single byte directly from <paramref name="inByte"/> to <paramref name="outStream"/>.
         /// </summary>
-        /// <param name="outStream"></param>
-        /// <param name="inByte"></param>
-        /// <param name="stream">Stream to write to</param>
-        /// <param name="inputByte">byte to write</param>
+        /// <param name="outStream">Stream to write to.</param>
+        /// <param name="inByte">Byte to write.</param>
         public void WriteByte(Stream outStream, byte inByte)
         {
             outStream.WriteByte(inByte);

@@ -440,7 +440,7 @@ namespace FrontierDataTool.Services
         /// <param name="skillName">Skill name to look up.</param>
         /// <param name="skillLookup">Dictionary mapping skill names to IDs.</param>
         /// <returns>Skill ID byte.</returns>
-        public static byte LookupSkillId(string skillName, Dictionary<string, byte> skillLookup)
+        public static byte LookupSkillId(string? skillName, Dictionary<string, byte> skillLookup)
         {
             if (string.IsNullOrEmpty(skillName))
                 return 0;

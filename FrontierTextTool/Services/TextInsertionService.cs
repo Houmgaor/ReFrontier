@@ -66,7 +66,7 @@ namespace FrontierTextTool.Services
                 {
                     Offset = csv.GetField<uint>("Offset"),
                     Hash = csv.GetField<uint>("Hash"),
-                    EString = csv.GetField("EString")
+                    EString = (csv.GetField("EString") ?? string.Empty)
                         .Replace("<TAB>", "\t")
                         .Replace("<CLINE>", "\r\n")
                         .Replace("<NLINE>", "\n")
@@ -125,7 +125,7 @@ namespace FrontierTextTool.Services
                     if (verbose)
                         _logger.WriteLine($"String: '{stringDatabase[i].EString}', Length: {eStringLengths[j] - 1}");
 
-                    byte[] eStringArray = Encoding.GetEncoding("shift-jis").GetBytes(stringDatabase[i].EString);
+                    byte[] eStringArray = Encoding.GetEncoding("shift-jis").GetBytes(stringDatabase[i].EString!);
                     Array.Copy(eStringArray, 0, eStringsArray, eStringLengths.Take(j).Sum(), eStringLengths[j] - 1);
                     j++;
                 }
@@ -197,11 +197,7 @@ namespace FrontierTextTool.Services
                 _fileSystem.WriteAllBytes(outputFile, updatedBytes);
 
                 // Pack with JPK type 0 and encrypt file with ECD
-                var compression = new Compression
-                {
-                    type = CompressionType.RW,
-                    level = 15
-                };
+                var compression = new Compression(CompressionType.RW, 15);
                 var pack = new Pack();
                 pack.JPKEncode(compression, outputFile, outputFile);
                 byte[] buffer = _fileSystem.ReadAllBytes(outputFile);

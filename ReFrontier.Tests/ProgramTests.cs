@@ -61,7 +61,7 @@ namespace ReFrontier.Tests
 
             var args = new InputArguments
             {
-                compression = new Compression { type = CompressionType.LZ, level = 10 }
+                compression = new Compression(CompressionType.LZ, 10)
             };
 
             // Act
@@ -81,7 +81,7 @@ namespace ReFrontier.Tests
 
             var args = new InputArguments
             {
-                compression = new Compression { level = 0 },
+                compression = new Compression(CompressionType.RW, 0),
                 encrypt = false
             };
 
@@ -225,7 +225,7 @@ namespace ReFrontier.Tests
             _fileSystem.AddFile("/test/original.bin", testData);
 
             packingService.JPKEncode(
-                new Compression { type = CompressionType.LZ, level = 10 },
+                new Compression(CompressionType.LZ, 10),
                 "/test/original.bin",
                 "/test/compressed.jkr"
             );
@@ -254,7 +254,7 @@ namespace ReFrontier.Tests
             _fileSystem.AddFile("/test/original.bin", testData);
 
             packingService.JPKEncode(
-                new Compression { type = CompressionType.LZ, level = 10 },
+                new Compression(CompressionType.LZ, 10),
                 "/test/original.bin",
                 "/test/compressed.jkr"
             );

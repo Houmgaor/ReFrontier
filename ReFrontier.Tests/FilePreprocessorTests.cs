@@ -213,11 +213,7 @@ namespace ReFrontier.Tests
             fileSystem.AddFile("/test/original.bin", originalData);
 
             // Compress using JPK RW compression
-            Compression compression = new()
-            {
-                type = CompressionType.RW,
-                level = 15
-            };
+            Compression compression = new(CompressionType.RW, 15);
 
             packingService.JPKEncode(compression, "/test/original.bin", "/test/compressed.jkr");
 
@@ -271,11 +267,7 @@ namespace ReFrontier.Tests
             fileSystem.AddFile("/test/original.bin", originalData);
 
             // Step 1: Compress the data
-            Compression compression = new()
-            {
-                type = CompressionType.RW,
-                level = 15
-            };
+            Compression compression = new(CompressionType.RW, 15);
             packingService.JPKEncode(compression, "/test/original.bin", "/test/compressed.jkr");
 
             // Step 2: Encrypt the compressed data

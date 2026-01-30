@@ -229,14 +229,14 @@ namespace ReFrontier.Tests.TextToolTests
         public void Constructor_WithNullFileSystem_ThrowsArgumentNullException()
         {
             Assert.Throws<System.ArgumentNullException>(() =>
-                new TextExtractionService(null, _logger));
+                new TextExtractionService(null!, _logger));
         }
 
         [Fact]
         public void Constructor_WithNullLogger_ThrowsArgumentNullException()
         {
             Assert.Throws<System.ArgumentNullException>(() =>
-                new TextExtractionService(_fileSystem, null));
+                new TextExtractionService(_fileSystem, null!));
         }
 
         [Fact]
