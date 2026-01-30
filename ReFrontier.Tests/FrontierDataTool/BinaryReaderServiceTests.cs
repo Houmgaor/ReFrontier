@@ -1,3 +1,5 @@
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -488,7 +490,7 @@ namespace ReFrontier.Tests.DataToolTests
             byte rarity = 1,
             int zennyCost = 100,
             short baseDefense = 50,
-            byte[] skillIndices = null)
+            byte[]? skillIndices = null)
         {
             // Total size: 0x48 (72) bytes
             using var ms = new MemoryStream();
