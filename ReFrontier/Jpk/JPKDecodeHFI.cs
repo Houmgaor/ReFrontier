@@ -15,16 +15,26 @@ namespace ReFrontier.Jpk
         private int m_hfTableLen = 0;
 
         /// <summary>
+        /// Initialize the Huffman table parameters from the stream.
+        /// Must be called before ReadByte() is used.
+        /// </summary>
+        /// <param name="inStream">Stream to read table info from.</param>
+        protected void InitializeTable(Stream inStream)
+        {
+            BinaryReader br = new(inStream);
+            m_hfTableLen = br.ReadInt16();
+            m_hfTableOffset = (int)inStream.Position;
+            m_hfDataOffset = m_hfTableOffset + m_hfTableLen * 4 - 0x3fc;
+        }
+
+        /// <summary>
         /// Decompress data the same as JPKDecodeLz, but sets input properties.
         /// </summary>
         /// <param name="inStream">Stream to read from.</param>
         /// <param name="outBuffer">Outpute buffer.</param>
         public override void ProcessOnDecode(Stream inStream, byte[] outBuffer)
         {
-            BinaryReader br = new(inStream);
-            m_hfTableLen = br.ReadInt16();
-            m_hfTableOffset = (int)inStream.Position;
-            m_hfDataOffset = m_hfTableOffset + m_hfTableLen * 4 - 0x3fc;
+            InitializeTable(inStream);
             base.ProcessOnDecode(inStream, outBuffer);
         }
 

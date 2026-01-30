@@ -11,8 +11,8 @@ namespace ReFrontier.Jpk
     {
         private const int m_headerLength = 0x100;
 
-        private static readonly short m_hfTableLen = 0x1fe;
-        private readonly short[] m_hfTable = new short[m_hfTableLen];
+        protected static readonly short m_hfTableLen = 0x1fe;
+        protected readonly short[] m_hfTable = new short[m_hfTableLen];
         private readonly short[] m_paths = new short[m_headerLength];
         private readonly short[] m_lengths = new short[m_headerLength];
 
@@ -41,7 +41,7 @@ namespace ReFrontier.Jpk
             GetPaths(2 * (strt - m_headerLength) + 1, level + 1, (pth << 1) | 1);
         }
 
-        private void FillTable()
+        protected void FillTable()
         {
             Array.Clear(m_paths, 0, m_paths.Length);
             Array.Clear(m_lengths, 0, m_lengths.Length);
@@ -96,7 +96,7 @@ namespace ReFrontier.Jpk
                 WriteBit(outStream, (byte)((bits >> length) & 1));
             }
         }
-        private void FlushWrite(Stream outStream)
+        protected void FlushWrite(Stream outStream)
         {
             if (m_bitcount > 0)
             {

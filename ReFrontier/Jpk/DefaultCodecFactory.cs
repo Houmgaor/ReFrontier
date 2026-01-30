@@ -14,6 +14,7 @@ namespace ReFrontier.Jpk
             return compressionType switch
             {
                 CompressionType.RW => new JPKEncodeRW(),
+                CompressionType.HFIRW => new JPKEncodeHFIRW(),
                 CompressionType.LZ => new JPKEncodeLz(),
                 CompressionType.HFI => new JPKEncodeHFI(),
                 _ => throw new InvalidOperationException($"Unsupported/invalid encoder type: {compressionType}")

@@ -22,6 +22,7 @@ namespace ReFrontier.Tests.Jpk
 
         [Theory]
         [InlineData(CompressionType.RW)]
+        [InlineData(CompressionType.HFIRW)]
         [InlineData(CompressionType.HFI)]
         [InlineData(CompressionType.LZ)]
         public void CreateEncoder_ValidType_ReturnsEncoder(CompressionType type)
@@ -46,14 +47,14 @@ namespace ReFrontier.Tests.Jpk
         }
 
         [Fact]
-        public void CreateEncoder_HFIRWType_ThrowsInvalidOperationException()
+        public void CreateEncoder_HFIRWType_ReturnsEncoder()
         {
-            // HFIRW encoding is not supported
-            // Act & Assert
-            var exception = Assert.Throws<InvalidOperationException>(() =>
-                _factory.CreateEncoder(CompressionType.HFIRW));
+            // Act
+            var encoder = _factory.CreateEncoder(CompressionType.HFIRW);
 
-            Assert.Contains("Unsupported", exception.Message);
+            // Assert
+            Assert.NotNull(encoder);
+            Assert.IsType<JPKEncodeHFIRW>(encoder);
         }
 
         [Fact]

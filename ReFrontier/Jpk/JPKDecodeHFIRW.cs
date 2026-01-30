@@ -16,6 +16,7 @@ namespace ReFrontier.Jpk
         /// <param name="outBuffer">Output buffer.</param>
         public override void ProcessOnDecode(Stream inStream, byte[] outBuffer)
         {
+            InitializeTable(inStream);
             for (int index = 0; index < outBuffer.Length; index++)
                 outBuffer[index] = base.ReadByte(inStream);
         }

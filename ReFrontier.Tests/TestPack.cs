@@ -111,20 +111,28 @@ public class TestPack
     }
 
     [Fact]
-    public void JPKEncode_HFIRW_ThrowsException()
+    public void JPKEncode_HFIRW_CreatesValidFile()
     {
         Compression compression = new()
         {
-            type = CompressionType.HFIRW,  // HFIRW has no encoder
+            type = CompressionType.HFIRW,
             level = 10
         };
-        string filepath = CreateTestFile("Test");
+        string filepath = CreateTestFile("Test content for HFIRW encoding");
         string outputPath = filepath + ".jpk";
 
         var pack = new Pack();
-        Assert.Throws<InvalidOperationException>(() =>
-            pack.JPKEncode(compression, filepath, outputPath)
-        );
+        pack.JPKEncode(compression, filepath, outputPath);
+
+        // Verify file was created and has JKR magic header
+        Assert.True(File.Exists(outputPath));
+        byte[] output = File.ReadAllBytes(outputPath);
+        Assert.True(output.Length > 16);
+        // JKR magic: 0x1A524B4A
+        Assert.Equal(0x4A, output[0]); // 'J'
+        Assert.Equal(0x4B, output[1]); // 'K'
+        Assert.Equal(0x52, output[2]); // 'R'
+        Assert.Equal(0x1A, output[3]);
     }
 
     [Fact]
