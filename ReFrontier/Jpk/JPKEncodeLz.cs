@@ -4,10 +4,38 @@ using System.IO;
 namespace ReFrontier.Jpk
 {
     /// <summary>
-    /// Variant of the LZ77 compression algorithm.
+    /// LZ77-based compression encoder for Monster Hunter Frontier JPK files.
+    ///
+    /// <para><b>Algorithm Overview:</b></para>
+    /// <para>This is a variant of LZ77 (Lempel-Ziv 1977) that uses a sliding window to find
+    /// repeated byte sequences. Instead of outputting raw (offset, length) pairs, it uses
+    /// a bit-flag system to indicate whether the next data is a literal byte or a back-reference.</para>
+    ///
+    /// <para><b>Encoding Format:</b></para>
+    /// <para>Data is organized in groups of 8 items, preceded by a flag byte where each bit
+    /// indicates the type of the corresponding item:</para>
+    /// <list type="bullet">
+    ///   <item>Bit = 0: Literal byte follows</item>
+    ///   <item>Bit = 1: Back-reference follows (with sub-cases based on length/offset)</item>
+    /// </list>
+    ///
+    /// <para><b>Back-Reference Cases:</b></para>
+    /// <list type="bullet">
+    ///   <item>Short (flag=10xx): Length 3-6, offset 0-255 (1 byte offset)</item>
+    ///   <item>Medium (flag=11, len in header): Length 3-9, offset 0-8191 (2 byte header)</item>
+    ///   <item>Long-A (flag=11, len=0, then 0xxxx): Length 10-25, offset 0-8191</item>
+    ///   <item>Long-B (flag=11, len=0, then 1): Length 26+, offset 0-8191 (extra byte for length)</item>
+    /// </list>
+    ///
+    /// <para><b>Compression Parameters:</b></para>
+    /// <para>The <c>level</c> parameter controls both the maximum match length (6-280) and
+    /// the search window size (50-8191 bytes back).</para>
     /// </summary>
     internal class JPKEncodeLz : IJPKEncode
     {
+        /// <summary>
+        /// Current flag byte being built. Each bit indicates literal (0) or back-reference (1).
+        /// </summary>
         private byte m_flag;
 
         /// <summary>

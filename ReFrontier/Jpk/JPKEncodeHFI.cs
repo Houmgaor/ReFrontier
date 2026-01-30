@@ -5,15 +5,57 @@ using System.Linq;
 namespace ReFrontier.Jpk
 {
     /// <summary>
-    /// LZ77 encoding but with an extra layer.
+    /// Huffman + LZ77 compression encoder for Monster Hunter Frontier JPK files (type 4: HFI).
+    ///
+    /// <para><b>Algorithm Overview:</b></para>
+    /// <para>Combines Huffman coding with LZ77 compression. First applies LZ77 to find
+    /// repeated sequences, then encodes the output bytes using a Huffman tree for
+    /// additional compression of frequently-occurring byte values.</para>
+    ///
+    /// <para><b>Output Format:</b></para>
+    /// <list type="bullet">
+    ///   <item>2 bytes: Huffman table length (0x1FE = 510 entries)</item>
+    ///   <item>510 × 2 bytes: Huffman tree table (1020 bytes)</item>
+    ///   <item>Variable: Huffman-encoded LZ77 data stream</item>
+    /// </list>
+    ///
+    /// <para><b>Huffman Tree Structure:</b></para>
+    /// <para>The tree is stored as an array where:</para>
+    /// <list type="bullet">
+    ///   <item>Indices 0-255: Leaf nodes (actual byte values, randomly shuffled)</item>
+    ///   <item>Indices 256-509: Internal nodes pointing to children at (value-256)*2 and (value-256)*2+1</item>
+    /// </list>
+    ///
+    /// <para><b>Encoding Process:</b></para>
+    /// <para>Each byte from the LZ77 stage is replaced by its Huffman code (variable-length
+    /// bit sequence determined by traversing the tree from root to leaf).</para>
     /// </summary>
     internal class JPKEncodeHFI : JPKEncodeLz
     {
+        /// <summary>
+        /// Number of possible byte values (0-255).
+        /// </summary>
         private const int m_headerLength = 0x100;
 
+        /// <summary>
+        /// Huffman table length: 256 leaves + 254 internal nodes = 510 entries.
+        /// </summary>
         protected static readonly short m_hfTableLen = 0x1fe;
+
+        /// <summary>
+        /// Huffman tree table. Values 0-255 are leaves, 256+ are internal nodes.
+        /// </summary>
         protected readonly short[] m_hfTable = new short[m_hfTableLen];
+
+        /// <summary>
+        /// Huffman code paths for each byte value (0-255). The path is the bit sequence
+        /// to reach that leaf from the root.
+        /// </summary>
         private readonly short[] m_paths = new short[m_headerLength];
+
+        /// <summary>
+        /// Bit lengths for each Huffman code (how many bits in m_paths are valid).
+        /// </summary>
         private readonly short[] m_lengths = new short[m_headerLength];
 
         private int m_depth = 0;

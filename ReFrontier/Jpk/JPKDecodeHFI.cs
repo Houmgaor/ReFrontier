@@ -3,15 +3,60 @@
 namespace ReFrontier.Jpk
 {
     /// <summary>
-    /// Decode a JPK the same as JPKDecodeLz,
-    /// but provides a new inteface for byte reading.
+    /// Huffman + LZ77 decompression decoder for Monster Hunter Frontier JPK files (type 4: HFI).
+    ///
+    /// <para><b>Algorithm Overview:</b></para>
+    /// <para>Decodes data compressed with Huffman + LZ77 encoding. First reads the Huffman
+    /// tree from the file header, then decodes each byte by traversing the tree based on
+    /// input bits, finally applying LZ77 decompression to reconstruct the original data.</para>
+    ///
+    /// <para><b>Input Format:</b></para>
+    /// <list type="bullet">
+    ///   <item>2 bytes: Huffman table length (typically 0x1FE = 510)</item>
+    ///   <item>510 × 2 bytes: Huffman tree table</item>
+    ///   <item>Variable: Huffman-encoded LZ77 data stream</item>
+    /// </list>
+    ///
+    /// <para><b>Decoding Process:</b></para>
+    /// <para>For each byte needed by the LZ77 decoder:</para>
+    /// <list type="number">
+    ///   <item>Start at tree root (index = table length)</item>
+    ///   <item>Read one bit from the data stream</item>
+    ///   <item>Navigate to left child (bit=0) or right child (bit=1)</item>
+    ///   <item>Repeat until reaching a leaf node (value &lt; 256)</item>
+    ///   <item>Output the leaf value as the decoded byte</item>
+    /// </list>
+    ///
+    /// <para><b>Stream Layout:</b></para>
+    /// <para>The file has two interleaved streams: the Huffman tree (sequential) and
+    /// the bit stream (at m_hfDataOffset). ReadByte alternates between seeking to
+    /// read tree nodes and seeking to read data bits.</para>
     /// </summary>
     internal class JPKDecodeHFI : JPKDecodeLz
     {
+        /// <summary>
+        /// Current byte from the Huffman-encoded data stream.
+        /// </summary>
         private byte m_flagHF = 0;
+
+        /// <summary>
+        /// Current bit position within m_flagHF (7 = MSB, -1 = need new byte).
+        /// </summary>
         private int m_flagShift = 0;
+
+        /// <summary>
+        /// File offset where the Huffman tree table begins.
+        /// </summary>
         private int m_hfTableOffset = 0;
+
+        /// <summary>
+        /// File offset where the Huffman-encoded data stream begins (after the tree).
+        /// </summary>
         private int m_hfDataOffset = 0;
+
+        /// <summary>
+        /// Number of entries in the Huffman table (typically 510).
+        /// </summary>
         private int m_hfTableLen = 0;
 
         /// <summary>

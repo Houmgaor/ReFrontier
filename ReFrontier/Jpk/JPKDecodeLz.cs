@@ -6,11 +6,37 @@ using LibReFrontier.Exceptions;
 namespace ReFrontier.Jpk
 {
     /// <summary>
-    /// Base class for LZ decompression.
+    /// LZ77-based decompression decoder for Monster Hunter Frontier JPK files.
+    ///
+    /// <para><b>Algorithm Overview:</b></para>
+    /// <para>Decodes data compressed with the LZ77 variant used by JPKEncodeLz. Reads a stream
+    /// of flag bits and data bytes, reconstructing the original data by either copying literal
+    /// bytes or reproducing back-references from already-decoded data.</para>
+    ///
+    /// <para><b>Decoding Cases (determined by flag bits):</b></para>
+    /// <list type="bullet">
+    ///   <item><b>Case: Literal (flag=0)</b> - Read and output one byte directly</item>
+    ///   <item><b>Case 0 (flag=10xx)</b> - Short back-ref: 2-bit length (3-6), 1-byte offset (0-255)</item>
+    ///   <item><b>Case 1 (flag=11, len!=0)</b> - Medium back-ref: 3-bit length in header (3-9), 13-bit offset</item>
+    ///   <item><b>Case 2 (flag=11, len=0, then 0xxxx)</b> - Long back-ref A: 4-bit length (10-25), 13-bit offset</item>
+    ///   <item><b>Case 3 (flag=11, len=0, then 1, byte=0xFF)</b> - Raw bytes: read (offset+0x1B) literal bytes</item>
+    ///   <item><b>Case 4 (flag=11, len=0, then 1, byte!=0xFF)</b> - Long back-ref B: length from byte (26+), 13-bit offset</item>
+    /// </list>
+    ///
+    /// <para><b>Back-Reference Format:</b></para>
+    /// <para>Back-references copy <c>length</c> bytes from position <c>(current - offset - 1)</c>.
+    /// This allows overlapping copies for run-length encoding of repeated patterns.</para>
     /// </summary>
     internal class JPKDecodeLz : IJPKDecode
     {
+        /// <summary>
+        /// Current bit position within m_flag (7 = MSB, 0 = LSB, then reload).
+        /// </summary>
         private int m_shiftIndex = 0;
+
+        /// <summary>
+        /// Current flag byte. Each bit indicates literal (0) or back-reference (1).
+        /// </summary>
         private byte m_flag = 0;
 
         /// <summary>
