@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using LibReFrontier;
 using LibReFrontier.Abstractions;
+using LibReFrontier.Exceptions;
 using ReFrontier.Jpk;
 
 namespace ReFrontier
@@ -229,8 +230,9 @@ namespace ReFrontier
             var compressionTypes = Enum.GetValues<CompressionType>();
             if (type < 0 || type >= compressionTypes.Length)
             {
-                throw new InvalidOperationException(
-                    $"Invalid compression type {type}. Valid range is 0-{compressionTypes.Length - 1}."
+                throw new CompressionException(
+                    $"Invalid compression type {type}. Valid range is 0-{compressionTypes.Length - 1}.",
+                    filePath
                 );
             }
             var compressionType = compressionTypes[type];

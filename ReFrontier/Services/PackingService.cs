@@ -4,6 +4,7 @@ using System.IO;
 
 using LibReFrontier;
 using LibReFrontier.Abstractions;
+using LibReFrontier.Exceptions;
 using ReFrontier.Jpk;
 
 namespace ReFrontier.Services
@@ -80,7 +81,7 @@ namespace ReFrontier.Services
                     PackStageContainer(logContent, inputDir);
                     break;
                 default:
-                    throw new InvalidOperationException("Unknown container type: " + logContent[0]);
+                    throw new PackingException("Unknown container type: " + logContent[0], inputDir);
             }
             _logger.WriteSeparator();
         }

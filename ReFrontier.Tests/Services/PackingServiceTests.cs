@@ -2,6 +2,7 @@ using System;
 using Xunit;
 
 using LibReFrontier;
+using LibReFrontier.Exceptions;
 using ReFrontier.Jpk;
 using ReFrontier.Services;
 using ReFrontier.Tests.Mocks;
@@ -158,15 +159,16 @@ namespace ReFrontier.Tests.Services
         }
 
         [Fact]
-        public void ProcessPackInput_UnknownType_ThrowsInvalidOperationException()
+        public void ProcessPackInput_UnknownType_ThrowsPackingException()
         {
             // Arrange
             string logContent = "UnknownType\ntest.bin";
             _fileSystem.AddFile("/test/dir.unpacked/dir.unpacked.log", logContent);
 
             // Act & Assert
-            Assert.Throws<System.InvalidOperationException>(() =>
+            var ex = Assert.Throws<PackingException>(() =>
                 _service.ProcessPackInput("/test/dir.unpacked"));
+            Assert.Contains("Unknown container type", ex.Message);
         }
 
         [Fact]
