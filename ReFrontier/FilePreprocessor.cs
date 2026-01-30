@@ -55,7 +55,7 @@ namespace ReFrontier
                 return false;
 
             uint magic = BitConverter.ToUInt32(buffer, 0);
-            return magic == 0x1A646365 || magic == 0x1A667865; // ECD or EXF
+            return FileMagic.IsEncrypted(magic);
         }
 
         /// <summary>
@@ -73,7 +73,7 @@ namespace ReFrontier
                 return false;
 
             uint magic = BitConverter.ToUInt32(buffer, 0);
-            return magic == 0x1A524B4A; // JKR
+            return FileMagic.IsJpkCompressed(magic);
         }
 
         /// <summary>
@@ -91,12 +91,12 @@ namespace ReFrontier
 
             uint magic = BitConverter.ToUInt32(buffer, 0);
 
-            if (magic == 0x1A646365) // ECD
+            if (magic == FileMagic.ECD)
             {
                 _logger.WriteLine($"Detected ECD encryption in {Path.GetFileName(filePath)}, decrypting...");
                 return DecryptEcd(filePath, buffer, createMetaFile);
             }
-            else if (magic == 0x1A667865) // EXF
+            else if (magic == FileMagic.EXF)
             {
                 _logger.WriteLine($"Detected EXF encryption in {Path.GetFileName(filePath)}, decrypting...");
                 return DecryptExf(filePath, buffer);
@@ -119,7 +119,7 @@ namespace ReFrontier
 
             uint magic = BitConverter.ToUInt32(buffer, 0);
 
-            if (magic == 0x1A524B4A) // JKR (JPK compressed)
+            if (magic == FileMagic.JKR)
             {
                 _logger.WriteLine($"Detected JPK compression in {Path.GetFileName(filePath)}, decompressing...");
                 return DecompressJpk(filePath, buffer);

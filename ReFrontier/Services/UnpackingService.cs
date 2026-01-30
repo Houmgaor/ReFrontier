@@ -257,10 +257,10 @@ namespace ReFrontier.Services
 
             // Check for JKR header
             uint magic = br.ReadUInt32();
-            if (magic != 0x1A524B4A)
+            if (magic != FileMagic.JKR)
             {
                 throw new PackingException(
-                    $"Invalid JKR header: expected 0x1A524B4A, got 0x{magic:X8}.",
+                    $"Invalid JKR header: expected 0x{FileMagic.JKR:X8}, got 0x{magic:X8}.",
                     input
                 );
             }

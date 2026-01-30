@@ -384,8 +384,8 @@ namespace ReFrontier
         /// </summary>
         /// <param name="filePath">Input file path.</param>
         /// <param name="inputArguments">Configuration arguments from CLI.</param>
-        /// <returns>Output path, can be file or folder.</returns>
-        public string? ProcessFile(string filePath, InputArguments inputArguments)
+        /// <returns>Result indicating success with output path, or skipped with reason.</returns>
+        public ProcessFileResult ProcessFile(string filePath, InputArguments inputArguments)
         {
             _logger.PrintWithSeparator($"Processing {filePath}", false);
 
@@ -396,9 +396,9 @@ namespace ReFrontier
             if (msInput.Length == 0)
             {
                 _logger.WriteLine("File is empty. Skipping.");
-                return null;
+                return ProcessFileResult.Skipped("File is empty");
             }
-            int fileMagic = brInput.ReadInt32();
+            uint fileMagic = brInput.ReadUInt32();
 
             // Since stage containers have no file magic, check for them first
             if (inputArguments.stageContainer)
@@ -406,7 +406,7 @@ namespace ReFrontier
                 brInput.BaseStream.Seek(0, SeekOrigin.Begin);
                 outputPath = _unpackingService.UnpackStageContainer(filePath, brInput, inputArguments.createLog, inputArguments.cleanUp);
             }
-            else if (fileMagic == 0x4F4D4F4D)
+            else if (fileMagic == FileMagic.MOMO)
             {
                 // MOMO Header: snp, snd
                 _logger.WriteLine("MOMO Header detected.");
@@ -414,14 +414,14 @@ namespace ReFrontier
                     filePath, brInput, 8, inputArguments.createLog, inputArguments.cleanUp, inputArguments.autoStage
                 );
             }
-            else if (fileMagic == 0x1A646365)
+            else if (fileMagic == FileMagic.ECD)
             {
                 // ECD Header
                 _logger.WriteLine("ECD Header detected.");
                 if (inputArguments.noDecryption)
                 {
                     _logger.PrintWithSeparator("Not decrypting due to flag.", false);
-                    return null;
+                    return ProcessFileResult.Skipped("Decryption disabled");
                 }
                 outputPath = _fileProcessingService.DecryptEcdFile(
                     filePath,
@@ -430,13 +430,13 @@ namespace ReFrontier
                     inputArguments.rewriteOldFile
                 );
             }
-            else if (fileMagic == 0x1A667865)
+            else if (fileMagic == FileMagic.EXF)
             {
                 // EXF Header
                 _logger.WriteLine("EXF Header detected.");
                 outputPath = _fileProcessingService.DecryptExfFile(filePath, inputArguments.cleanUp);
             }
-            else if (fileMagic == 0x1A524B4A)
+            else if (fileMagic == FileMagic.JKR)
             {
                 // JKR Header
                 _logger.WriteLine("JKR Header detected.");
@@ -454,13 +454,13 @@ namespace ReFrontier
                         _fileSystem.Copy(outputPath, filePath);
                 }
             }
-            else if (fileMagic == 0x0161686D)
+            else if (fileMagic == FileMagic.MHA)
             {
                 // MHA Header
                 _logger.WriteLine("MHA Header detected.");
                 outputPath = _unpackingService.UnpackMHA(filePath, brInput, inputArguments.createLog);
             }
-            else if (fileMagic == 0x000B0000)
+            else if (fileMagic == FileMagic.FTXT)
             {
                 // MHF Text file
                 _logger.WriteLine("MHF Text file detected.");
@@ -477,14 +477,15 @@ namespace ReFrontier
 
             _logger.WriteSeparator();
             // Decompress file if it was an ECD (encrypted)
-            if (fileMagic == 0x1A646365 && !inputArguments.decryptOnly)
+            if (fileMagic == FileMagic.ECD && !inputArguments.decryptOnly)
             {
                 string decdFilePath = outputPath;
-                outputPath = ProcessFile(decdFilePath, inputArguments);
+                var result = ProcessFile(decdFilePath, inputArguments);
                 if (inputArguments.cleanUp)
                     _fileSystem.DeleteFile(decdFilePath);
+                outputPath = result.OutputPath ?? outputPath;
             }
-            return outputPath;
+            return ProcessFileResult.Success(outputPath);
         }
 
         /// <summary>
@@ -526,12 +527,12 @@ namespace ReFrontier
 
                     try
                     {
-                        string outputPath = ProcessFile(inputFile, localArgs);
+                        ProcessFileResult result = ProcessFile(inputFile, localArgs);
 
                         // Check if a new directory was created
-                        if (inputArguments.recursive && _fileSystem.DirectoryExists(outputPath))
+                        if (inputArguments.recursive && result.OutputPath != null && _fileSystem.DirectoryExists(result.OutputPath))
                         {
-                            AddNewFiles(outputPath, filesToProcess);
+                            AddNewFiles(result.OutputPath, filesToProcess);
                         }
                     }
                     catch (ReFrontierException ex)

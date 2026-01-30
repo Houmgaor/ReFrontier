@@ -327,7 +327,7 @@ namespace ReFrontier.Services
             using var fsot = _fileSystem.Create(otPath);
             using BinaryWriter br = new(fsot);
             // JKR header
-            br.Write((uint)0x1A524B4A);
+            br.Write(FileMagic.JKR);
             br.Write((ushort)0x108);
             br.Write((ushort)compression.type);
             br.Write((uint)0x10);
