@@ -412,8 +412,8 @@ namespace ReFrontier
             _logger.PrintWithSeparator($"Processing {filePath}", false);
 
             // Read file to memory
-            MemoryStream msInput = new(_fileSystem.ReadAllBytes(filePath));
-            BinaryReader brInput = new(msInput);
+            using MemoryStream msInput = new(_fileSystem.ReadAllBytes(filePath));
+            using BinaryReader brInput = new(msInput);
             string outputPath;
             if (msInput.Length == 0)
             {
