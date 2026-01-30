@@ -168,5 +168,62 @@ namespace ReFrontier.Tests.Services
             Assert.Throws<System.InvalidOperationException>(() =>
                 _service.ProcessPackInput("/test/dir.unpacked"));
         }
+
+        [Fact]
+        public void JPKEncode_WithHFIRWCompression_CreatesValidFile()
+        {
+            // Arrange
+            byte[] testData = new byte[100];
+            for (int i = 0; i < testData.Length; i++)
+                testData[i] = (byte)(i % 5);
+            _fileSystem.AddFile("/test/input.bin", testData);
+
+            var compression = new Compression
+            {
+                type = CompressionType.HFIRW,
+                level = 10
+            };
+
+            // Act
+            _service.JPKEncode(compression, "/test/input.bin", "output/compressed.jkr");
+
+            // Assert
+            Assert.True(_fileSystem.FileExists("output/compressed.jkr"));
+        }
+
+
+
+
+        [Fact]
+        public void PackingService_CanBeCreatedWithDefaultConstructor()
+        {
+            // Arrange & Act
+            var service = new PackingService();
+
+            // Assert
+            Assert.NotNull(service);
+        }
+
+        [Fact]
+        public void JPKEncode_LogsCompressionInfo()
+        {
+            // Arrange
+            byte[] testData = new byte[30];
+            _fileSystem.AddFile("/test/input.bin", testData);
+
+            var compression = new Compression
+            {
+                type = CompressionType.LZ,
+                level = 10
+            };
+
+            // Act
+            _service.JPKEncode(compression, "/test/input.bin", "output/compressed.jkr");
+
+            // Assert
+            Assert.True(_logger.ContainsMessage("Starting file compression"));
+            Assert.True(_logger.ContainsMessage("LZ"));
+            Assert.True(_logger.ContainsMessage("level 10"));
+        }
     }
 }

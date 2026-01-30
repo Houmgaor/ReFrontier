@@ -185,5 +185,89 @@ namespace ReFrontier.Tests.Services
             // Assert
             Assert.NotNull(service);
         }
+
+        [Fact]
+        public void UnpackJPK_HFIRWCompression_Decompresses()
+        {
+            // Arrange - Compress with HFIRW
+            var packingService = new PackingService(_fileSystem, _logger, _codecFactory, _config);
+            byte[] originalData = new byte[100];
+            for (int i = 0; i < originalData.Length; i++)
+                originalData[i] = (byte)(i % 10);
+            _fileSystem.AddFile("/test/original.bin", originalData);
+
+            packingService.JPKEncode(
+                new Compression { type = CompressionType.HFIRW, level = 10 },
+                "/test/original.bin",
+                "/test/compressed.jkr"
+            );
+
+            _logger.Clear();
+
+            // Act
+            var result = _service.UnpackJPK("/test/compressed.jkr");
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.True(_fileSystem.FileExists(result));
+            Assert.True(_logger.ContainsMessage("JPK HFIRW"));
+        }
+
+        [Fact]
+        public void UnpackJPK_RWCompression_Decompresses()
+        {
+            // Arrange - Compress with RW
+            var packingService = new PackingService(_fileSystem, _logger, _codecFactory, _config);
+            byte[] originalData = new byte[30];
+            for (int i = 0; i < originalData.Length; i++)
+                originalData[i] = (byte)i;
+            _fileSystem.AddFile("/test/original.bin", originalData);
+
+            packingService.JPKEncode(
+                new Compression { type = CompressionType.RW, level = 10 },
+                "/test/original.bin",
+                "/test/compressed.jkr"
+            );
+
+            _logger.Clear();
+
+            // Act
+            var result = _service.UnpackJPK("/test/compressed.jkr");
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.True(_fileSystem.FileExists(result));
+            Assert.True(_logger.ContainsMessage("JPK RW"));
+        }
+
+        [Fact]
+        public void UnpackJPK_HFICompression_Decompresses()
+        {
+            // Arrange - Compress with HFI
+            var packingService = new PackingService(_fileSystem, _logger, _codecFactory, _config);
+            byte[] originalData = new byte[50];
+            for (int i = 0; i < originalData.Length; i++)
+                originalData[i] = (byte)(i * 2);
+            _fileSystem.AddFile("/test/original.bin", originalData);
+
+            packingService.JPKEncode(
+                new Compression { type = CompressionType.HFI, level = 20 },
+                "/test/original.bin",
+                "/test/compressed.jkr"
+            );
+
+            _logger.Clear();
+
+            // Act
+            var result = _service.UnpackJPK("/test/compressed.jkr");
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.True(_fileSystem.FileExists(result));
+            Assert.True(_logger.ContainsMessage("JPK HFI"));
+        }
+
+
+
     }
 }

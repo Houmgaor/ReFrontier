@@ -242,6 +242,40 @@ namespace ReFrontier.Tests.Mocks
             return new StreamWriter(OpenWrite(path), encoding);
         }
 
+        /// <summary>
+        /// Create a StreamReader for a file with specified encoding.
+        /// </summary>
+        /// <param name="path">File path.</param>
+        /// <param name="encoding">Text encoding.</param>
+        /// <returns>StreamReader instance.</returns>
+        public StreamReader CreateStreamReader(string path, Encoding encoding)
+        {
+            return new StreamReader(OpenRead(path), encoding);
+        }
+
+        /// <summary>
+        /// Read all text from a file with specified encoding.
+        /// </summary>
+        /// <param name="path">File path.</param>
+        /// <param name="encoding">Text encoding.</param>
+        /// <returns>File contents as string.</returns>
+        public string ReadAllText(string path, Encoding encoding)
+        {
+            using var reader = CreateStreamReader(path, encoding);
+            return reader.ReadToEnd();
+        }
+
+        /// <summary>
+        /// Write all text to a file with specified encoding.
+        /// </summary>
+        /// <param name="path">File path.</param>
+        /// <param name="content">Text content.</param>
+        /// <param name="encoding">Text encoding.</param>
+        public void WriteAllText(string path, string content, Encoding encoding)
+        {
+            WriteAllBytes(path, encoding.GetBytes(content));
+        }
+
         private static string NormalizePath(string path)
         {
             return path.Replace('\\', '/').TrimEnd('/');
