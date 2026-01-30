@@ -41,35 +41,47 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Install coverlet
-        run: dotnet tool install -g coverlet.console
-
-      - name: Build
-        run: dotnet build
-
       - name: Run tests with coverage
         run: |
-          coverlet ./ReFrontier.Tests/bin/Debug/net8.0/ReFrontier.Tests.dll \
-            --target "dotnet" \
-            --targetargs "test --no-build" \
-            --format cobertura \
-            --output coverage.cobertura.xml
+          dotnet test ./ReFrontier.Tests/ReFrontier.Tests.csproj \
+            --collect:"XPlat Code Coverage" \
+            --logger "console;verbosity=detailed"
+
+      - name: Find coverage files
+        run: |
+          echo "=== All XML files ==="
+          find . -name "*.xml" -type f 2>/dev/null
+          echo "=== TestResults contents ==="
+          find . -path "*/TestResults/*" -type f 2>/dev/null
 
       - name: Install ReportGenerator
         run: dotnet tool install -g dotnet-reportgenerator-globaltool
 
       - name: Generate coverage report
         run: |
-          reportgenerator \
-            -reports:"coverage.cobertura.xml" \
-            -targetdir:"coveragereport" \
-            -reporttypes:"Html;MarkdownSummaryGithub"
+          COVERAGE_FILE=$(find . -name "coverage.cobertura.xml" -type f | head -1)
+          if [ -n "$COVERAGE_FILE" ]; then
+            echo "Found coverage file: $COVERAGE_FILE"
+            reportgenerator \
+              -reports:"$COVERAGE_FILE" \
+              -targetdir:"coveragereport" \
+              -reporttypes:"Html;MarkdownSummaryGithub"
+          else
+            echo "No coverage file found"
+            mkdir -p coveragereport
+            echo "# Coverage Report" > coveragereport/SummaryGithub.md
+            echo "" >> coveragereport/SummaryGithub.md
+            echo "Coverage file not generated. Check test output above." >> coveragereport/SummaryGithub.md
+            exit 1
+          fi
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: coverage-report
           path: coveragereport
 
       - name: Write coverage summary
+        if: always()
         run: cat coveragereport/SummaryGithub.md >> $GITHUB_STEP_SUMMARY
