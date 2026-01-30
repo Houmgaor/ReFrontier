@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -7,6 +7,9 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 using LibReFrontier;
+using LibReFrontier.Abstractions;
+using ReFrontier.Jpk;
+using ReFrontier.Services;
 
 namespace ReFrontier
 {
@@ -26,7 +29,7 @@ namespace ReFrontier
         public bool stageContainer;
         public bool autoStage;
         /// <summary>
-        /// Rewrite files after decrypting, for compatibility 
+        /// Rewrite files after decrypting, for compatibility
         /// </summary>
         public bool rewriteOldFile;
         public Compression compression;
@@ -41,6 +44,40 @@ namespace ReFrontier
         /// Number of parallel processes on reading folders.
         /// </summary>
         const int MAX_PARALLEL_PROCESSES = 4;
+
+        private static readonly Lazy<Program> DefaultInstance = new(() => new Program());
+
+        private readonly IFileSystem _fileSystem;
+        private readonly ILogger _logger;
+        private readonly FileProcessingService _fileProcessingService;
+        private readonly PackingService _packingService;
+        private readonly UnpackingService _unpackingService;
+        private readonly FileProcessingConfig _config;
+
+        /// <summary>
+        /// Create a new Program instance with default dependencies.
+        /// </summary>
+        public Program()
+            : this(new RealFileSystem(), new ConsoleLogger(), new DefaultCodecFactory(), FileProcessingConfig.Default())
+        {
+        }
+
+        /// <summary>
+        /// Create a new Program instance with injectable dependencies.
+        /// </summary>
+        /// <param name="fileSystem">File system abstraction.</param>
+        /// <param name="logger">Logger abstraction.</param>
+        /// <param name="codecFactory">Codec factory.</param>
+        /// <param name="config">Configuration settings.</param>
+        public Program(IFileSystem fileSystem, ILogger logger, ICodecFactory codecFactory, FileProcessingConfig config)
+        {
+            _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _config = config ?? throw new ArgumentNullException(nameof(config));
+            _fileProcessingService = new FileProcessingService(fileSystem, logger, config);
+            _packingService = new PackingService(fileSystem, logger, codecFactory, config);
+            _unpackingService = new UnpackingService(fileSystem, logger, codecFactory, config);
+        }
 
         /// <summary>
         /// Main interface to start the program.
@@ -182,147 +219,150 @@ namespace ReFrontier
 
         /// <summary>
         /// Encrypt a single file to a new file.
-        /// 
-        /// If <paramref name="inputFile"/> is "mhfdat.bin.decd",
-        /// <paramref name="metaFile"/> should be "mhfdat.bin.meta" and 
+        /// Static version for backward compatibility.
+        ///
+        /// If inputFile is "mhfdat.bin.decd",
+        /// metaFile should be "mhfdat.bin.meta" and
         /// the output file will be "mhfdat.bin".
         /// </summary>
         /// <param name="inputFile">Input file to encrypt.</param>
         /// <param name="metaFile">Data to use for encryption.</param>
-        /// <param name="cleanUp">Remove both <paramref name="inputFile"/> and <paramref name="metaFile"/>.</param>
+        /// <param name="cleanUp">Remove both inputFile and metaFile.</param>
         /// <returns>Encrypted file path.</returns>
         /// <exception cref="FileNotFoundException">Thrown if the meta file does not exist.</exception>
         private static string EncryptEcdFile(string inputFile, string metaFile, bool cleanUp)
         {
-            byte[] buffer = File.ReadAllBytes(inputFile);
-            // From mhfdat.bin.decd to mhdat.bin
-            string encryptedFilePath = Path.Join(
-                Path.GetDirectoryName(inputFile),
-                Path.GetFileNameWithoutExtension(inputFile)
-            );
-            if (!File.Exists(metaFile))
-            {
-                throw new FileNotFoundException(
-                    $"META file {metaFile} does not exist, " +
-                    $"cannot encryt {inputFile}." +
-                    "Make sure to decryt the initial file with the -log option, " +
-                    "and to place the generate meta file in the same folder as the file " +
-                    "to encypt."
-                );
-            }
-            byte[] bufferMeta = File.ReadAllBytes(metaFile);
-            buffer = Crypto.EncodeEcd(buffer, bufferMeta);
-            File.WriteAllBytes(encryptedFilePath, buffer);
-            ArgumentsParser.Print($"File encrypted to {encryptedFilePath}.", false);
-            FileOperations.GetUpdateEntry(inputFile);
-            if (cleanUp)
-            {
-                File.Delete(inputFile);
-                File.Delete(metaFile);
-            }
-            return encryptedFilePath;
+            return DefaultInstance.Value._fileProcessingService.EncryptEcdFile(inputFile, metaFile, cleanUp);
+        }
+
+        /// <summary>
+        /// Encrypt a single file to a new file.
+        /// Instance method for testability.
+        /// </summary>
+        /// <param name="inputFile">Input file to encrypt.</param>
+        /// <param name="metaFile">Data to use for encryption.</param>
+        /// <param name="cleanUp">Remove both inputFile and metaFile.</param>
+        /// <returns>Encrypted file path.</returns>
+        public string EncryptEcdFileInstance(string inputFile, string metaFile, bool cleanUp)
+        {
+            return _fileProcessingService.EncryptEcdFile(inputFile, metaFile, cleanUp);
         }
 
         /// <summary>
         /// Decrypt an ECD encoded file to a new file.
+        /// Static version for backward compatibility.
         /// </summary>
         /// <param name="inputFile">Input file path.</param>
         /// <param name="createLog">True if we should create a log file with the header.</param>
         /// <param name="cleanUp">true if the original file should be deleted.</param>
-        /// <param name="rewriteOldFile">Should we overwrite <paramref name="inputFile"/>.</param>
-        /// <returns>Path to the decrypted file, in the form <paramref name="inputFile" />.decd</returns>
+        /// <param name="rewriteOldFile">Should we overwrite inputFile.</param>
+        /// <returns>Path to the decrypted file, in the form inputFile.decd</returns>
         private static string DecryptEcdFile(string inputFile, bool createLog, bool cleanUp, bool rewriteOldFile)
         {
-            byte[] buffer = File.ReadAllBytes(inputFile);
-            Crypto.DecodeEcd(buffer);
-            const int headerLength = 0x10;
+            return DefaultInstance.Value._fileProcessingService.DecryptEcdFile(inputFile, createLog, cleanUp, rewriteOldFile);
+        }
 
-            byte[] ecdHeader = new byte[headerLength];
-            Array.Copy(buffer, 0, ecdHeader, 0, headerLength);
-            byte[] bufferStripped = new byte[buffer.Length - headerLength];
-            Array.Copy(buffer, headerLength, bufferStripped, 0, buffer.Length - headerLength);
-
-            string outputFile = inputFile + ".decd";
-            File.WriteAllBytes(outputFile, bufferStripped);
-            Console.Write($"File decrypted to {outputFile}");
-            if (createLog)
-            {
-                string metaFile = $"{inputFile}.meta";
-                File.WriteAllBytes(metaFile, ecdHeader);
-                Console.Write($", log file at {metaFile}");
-            }
-            Console.Write(".\n");
-            if (rewriteOldFile)
-            {
-                File.WriteAllBytes(inputFile, bufferStripped);
-                Console.WriteLine(
-                    $"Rewriting original file {inputFile}. " +
-                    "This behavior is deprecated and will be removed in 2.0.0. " +
-                    "Use --noFileRewrite to remove this warning."
-                );
-            }
-            else if (cleanUp)
-                File.Delete(inputFile);
-
-            return outputFile;
+        /// <summary>
+        /// Decrypt an ECD encoded file to a new file.
+        /// Instance method for testability.
+        /// </summary>
+        /// <param name="inputFile">Input file path.</param>
+        /// <param name="createLog">True if we should create a log file with the header.</param>
+        /// <param name="cleanUp">true if the original file should be deleted.</param>
+        /// <param name="rewriteOldFile">Should we overwrite inputFile.</param>
+        /// <returns>Path to the decrypted file, in the form inputFile.decd</returns>
+        public string DecryptEcdFileInstance(string inputFile, bool createLog, bool cleanUp, bool rewriteOldFile)
+        {
+            return _fileProcessingService.DecryptEcdFile(inputFile, createLog, cleanUp, rewriteOldFile);
         }
 
         /// <summary>
         /// Decrypt an Exf file.
+        /// Static version for backward compatibility.
         /// </summary>
         /// <param name="inputFile">Input file path.</param>
         /// <param name="cleanUp">Should the original file be removed.</param>
         /// <returns>Output file at {inputFile}.dexf</returns>
         private static string DecryptExfFile(string inputFile, bool cleanUp)
         {
-            byte[] buffer = File.ReadAllBytes(inputFile);
-            Crypto.DecodeExf(buffer);
-            const int headerLength = 0x10;
-            byte[] bufferStripped = new byte[buffer.Length - headerLength];
-            Array.Copy(buffer, headerLength, bufferStripped, 0, buffer.Length - headerLength);
-            string outputFile = inputFile + ".dexf";
-            File.WriteAllBytes(outputFile, bufferStripped);
-            if (cleanUp)
-                File.Delete(inputFile);
-            Console.WriteLine($"File decrypted to {outputFile}.");
-            return outputFile;
+            return DefaultInstance.Value._fileProcessingService.DecryptExfFile(inputFile, cleanUp);
         }
 
         /// <summary>
-        /// Lauches a directory processing.
-        /// 
+        /// Decrypt an Exf file.
+        /// Instance method for testability.
+        /// </summary>
+        /// <param name="inputFile">Input file path.</param>
+        /// <param name="cleanUp">Should the original file be removed.</param>
+        /// <returns>Output file at {inputFile}.dexf</returns>
+        public string DecryptExfFileInstance(string inputFile, bool cleanUp)
+        {
+            return _fileProcessingService.DecryptExfFile(inputFile, cleanUp);
+        }
+
+        /// <summary>
+        /// Launches a directory processing.
+        /// Static version for backward compatibility.
+        ///
         /// It can either pack the directory as a file, or uncompress the content.
         /// </summary>
         /// <param name="directoryPath">Directory path.</param>
         /// <param name="inputArguments">Configuration arguments from CLI.</param>
         public static void StartProcessingDirectory(string directoryPath, InputArguments inputArguments)
         {
+            DefaultInstance.Value.StartProcessingDirectoryInstance(directoryPath, inputArguments);
+        }
+
+        /// <summary>
+        /// Launches a directory processing.
+        /// Instance method for testability.
+        ///
+        /// It can either pack the directory as a file, or uncompress the content.
+        /// </summary>
+        /// <param name="directoryPath">Directory path.</param>
+        /// <param name="inputArguments">Configuration arguments from CLI.</param>
+        public void StartProcessingDirectoryInstance(string directoryPath, InputArguments inputArguments)
+        {
             if (inputArguments.repack)
-                Pack.ProcessPackInput(directoryPath);
+                _packingService.ProcessPackInput(directoryPath);
             else
             {
                 // Process each element in directory
-                string[] inputFiles = Directory.GetFiles(
+                string[] inputFiles = _fileSystem.GetFiles(
                     directoryPath, "*.*", SearchOption.AllDirectories
                 );
-                ProcessMultipleLevels(inputFiles, inputArguments);
+                ProcessMultipleLevelsInstance(inputFiles, inputArguments);
             }
         }
 
         /// <summary>
         /// Start the processing for a file.
-        /// 
+        /// Static version for backward compatibility.
+        ///
         /// It will either compress the file, encrypt it or depack it as many files.
         /// </summary>
         /// <param name="filePath">File path.</param>
         /// <param name="inputArguments">Configuration arguments from CLI.</param>
         public static void StartProcessingFile(string filePath, InputArguments inputArguments)
         {
+            DefaultInstance.Value.StartProcessingFileInstance(filePath, inputArguments);
+        }
+
+        /// <summary>
+        /// Start the processing for a file.
+        /// Instance method for testability.
+        ///
+        /// It will either compress the file, encrypt it or depack it as many files.
+        /// </summary>
+        /// <param name="filePath">File path.</param>
+        /// <param name="inputArguments">Configuration arguments from CLI.</param>
+        public void StartProcessingFileInstance(string filePath, InputArguments inputArguments)
+        {
             if (inputArguments.compression.level != 0)
             {
                 // From mhfdat.bin.decd.bin to output/mhfdat.bin.decd
-                Pack.JPKEncode(
-                    inputArguments.compression, filePath, $"output/{Path.GetFileNameWithoutExtension(filePath)}"
+                _packingService.JPKEncode(
+                    inputArguments.compression, filePath, $"{_config.OutputDirectory}/{Path.GetFileNameWithoutExtension(filePath)}"
                 );
             }
 
@@ -334,19 +374,20 @@ namespace ReFrontier
                 );
                 string metaFilePath = Path.Join(
                     Path.GetDirectoryName(filePath),
-                    Path.GetFileNameWithoutExtension(decompressedFilePath) + ".meta"
+                    Path.GetFileNameWithoutExtension(decompressedFilePath) + _config.MetaSuffix
                 );
-                EncryptEcdFile(decompressedFilePath, metaFilePath, inputArguments.cleanUp);
+                _fileProcessingService.EncryptEcdFile(decompressedFilePath, metaFilePath, inputArguments.cleanUp);
             }
 
             // Try to depack the file as multiple files
             if (inputArguments.compression.level == 0 && !inputArguments.encrypt)
-                ProcessMultipleLevels([filePath], inputArguments);
+                ProcessMultipleLevelsInstance([filePath], inputArguments);
         }
 
         /// <summary>
         /// Unpack or (decrypt and decompress) a single file.
-        /// 
+        /// Static version for backward compatibility.
+        ///
         /// If the file was an ECD, decompress it as well.
         /// </summary>
         /// <param name="filePath">Input file path.</param>
@@ -354,15 +395,29 @@ namespace ReFrontier
         /// <returns>Output path, can be file or folder.</returns>
         private static string ProcessFile(string filePath, InputArguments inputArguments)
         {
-            ArgumentsParser.Print($"Processing {filePath}", false);
+            return DefaultInstance.Value.ProcessFileInstance(filePath, inputArguments);
+        }
+
+        /// <summary>
+        /// Unpack or (decrypt and decompress) a single file.
+        /// Instance method for testability.
+        ///
+        /// If the file was an ECD, decompress it as well.
+        /// </summary>
+        /// <param name="filePath">Input file path.</param>
+        /// <param name="inputArguments">Configuration arguments from CLI.</param>
+        /// <returns>Output path, can be file or folder.</returns>
+        public string ProcessFileInstance(string filePath, InputArguments inputArguments)
+        {
+            _logger.PrintWithSeparator($"Processing {filePath}", false);
 
             // Read file to memory
-            MemoryStream msInput = new(File.ReadAllBytes(filePath));
+            MemoryStream msInput = new(_fileSystem.ReadAllBytes(filePath));
             BinaryReader brInput = new(msInput);
             string outputPath;
             if (msInput.Length == 0)
             {
-                Console.WriteLine("File is empty. Skipping.");
+                _logger.WriteLine("File is empty. Skipping.");
                 return null;
             }
             int fileMagic = brInput.ReadInt32();
@@ -371,26 +426,26 @@ namespace ReFrontier
             if (inputArguments.stageContainer)
             {
                 brInput.BaseStream.Seek(0, SeekOrigin.Begin);
-                outputPath = Unpack.UnpackStageContainer(filePath, brInput, inputArguments.createLog, inputArguments.cleanUp);
+                outputPath = _unpackingService.UnpackStageContainer(filePath, brInput, inputArguments.createLog, inputArguments.cleanUp);
             }
             else if (fileMagic == 0x4F4D4F4D)
             {
                 // MOMO Header: snp, snd
-                Console.WriteLine("MOMO Header detected.");
-                outputPath = Unpack.UnpackSimpleArchive(
+                _logger.WriteLine("MOMO Header detected.");
+                outputPath = _unpackingService.UnpackSimpleArchive(
                     filePath, brInput, 8, inputArguments.createLog, inputArguments.cleanUp, inputArguments.autoStage
                 );
             }
             else if (fileMagic == 0x1A646365)
             {
                 // ECD Header
-                Console.WriteLine("ECD Header detected.");
+                _logger.WriteLine("ECD Header detected.");
                 if (inputArguments.noDecryption)
                 {
-                    ArgumentsParser.Print("Not decrypting due to flag.", false);
+                    _logger.PrintWithSeparator("Not decrypting due to flag.", false);
                     return null;
                 }
-                outputPath = DecryptEcdFile(
+                outputPath = _fileProcessingService.DecryptEcdFile(
                     filePath,
                     inputArguments.createLog,
                     inputArguments.cleanUp,
@@ -400,68 +455,82 @@ namespace ReFrontier
             else if (fileMagic == 0x1A667865)
             {
                 // EXF Header
-                Console.WriteLine("EXF Header detected.");
-                outputPath = DecryptExfFile(filePath, inputArguments.cleanUp);
+                _logger.WriteLine("EXF Header detected.");
+                outputPath = _fileProcessingService.DecryptExfFile(filePath, inputArguments.cleanUp);
             }
             else if (fileMagic == 0x1A524B4A)
             {
                 // JKR Header
-                Console.WriteLine("JKR Header detected.");
+                _logger.WriteLine("JKR Header detected.");
                 outputPath = filePath;
                 if (!inputArguments.ignoreJPK)
                 {
-                    outputPath = Unpack.UnpackJPK(filePath);
-                    Console.WriteLine($"File decompressed to {outputPath}.");
+                    outputPath = _unpackingService.UnpackJPK(filePath);
+                    _logger.WriteLine($"File decompressed to {outputPath}.");
 
-                    // Replace input file, deprecated behavior, will be removed in 2.0.0 
+                    // Replace input file, deprecated behavior, will be removed in 2.0.0
                     if (
                         inputArguments.rewriteOldFile && outputPath != filePath &&
-                        File.GetAttributes(outputPath).HasFlag(FileAttributes.Normal)
+                        _fileSystem.GetAttributes(outputPath).HasFlag(FileAttributes.Normal)
                     )
-                        File.Copy(outputPath, filePath);
+                        _fileSystem.Copy(outputPath, filePath);
                 }
             }
             else if (fileMagic == 0x0161686D)
             {
                 // MHA Header
-                Console.WriteLine("MHA Header detected.");
-                outputPath = Unpack.UnpackMHA(filePath, brInput, inputArguments.createLog);
+                _logger.WriteLine("MHA Header detected.");
+                outputPath = _unpackingService.UnpackMHA(filePath, brInput, inputArguments.createLog);
             }
             else if (fileMagic == 0x000B0000)
             {
                 // MHF Text file
-                Console.WriteLine("MHF Text file detected.");
-                outputPath = Unpack.PrintFTXT(filePath, brInput);
+                _logger.WriteLine("MHF Text file detected.");
+                outputPath = _unpackingService.PrintFTXT(filePath, brInput);
             }
             else
             {
                 // Try to unpack as simple container: i.e. txb, bin, pac, gab
                 brInput.BaseStream.Seek(0, SeekOrigin.Begin);
-                outputPath = Unpack.UnpackSimpleArchive(
+                outputPath = _unpackingService.UnpackSimpleArchive(
                     filePath, brInput, 4, inputArguments.createLog, inputArguments.cleanUp, inputArguments.autoStage
                 );
             }
 
-            Console.WriteLine("==============================");
-            // Decompress file if it was an ECD (encypted)
+            _logger.WriteSeparator();
+            // Decompress file if it was an ECD (encrypted)
             if (fileMagic == 0x1A646365 && !inputArguments.decryptOnly)
             {
                 string decdFilePath = outputPath;
-                outputPath = ProcessFile(decdFilePath, inputArguments);
+                outputPath = ProcessFileInstance(decdFilePath, inputArguments);
                 if (inputArguments.cleanUp)
-                    File.Delete(decdFilePath);
+                    _fileSystem.DeleteFile(decdFilePath);
             }
             return outputPath;
         }
 
         /// <summary>
         /// Process files on multiple container level.
-        /// 
+        /// Static version for backward compatibility.
+        ///
         /// Try to use each file is considered a container of multiple files.
         /// </summary>
         /// <param name="filePathes">Files to process.</param>
         /// <param name="inputArguments">Configuration arguments from CLI.</param>
         private static void ProcessMultipleLevels(string[] filePathes, InputArguments inputArguments)
+        {
+            DefaultInstance.Value.ProcessMultipleLevelsInstance(filePathes, inputArguments);
+        }
+
+        /// <summary>
+        /// Process files on multiple container level.
+        /// Instance method for testability.
+        ///
+        /// Try to use each file is considered a container of multiple files.
+        /// </summary>
+        /// <param name="filePathes">Files to process.</param>
+        /// <param name="inputArguments">Configuration arguments from CLI.</param>
+        public void ProcessMultipleLevelsInstance(string[] filePathes, InputArguments inputArguments)
         {
             var parallelOptions = new ParallelOptions()
             {
@@ -485,34 +554,49 @@ namespace ReFrontier
                 bool stageContainer = inputArguments.stageContainer;
                 Parallel.ForEach(fileWorkers, parallelOptions, inputFile =>
                 {
-                    string outputPath = ProcessFile(inputFile, inputArguments);
+                    string outputPath = ProcessFileInstance(inputFile, inputArguments);
 
                     // Disable stage processing files unpacked from parent
                     if (stageContainer)
                         stageContainer = false;
 
                     // Check if a new directory was created
-                    if (inputArguments.recursive && Directory.Exists(outputPath))
+                    if (inputArguments.recursive && _fileSystem.DirectoryExists(outputPath))
                     {
-                        AddNewFiles(outputPath, filesToProcess);
+                        AddNewFilesInstance(outputPath, filesToProcess);
                     }
                 });
             }
         }
 
         /// <summary>
-        /// Add new files in the directory to <paramref name="filesQueue" />.
-        /// 
+        /// Add new files in the directory to filesQueue.
+        /// Static version for backward compatibility.
+        ///
         /// It is a task producer in Task Parallel Library paradigm.
         /// </summary>
         /// <param name="directoryPath">Directory to search into.</param>
         /// <param name="filesQueue">Thread-safe queue where to add files to.</param>
         private static void AddNewFiles(string directoryPath, ConcurrentQueue<string> filesQueue)
         {
+            DefaultInstance.Value.AddNewFilesInstance(directoryPath, filesQueue);
+        }
+
+        /// <summary>
+        /// Add new files in the directory to filesQueue.
+        /// Instance method for testability.
+        ///
+        /// It is a task producer in Task Parallel Library paradigm.
+        /// </summary>
+        /// <param name="directoryPath">Directory to search into.</param>
+        /// <param name="filesQueue">Thread-safe queue where to add files to.</param>
+        public void AddNewFilesInstance(string directoryPath, ConcurrentQueue<string> filesQueue)
+        {
             // Limit file search to these patterns
             string[] patterns = ["*.bin", "*.jkr", "*.ftxt", "*.snd"];
 
-            var nextFiles = FileOperations.GetFiles(directoryPath, patterns, SearchOption.TopDirectoryOnly);
+            var fileOperations = new FileOperations(_fileSystem, _logger);
+            var nextFiles = fileOperations.GetFilesInstance(directoryPath, patterns, SearchOption.TopDirectoryOnly);
 
             foreach (var nextFile in nextFiles)
             {

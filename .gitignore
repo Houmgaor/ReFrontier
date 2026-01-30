@@ -249,3 +249,6 @@ ModelManifest.xml
 backup/
 csv/
 output/
+
+## Testing configuration
+ReFrontier.Tests/TestFiles/*

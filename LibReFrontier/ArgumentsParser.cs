@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 
+using LibReFrontier.Abstractions;
+
 namespace LibReFrontier
 {
     /// <summary>
@@ -8,6 +10,25 @@ namespace LibReFrontier
     /// </summary>
     public class ArgumentsParser
     {
+        private static readonly ILogger DefaultLogger = new ConsoleLogger();
+
+        private readonly ILogger _logger;
+
+        /// <summary>
+        /// Create a new ArgumentsParser instance with default dependencies.
+        /// </summary>
+        public ArgumentsParser() : this(DefaultLogger)
+        {
+        }
+
+        /// <summary>
+        /// Create a new ArgumentsParser instance with injectable logger.
+        /// </summary>
+        /// <param name="logger">Logger abstraction.</param>
+        public ArgumentsParser(ILogger logger)
+        {
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
 
         /// <summary>
         /// Simple arguments parser.
@@ -34,22 +55,25 @@ namespace LibReFrontier
 
 
         /// <summary>
-        /// Print to console with seperator
+        /// Print to console with seperator.
+        /// Static version for backward compatibility.
         /// </summary>
         /// <param name="input">Value to print</param>
         /// <param name="printBefore">Set to true to display input before the separator.</param>
         public static void Print(string input, bool printBefore)
         {
-            if (printBefore)
-            {
-                Console.WriteLine("\n==============================");
-                Console.WriteLine(input);
-            }
-            else
-            {
-                Console.WriteLine(input);
-                Console.WriteLine("==============================");
-            }
+            DefaultLogger.PrintWithSeparator(input, printBefore);
+        }
+
+        /// <summary>
+        /// Print to console with separator.
+        /// Instance method for testability.
+        /// </summary>
+        /// <param name="input">Value to print</param>
+        /// <param name="printBefore">Set to true to display input before the separator.</param>
+        public void PrintInstance(string input, bool printBefore)
+        {
+            _logger.PrintWithSeparator(input, printBefore);
         }
 
         /// <summary>

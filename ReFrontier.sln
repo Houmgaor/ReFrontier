@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FrontierDataTool", "Frontie
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LibReFrontier", "LibReFrontier\LibReFrontier.csproj", "{65DFE92C-FED7-419A-9732-854BA5E9D162}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReFrontier.Tests", "ReFrontier.Tests\ReFrontier.Tests.csproj", "{2A13B748-FC6B-45F9-80B8-0BF2E55C0554}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{65DFE92C-FED7-419A-9732-854BA5E9D162}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{65DFE92C-FED7-419A-9732-854BA5E9D162}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{65DFE92C-FED7-419A-9732-854BA5E9D162}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2A13B748-FC6B-45F9-80B8-0BF2E55C0554}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2A13B748-FC6B-45F9-80B8-0BF2E55C0554}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2A13B748-FC6B-45F9-80B8-0BF2E55C0554}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2A13B748-FC6B-45F9-80B8-0BF2E55C0554}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

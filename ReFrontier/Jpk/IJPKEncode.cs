@@ -5,7 +5,7 @@ namespace ReFrontier.Jpk
   /// <summary>
   /// Define the encoding scheme to JPK compression.
   /// </summary>
-  internal interface IJPKEncode
+  public interface IJPKEncode
   {
     /// <summary>
     /// Write byte to the stream.
