@@ -114,13 +114,8 @@ namespace LibReFrontier
             Array.Copy(BitConverter.GetBytes(payloadSize), 0, outputBuffer, 8, 4);
             Array.Copy(BitConverter.GetBytes(crc32w), 0, outputBuffer, 12, 4);
 
-            // Fill data with nullspace
-            // TODO: remove entirely?
-            int i;
-            for (i = 16 + payloadSize; i < outputBuffer.Length; i++)
-                outputBuffer[i] = 0;
-
             // Encrypt data
+            int i;
             uint rnd = (crc32w << 16) | (crc32w >> 16) | 1;
             uint xorpad = GetRndEcd(index, ref rnd);
             byte r8 = (byte)xorpad;
