@@ -5,6 +5,7 @@ using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.IO;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 
 using LibReFrontier;
@@ -492,14 +493,16 @@ namespace ReFrontier
                     fileWorkers.Add(tempInputFile);
                 }
 
-                bool stageContainer = inputArguments.stageContainer;
+                // Use Interlocked to safely disable stage processing after first file
+                int stageContainerFlag = inputArguments.stageContainer ? 1 : 0;
                 Parallel.ForEach(fileWorkers, parallelOptions, inputFile =>
                 {
-                    string outputPath = ProcessFile(inputFile, inputArguments);
+                    // Check if this is the first file to process with stage container
+                    bool useStageContainer = Interlocked.Exchange(ref stageContainerFlag, 0) == 1;
+                    var localArgs = inputArguments;
+                    localArgs.stageContainer = useStageContainer;
 
-                    // Disable stage processing files unpacked from parent
-                    if (stageContainer)
-                        stageContainer = false;
+                    string outputPath = ProcessFile(inputFile, localArgs);
 
                     // Check if a new directory was created
                     if (inputArguments.recursive && _fileSystem.DirectoryExists(outputPath))

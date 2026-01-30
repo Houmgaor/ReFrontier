@@ -13,6 +13,13 @@ namespace ReFrontier.Services
     /// </summary>
     public class UnpackingService
     {
+        // Entry sizes for archive structures (in bytes)
+        private const int SIMPLE_ARCHIVE_ENTRY_SIZE = 0x08;
+        private const int MHA_ENTRY_METADATA_SIZE = 0x14;
+        private const int STAGE_CONTAINER_HEADER_SIZE = 0x18;
+        private const int STAGE_CONTAINER_REST_HEADER_SIZE = 0x08;
+        private const int STAGE_CONTAINER_REST_ENTRY_SIZE = 0x0C;
+
         private readonly IFileSystem _fileSystem;
         private readonly ILogger _logger;
         private readonly ICodecFactory _codecFactory;
@@ -164,7 +171,7 @@ namespace ReFrontier.Services
                 _fileSystem.WriteAllBytes($"{outputDir}/{i + 1:D4}_{entryOffset:X8}.{extension}", entryData);
 
                 // Move to next entry block
-                brInput.BaseStream.Seek(magicSize + (i + 1) * 0x08, SeekOrigin.Begin);
+                brInput.BaseStream.Seek(magicSize + (i + 1) * SIMPLE_ARCHIVE_ENTRY_SIZE, SeekOrigin.Begin);
             }
             // Clean up
             logOutput.Close();
@@ -213,7 +220,7 @@ namespace ReFrontier.Services
             for (int i = 0; i < count; i++)
             {
                 // Get meta
-                brInput.BaseStream.Seek(pointerEntryMetaBlock + i * 0x14, SeekOrigin.Begin);
+                brInput.BaseStream.Seek(pointerEntryMetaBlock + i * MHA_ENTRY_METADATA_SIZE, SeekOrigin.Begin);
                 int stringOffset = brInput.ReadInt32();
                 int entryOffset = brInput.ReadInt32();
                 int entrySize = brInput.ReadInt32();
@@ -258,7 +265,14 @@ namespace ReFrontier.Services
             {
                 ms.Seek(0x2, SeekOrigin.Current);
                 int type = br.ReadUInt16();
-                var compressionType = Enum.GetValues<CompressionType>()[type];
+                var compressionTypes = Enum.GetValues<CompressionType>();
+                if (type < 0 || type >= compressionTypes.Length)
+                {
+                    throw new InvalidOperationException(
+                        $"Invalid compression type {type}. Valid range is 0-{compressionTypes.Length - 1}."
+                    );
+                }
+                var compressionType = compressionTypes[type];
                 _logger.WriteLine($"JPK {compressionType} (type {type})");
                 IJPKDecode decoder = _codecFactory.CreateDecoder(compressionType);
 
@@ -393,7 +407,7 @@ namespace ReFrontier.Services
                 _fileSystem.WriteAllBytes($"{outputDir}/{i + 1:D4}_{offset:X8}.{extension}", data);
 
                 // Move to next entry block
-                brInput.BaseStream.Seek(0x18 + 0x08 + (i - 3 + 1) * 0x0C, SeekOrigin.Begin); // 0x18 = first three segments, 0x08 = header for this segment
+                brInput.BaseStream.Seek(STAGE_CONTAINER_HEADER_SIZE + STAGE_CONTAINER_REST_HEADER_SIZE + (i - 3 + 1) * STAGE_CONTAINER_REST_ENTRY_SIZE, SeekOrigin.Begin);
             }
 
             // Clean up

@@ -544,7 +544,7 @@ namespace FrontierTextTool
             var pack = new Pack();
             pack.JPKEncode(compression, outputFile, outputFile);
             byte[] buffer = File.ReadAllBytes(outputFile);
-            if (File.Exists($"{outputFile}.meta"))
+            if (!File.Exists($"{outputFile}.meta"))
             {
                 throw new FileNotFoundException(
                     $"META file {outputFile}.meta does not exist, did you use '--log' during decrypting to generate it?"

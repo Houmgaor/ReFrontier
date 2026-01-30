@@ -17,6 +17,14 @@ namespace FrontierDataTool
 {
     public class Program
     {
+        // Entry sizes for data structures (in bytes)
+        private const int ARMOR_ENTRY_SIZE = 0x48;
+        private const int MELEE_WEAPON_ENTRY_SIZE = 0x34;
+        private const int RANGED_WEAPON_ENTRY_SIZE = 0x3C;
+        private const int ITEM_ENTRY_SIZE = 0x24;
+        private const int PEARL_ENTRY_SIZE = 0x30;
+        private const int SHOP_ENTRY_SIZE = 8;
+
         // Define offset pointers
 
         // --- mhfdat.bin ---
@@ -463,7 +471,7 @@ namespace FrontierDataTool
                 brInput.BaseStream.Seek(_dataPointersArmor[i].Value, SeekOrigin.Begin);
                 eOffset = brInput.ReadInt32();
 
-                int entryCount = (eOffset - sOffset) / 0x48;
+                int entryCount = (eOffset - sOffset) / ARMOR_ENTRY_SIZE;
                 totalCount += entryCount;
             }
             Console.WriteLine($"Total armor count: {totalCount}");
@@ -478,7 +486,7 @@ namespace FrontierDataTool
                 brInput.BaseStream.Seek(_dataPointersArmor[i].Value, SeekOrigin.Begin);
                 eOffset = brInput.ReadInt32();
 
-                int entryCount = (eOffset - sOffset) / 0x48;
+                int entryCount = (eOffset - sOffset) / ARMOR_ENTRY_SIZE;
                 brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
                 Console.WriteLine($"{aClassIds[i]} count: {entryCount}");
 
@@ -600,7 +608,7 @@ namespace FrontierDataTool
             brInput.BaseStream.Seek(_eoMelee, SeekOrigin.Begin);
             int eOffset = brInput.ReadInt32();
 
-            int entryCountMelee = (eOffset - sOffset) / 0x34;
+            int entryCountMelee = (eOffset - sOffset) / MELEE_WEAPON_ENTRY_SIZE;
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
             Console.WriteLine($"Melee count: {entryCountMelee}");
 
@@ -671,7 +679,7 @@ namespace FrontierDataTool
             brInput.BaseStream.Seek(_eoRanged, SeekOrigin.Begin);
             eOffset = brInput.ReadInt32();
 
-            int entryCountRanged = (eOffset - sOffset) / 0x3C;
+            int entryCountRanged = (eOffset - sOffset) / RANGED_WEAPON_ENTRY_SIZE;
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
             Console.WriteLine($"Ranged count: {entryCountRanged}");
 
@@ -900,17 +908,17 @@ namespace FrontierDataTool
                 brInput.BaseStream.Seek(0xA70, SeekOrigin.Begin);
                 int eOffset = brInput.ReadInt32();
 
-                count = (eOffset - sOffset) / 0x24;
+                count = (eOffset - sOffset) / ITEM_ENTRY_SIZE;
                 Console.WriteLine($"Patching prices for {count} items starting at 0x{sOffset:X8}");
                 for (int i = 0; i < count; i++)
                 {
-                    brOutput.BaseStream.Seek(sOffset + (i * 0x24) + 12, SeekOrigin.Begin);
-                    brInput.BaseStream.Seek(sOffset + (i * 0x24) + 12, SeekOrigin.Begin);
+                    brOutput.BaseStream.Seek(sOffset + (i * ITEM_ENTRY_SIZE) + 12, SeekOrigin.Begin);
+                    brInput.BaseStream.Seek(sOffset + (i * ITEM_ENTRY_SIZE) + 12, SeekOrigin.Begin);
                     int buyPrice = brInput.ReadInt32() / 50;
                     brOutput.Write(buyPrice);
 
-                    brOutput.BaseStream.Seek(sOffset + (i * 0x24) + 16, SeekOrigin.Begin);
-                    brInput.BaseStream.Seek(sOffset + (i * 0x24) + 16, SeekOrigin.Begin);
+                    brOutput.BaseStream.Seek(sOffset + (i * ITEM_ENTRY_SIZE) + 16, SeekOrigin.Begin);
+                    brInput.BaseStream.Seek(sOffset + (i * ITEM_ENTRY_SIZE) + 16, SeekOrigin.Begin);
                     int sellPrice = brInput.ReadInt32() * 5;
                     brOutput.Write(sellPrice);
                 }
@@ -923,11 +931,11 @@ namespace FrontierDataTool
                     brInput.BaseStream.Seek(_dataPointersArmor[i].Value, SeekOrigin.Begin);
                     eOffset = brInput.ReadInt32();
 
-                    count = (eOffset - sOffset) / 0x48;
+                    count = (eOffset - sOffset) / ARMOR_ENTRY_SIZE;
                     Console.WriteLine($"Patching prices for {count} armor pieces starting at 0x{sOffset:X8}");
                     for (int j = 0; j < count; j++)
                     {
-                        brOutput.BaseStream.Seek(sOffset + (j * 0x48) + 12, SeekOrigin.Begin);
+                        brOutput.BaseStream.Seek(sOffset + (j * ARMOR_ENTRY_SIZE) + 12, SeekOrigin.Begin);
                         brOutput.Write(50);
                     }
                 }
@@ -935,14 +943,14 @@ namespace FrontierDataTool
 
             // Generate shop array
             count = 16700;
-            byte[] shopArray = new byte[(count * 8) + 5 * 32];
+            byte[] shopArray = new byte[(count * SHOP_ENTRY_SIZE) + 5 * 32];
 
             for (int i = 0; i < count; i++)
             {
                 byte[] id = BitConverter.GetBytes((short)(i + 1));
                 byte[] item = new byte[8];
                 Array.Copy(id, item, 2);
-                Array.Copy(item, 0, shopArray, i * 8, 8);
+                Array.Copy(item, 0, shopArray, i * SHOP_ENTRY_SIZE, 8);
             }
 
             // Append modshop data to file
@@ -981,7 +989,7 @@ namespace FrontierDataTool
                 Console.WriteLine($"Found hunter pearl skill data to modify at 0x{offsetData:X8}.");
                 byte[] pearlPatch = [02, 00, 02, 00, 02, 00, 02, 00, 02, 00, 02, 00, 02, 00];
                 for (int i = 0; i < 108; i++)
-                    Array.Copy(pearlPatch, 0, outputArray, offsetData + (i * 0x30) + 8, pearlPatch.Length);
+                    Array.Copy(pearlPatch, 0, outputArray, offsetData + (i * PEARL_ENTRY_SIZE) + 8, pearlPatch.Length);
             }
             else
                 Console.WriteLine("Could not find pearl skill needle, please check manually and correct code.");
