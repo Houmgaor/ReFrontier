@@ -3,6 +3,7 @@ using System.IO;
 using Xunit;
 
 using LibReFrontier;
+using LibReFrontier.Exceptions;
 using ReFrontier.Jpk;
 using ReFrontier.Services;
 using ReFrontier.Tests.Mocks;
@@ -75,9 +76,9 @@ namespace ReFrontier.Tests
         }
 
         [Fact]
-        public void StartProcessingFile_NoCompressionNoEncrypt_DoesNotCreateOutput()
+        public void StartProcessingFile_NoCompressionNoEncrypt_LogsAndContinues()
         {
-            // Arrange
+            // Arrange - File with no recognized format (50 bytes of zeros)
             byte[] testData = new byte[50];
             _fileSystem.AddFile("/test/input.bin", testData);
 
@@ -87,12 +88,11 @@ namespace ReFrontier.Tests
                 encrypt = false
             };
 
-            // Act
+            // Act - Should not throw; exceptions are caught and logged
             _program.StartProcessingFile("/test/input.bin", args);
 
-            // Assert
-            // No output should be created since no operation was requested
-            Assert.False(_fileSystem.FileExists("output/input.bin"));
+            // Assert - Should have logged a skip message
+            Assert.True(_logger.ContainsMessage("Skipping") || _logger.ContainsMessage("stage-specific"));
         }
 
         [Fact]
@@ -147,8 +147,8 @@ namespace ReFrontier.Tests
         {
             // Arrange - Create directory with files
             _fileSystem.AddDirectory("/test/dir");
-            // Add a simple file that won't be recognized as an archive
-            _fileSystem.AddFile("/test/dir/file1.txt", new byte[] { 0x48, 0x65, 0x6C, 0x6C, 0x6F });
+            // Add a file large enough to pass size check (16+ bytes), but still invalid
+            _fileSystem.AddFile("/test/dir/file1.txt", new byte[20] { 0x48, 0x65, 0x6C, 0x6C, 0x6F, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
 
             var args = new InputArguments
             {
@@ -156,10 +156,10 @@ namespace ReFrontier.Tests
                 recursive = false
             };
 
-            // Act
+            // Act - Should not throw; exceptions are caught and logged
             _program.StartProcessingDirectory("/test/dir", args);
 
-            // Assert - Files should be processed (or at least attempted)
+            // Assert - Files should be processed (or at least attempted with skip message)
             // The logger should have some output
             Assert.True(_logger.Lines.Count > 0 || _logger.Messages.Count > 0);
         }
@@ -278,9 +278,9 @@ namespace ReFrontier.Tests
         }
 
         [Fact]
-        public void ProcessFile_UnrecognizedMagic_DoesNotProcess()
+        public void ProcessFile_UnrecognizedMagic_ThrowsPackingException()
         {
-            // Arrange - Create a file with unrecognized magic
+            // Arrange - Create a file with unrecognized magic (too small to be valid)
             byte[] unknownFile = new byte[] { 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0 };
             _fileSystem.AddFile("/test/unknown.bin", unknownFile);
 
@@ -289,10 +289,11 @@ namespace ReFrontier.Tests
                 recursive = false
             };
 
-            // Act
-            _program.ProcessFile("/test/unknown.bin", args);
-
-            // Assert - Should not throw, just skip
+            // Act & Assert - Should throw PackingException for invalid file
+            var ex = Assert.Throws<PackingException>(() =>
+                _program.ProcessFile("/test/unknown.bin", args)
+            );
+            Assert.Contains("too small", ex.Message);
             // File should still exist
             Assert.True(_fileSystem.FileExists("/test/unknown.bin"));
         }

@@ -4,6 +4,7 @@ using System.Text;
 
 using LibReFrontier;
 using LibReFrontier.Abstractions;
+using LibReFrontier.Exceptions;
 using ReFrontier.Jpk;
 
 namespace ReFrontier.Services
@@ -69,8 +70,7 @@ namespace ReFrontier.Services
             // Abort if too small
             if (fileLength < 16)
             {
-                _logger.WriteLine("File is too small. Skipping.");
-                return null;
+                throw new PackingException("File is too small to be a valid archive (minimum 16 bytes required).", input);
             }
 
             uint count = brInput.ReadUInt32();
@@ -104,18 +104,17 @@ namespace ReFrontier.Services
                 }
                 else
                 {
-                    _logger.WriteLine(
-                        "Skipping. Not a valid simple container, but could be stage-specific. Try:\n" +
-                        $"ReFrontier.exe {Path.GetFullPath(input)} --stageContainer"
+                    throw new PackingException(
+                        $"Not a valid simple container, but could be stage-specific. Try: ReFrontier.exe {Path.GetFullPath(input)} --stageContainer",
+                        input
                     );
                 }
-                return null;
+                return outputDir;
             }
 
             if (completeSize > fileLength || tempCount == 0 || tempCount > 9999)
             {
-                _logger.WriteLine("Skipping. Not a valid simple container.");
-                return null;
+                throw new PackingException("Not a valid simple container (invalid size or entry count).", input);
             }
 
             _logger.WriteLine("Trying to unpack as generic simple container.");
@@ -155,12 +154,7 @@ namespace ReFrontier.Services
                 byte[] entryData = brInput.ReadBytes(entrySize);
 
                 // Check file header and get extension
-                byte[] header = new byte[headerSize];
-                Array.Copy(entryData, header, headerSize);
-                uint headerInt = BitConverter.ToUInt32(header, 0);
-                string extension = Enum.GetName(typeof(FileExtension), headerInt);
-                extension ??= ByteOperations.CheckForMagic(headerInt, entryData);
-                extension ??= "bin";
+                string extension = ByteOperations.DetectExtension(entryData, out uint headerInt);
 
                 // Print info
                 _logger.WriteLine($"Offset: 0x{entryOffset:X8}, Size: 0x{entrySize:X8} ({extension})");
@@ -257,46 +251,47 @@ namespace ReFrontier.Services
         public string UnpackJPK(string input)
         {
             byte[] buffer = _fileSystem.ReadAllBytes(input);
-            MemoryStream ms = new(buffer);
-            BinaryReader br = new(ms);
-            string output = null;
+            using MemoryStream ms = new(buffer);
+            using BinaryReader br = new(ms);
+
             // Check for JKR header
-            if (br.ReadUInt32() == 0x1A524B4A)
+            uint magic = br.ReadUInt32();
+            if (magic != 0x1A524B4A)
             {
-                ms.Seek(0x2, SeekOrigin.Current);
-                int type = br.ReadUInt16();
-                var compressionTypes = Enum.GetValues<CompressionType>();
-                if (type < 0 || type >= compressionTypes.Length)
-                {
-                    throw new InvalidOperationException(
-                        $"Invalid compression type {type}. Valid range is 0-{compressionTypes.Length - 1}."
-                    );
-                }
-                var compressionType = compressionTypes[type];
-                _logger.WriteLine($"JPK {compressionType} (type {type})");
-                IJPKDecode decoder = _codecFactory.CreateDecoder(compressionType);
-
-                // Decompress file
-                int startOffset = br.ReadInt32();
-                int outSize = br.ReadInt32();
-                byte[] outBuffer = new byte[outSize];
-                ms.Seek(startOffset, SeekOrigin.Begin);
-                decoder.ProcessOnDecode(ms, outBuffer);
-
-                // Get extension
-                byte[] header = new byte[4];
-                Array.Copy(outBuffer, header, 4);
-                uint headerInt = BitConverter.ToUInt32(header, 0);
-                string extension = Enum.GetName(typeof(FileExtension), headerInt);
-                extension ??= ByteOperations.CheckForMagic(headerInt, outBuffer);
-                extension ??= "bin";
-
-                output = $"{input}.{extension}";
-                _fileSystem.DeleteFile(input);
-                _fileSystem.WriteAllBytes(output, outBuffer);
+                throw new PackingException(
+                    $"Invalid JKR header: expected 0x1A524B4A, got 0x{magic:X8}.",
+                    input
+                );
             }
-            br.Close();
-            ms.Close();
+
+            ms.Seek(0x2, SeekOrigin.Current);
+            int type = br.ReadUInt16();
+            var compressionTypes = Enum.GetValues<CompressionType>();
+            if (type < 0 || type >= compressionTypes.Length)
+            {
+                throw new PackingException(
+                    $"Invalid compression type {type}. Valid range is 0-{compressionTypes.Length - 1}.",
+                    input
+                );
+            }
+            var compressionType = compressionTypes[type];
+            _logger.WriteLine($"JPK {compressionType} (type {type})");
+            IJPKDecode decoder = _codecFactory.CreateDecoder(compressionType);
+
+            // Decompress file
+            int startOffset = br.ReadInt32();
+            int outSize = br.ReadInt32();
+            byte[] outBuffer = new byte[outSize];
+            ms.Seek(startOffset, SeekOrigin.Begin);
+            decoder.ProcessOnDecode(ms, outBuffer);
+
+            // Get extension
+            string extension = ByteOperations.DetectExtension(outBuffer, out _);
+
+            string output = $"{input}.{extension}";
+            _fileSystem.DeleteFile(input);
+            _fileSystem.WriteAllBytes(output, outBuffer);
+
             return output;
         }
 
@@ -343,12 +338,7 @@ namespace ReFrontier.Services
                 byte[] data = brInput.ReadBytes(size);
 
                 // Get extension
-                byte[] header = new byte[4];
-                Array.Copy(data, header, 4);
-                uint headerInt = BitConverter.ToUInt32(header, 0);
-                string extension = Enum.GetName(typeof(FileExtension), headerInt);
-                extension ??= ByteOperations.CheckForMagic(headerInt, data);
-                extension ??= "bin";
+                string extension = ByteOperations.DetectExtension(data, out uint headerInt);
 
                 // Print info
                 _logger.WriteLine(
@@ -391,12 +381,7 @@ namespace ReFrontier.Services
                 byte[] data = brInput.ReadBytes(size);
 
                 // Get extension
-                byte[] header = new byte[4];
-                Array.Copy(data, header, 4);
-                uint headerInt = BitConverter.ToUInt32(header, 0);
-                string extension = Enum.GetName(typeof(FileExtension), headerInt);
-                extension ??= ByteOperations.CheckForMagic(headerInt, data);
-                extension ??= "bin";
+                string extension = ByteOperations.DetectExtension(data, out uint headerInt);
 
                 // Print info
                 _logger.WriteLine($"Offset: 0x{offset:X8}, Size: 0x{size:X8}, Unk: 0x{unk:X8} ({extension})");

@@ -38,6 +38,24 @@ namespace LibReFrontier
 
 
         /// <summary>
+        /// Detect file extension from data header.
+        /// </summary>
+        /// <param name="data">File data buffer (must be at least 4 bytes).</param>
+        /// <param name="headerInt">Output parameter containing the header as uint32.</param>
+        /// <returns>File extension string (without dot), defaults to "bin" if unknown.</returns>
+        public static string DetectExtension(byte[] data, out uint headerInt)
+        {
+            headerInt = 0;
+            if (data == null || data.Length < 4)
+                return "bin";
+
+            headerInt = BitConverter.ToUInt32(data, 0);
+            string extension = Enum.GetName(typeof(FileExtension), headerInt);
+            extension ??= CheckForMagic(headerInt, data);
+            return extension ?? "bin";
+        }
+
+        /// <summary>
         /// Get file extension for files without unique 4-byte magic
         /// </summary>
         /// <param name="headerInt"></param>

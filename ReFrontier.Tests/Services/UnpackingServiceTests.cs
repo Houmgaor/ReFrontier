@@ -3,6 +3,7 @@ using System.IO;
 using Xunit;
 
 using LibReFrontier;
+using LibReFrontier.Exceptions;
 using ReFrontier.Jpk;
 using ReFrontier.Services;
 using ReFrontier.Tests.Mocks;
@@ -30,7 +31,7 @@ namespace ReFrontier.Tests.Services
         }
 
         [Fact]
-        public void UnpackSimpleArchive_TooSmallFile_ReturnsNull()
+        public void UnpackSimpleArchive_TooSmallFile_ThrowsPackingException()
         {
             // Arrange
             byte[] smallFile = new byte[10];
@@ -38,12 +39,11 @@ namespace ReFrontier.Tests.Services
             using var ms = new MemoryStream(smallFile);
             using var br = new BinaryReader(ms);
 
-            // Act
-            var result = _service.UnpackSimpleArchive("/test/small.bin", br, 4, false, false, false);
-
-            // Assert
-            Assert.Null(result);
-            Assert.True(_logger.ContainsMessage("too small"));
+            // Act & Assert
+            var ex = Assert.Throws<PackingException>(() =>
+                _service.UnpackSimpleArchive("/test/small.bin", br, 4, false, false, false)
+            );
+            Assert.Contains("too small", ex.Message);
         }
 
         [Fact]
@@ -153,17 +153,17 @@ namespace ReFrontier.Tests.Services
         }
 
         [Fact]
-        public void UnpackJPK_InvalidFile_ReturnsNull()
+        public void UnpackJPK_InvalidFile_ThrowsPackingException()
         {
             // Arrange - File without JKR header
             byte[] invalidData = new byte[] { 0x00, 0x01, 0x02, 0x03 };
             _fileSystem.AddFile("/test/invalid.bin", invalidData);
 
-            // Act
-            var result = _service.UnpackJPK("/test/invalid.bin");
-
-            // Assert
-            Assert.Null(result);
+            // Act & Assert
+            var ex = Assert.Throws<PackingException>(() =>
+                _service.UnpackJPK("/test/invalid.bin")
+            );
+            Assert.Contains("Invalid JKR header", ex.Message);
         }
 
         [Fact]

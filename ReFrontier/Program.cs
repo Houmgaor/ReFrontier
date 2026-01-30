@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 
 using LibReFrontier;
 using LibReFrontier.Abstractions;
+using LibReFrontier.Exceptions;
 using ReFrontier.Jpk;
 using ReFrontier.Services;
 
@@ -502,12 +503,20 @@ namespace ReFrontier
                     var localArgs = inputArguments;
                     localArgs.stageContainer = useStageContainer;
 
-                    string outputPath = ProcessFile(inputFile, localArgs);
-
-                    // Check if a new directory was created
-                    if (inputArguments.recursive && _fileSystem.DirectoryExists(outputPath))
+                    try
                     {
-                        AddNewFiles(outputPath, filesToProcess);
+                        string outputPath = ProcessFile(inputFile, localArgs);
+
+                        // Check if a new directory was created
+                        if (inputArguments.recursive && _fileSystem.DirectoryExists(outputPath))
+                        {
+                            AddNewFiles(outputPath, filesToProcess);
+                        }
+                    }
+                    catch (ReFrontierException ex)
+                    {
+                        // Log the error and continue processing other files
+                        _logger.WriteLine($"Skipping {inputFile}: {ex.Message}");
                     }
                 });
             }
