@@ -41,20 +41,19 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Test with coverage
-        run: |
-          dotnet test \
-            --collect:"XPlat Code Coverage" \
-            --results-directory TestResults \
-            --verbosity normal
+      - name: Install coverlet
+        run: dotnet tool install -g coverlet.console
 
-      - name: List test results
-        if: always()
+      - name: Build
+        run: dotnet build
+
+      - name: Run tests with coverage
         run: |
-          echo "=== TestResults directory ==="
-          ls -laR TestResults/ || echo "TestResults not found"
-          echo "=== Finding coverage files ==="
-          find . -name "*.xml" -path "*/TestResults/*" -type f 2>/dev/null || echo "No XML files found"
+          coverlet ./ReFrontier.Tests/bin/Debug/net8.0/ReFrontier.Tests.dll \
+            --target "dotnet" \
+            --targetargs "test --no-build" \
+            --format cobertura \
+            --output coverage.cobertura.xml
 
       - name: Install ReportGenerator
         run: dotnet tool install -g dotnet-reportgenerator-globaltool
@@ -62,7 +61,7 @@ jobs:
       - name: Generate coverage report
         run: |
           reportgenerator \
-            -reports:"TestResults/*/coverage.cobertura.xml" \
+            -reports:"coverage.cobertura.xml" \
             -targetdir:"coveragereport" \
             -reporttypes:"Html;MarkdownSummaryGithub"
 
