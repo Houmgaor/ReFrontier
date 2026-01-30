@@ -20,11 +20,14 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="9.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ReFrontier\ReFrontier.csproj" />
     <ProjectReference Include="..\LibReFrontier\LibReFrontier.csproj" />
+    <ProjectReference Include="..\FrontierDataTool\FrontierDataTool.csproj" />
+    <ProjectReference Include="..\FrontierTextTool\FrontierTextTool.csproj" />
   </ItemGroup>
 
 </Project>

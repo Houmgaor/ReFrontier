@@ -14,7 +14,7 @@ using LibReFrontier;
 
 namespace FrontierDataTool
 {
-    internal class Program
+    public class Program
     {
         // Define offset pointers
 
@@ -865,7 +865,7 @@ namespace FrontierDataTool
             return str;
         }
 
-        private static string GetModelIdData(int id)
+        public static string GetModelIdData(int id)
         {
             string str;
             if (id >= 0 && id < 1000) str = $"we{id:D3}";

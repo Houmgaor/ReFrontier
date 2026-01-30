@@ -18,7 +18,7 @@ namespace FrontierTextTool
     /// <summary>
     /// Utility program for text data edition.
     /// </summary>
-    internal class Program
+    public class Program
     {
         /// <summary>
         /// Main CLI for text edition.
@@ -267,20 +267,30 @@ namespace FrontierTextTool
         private static void CleanTrados(string file)
         {
             string text = File.ReadAllText(file, Encoding.UTF8);
-            text = text
-            .Replace(": ~", ":~")
-            .Replace("。 ", "。")
-            .Replace("！ ", "！")
-            .Replace("？ ", "？")
-            .Replace("： ", "：")
-            .Replace("． ", "．")
-            .Replace("． ", "．")
-            .Replace("」 ", "」")
-            .Replace("「 ", "「")
-            .Replace("） ", "）")
-            .Replace("（ ", "（");
+            text = CleanTradosText(text);
             File.WriteAllText(file, text, Encoding.UTF8);
             Console.WriteLine("Cleaned up");
+        }
+
+        /// <summary>
+        /// Clean pollution caused by Trados or other CAT from text.
+        /// Removes extra spaces after Japanese punctuation.
+        /// </summary>
+        /// <param name="text">Input text to clean.</param>
+        /// <returns>Cleaned text.</returns>
+        public static string CleanTradosText(string text)
+        {
+            return text
+                .Replace(": ~", ":~")
+                .Replace("。 ", "。")
+                .Replace("！ ", "！")
+                .Replace("？ ", "？")
+                .Replace("： ", "：")
+                .Replace("． ", "．")
+                .Replace("」 ", "」")
+                .Replace("「 ", "「")
+                .Replace("） ", "）")
+                .Replace("（ ", "（");
         }
 
         /// <summary>
