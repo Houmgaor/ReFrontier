@@ -9,6 +9,7 @@ using CsvHelper.Configuration;
 
 using LibReFrontier;
 using LibReFrontier.Abstractions;
+
 using ReFrontier;
 
 namespace FrontierTextTool.Services
@@ -126,7 +127,7 @@ namespace FrontierTextTool.Services
                     brInput.BaseStream.Seek(tmpPos, SeekOrigin.Begin);
                 }
 
-                if (str == "")
+                if (string.IsNullOrEmpty(str))
                     continue;
             }
 
@@ -177,11 +178,11 @@ namespace FrontierTextTool.Services
         /// <summary>
         /// Japanese version of the string.
         /// </summary>
-        public string JString { get; set; }
+        public string? JString { get; set; }
 
         /// <summary>
         /// English translation.
         /// </summary>
-        public string EString { get; set; }
+        public string? EString { get; set; }
     }
 }

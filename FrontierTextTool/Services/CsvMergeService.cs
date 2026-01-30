@@ -94,7 +94,7 @@ namespace FrontierTextTool.Services
             for (int i = 0; i < stringDbOld.Count; i++)
             {
                 _logger.Write($"\rUpdating entry {i + 1}/{stringDbOld.Count}");
-                if (stringDbOld[i].EString != "")
+                if (!string.IsNullOrEmpty(stringDbOld[i].EString))
                 {
                     var matchedNewObjs = stringDbNew.Where(x => x.Hash.Equals(stringDbOld[i].Hash));
                     foreach (var obj in matchedNewObjs)
@@ -166,7 +166,7 @@ namespace FrontierTextTool.Services
                 _logger.Write($"\rUpdating entry {i + 1}/{stringDb.Count}");
                 if (stringDb[i].JString != catStrings[i])
                     stringDb[i].EString = catStrings[i];
-                else if (stringDb[i].JString == catStrings[i] && stringDb[i].EString != "")
+                else if (stringDb[i].JString == catStrings[i] && !string.IsNullOrEmpty(stringDb[i].EString))
                     stringDb[i].EString = "";
             }
             _logger.WriteLine("");

@@ -8,7 +8,9 @@ using CsvHelper;
 using CsvHelper.Configuration;
 
 using FrontierDataTool.Structs;
+
 using LibReFrontier.Abstractions;
+
 using ReFrontier;
 
 namespace FrontierDataTool.Services

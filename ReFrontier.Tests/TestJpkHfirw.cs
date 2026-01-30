@@ -1,6 +1,4 @@
-using System.IO;
 using ReFrontier.Jpk;
-using Xunit;
 
 namespace ReFrontier.Tests
 {

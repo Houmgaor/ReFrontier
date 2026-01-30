@@ -5,8 +5,8 @@ namespace FrontierDataTool.Structs
     /// </summary>
     public class ArmorDataEntry
     {
-        public string EquipClass { get; set; }
-        public string Name { get; set; }
+        public string? EquipClass { get; set; }
+        public string? Name { get; set; }
         public short ModelIdMale { get; set; }
         public short ModelIdFemale { get; set; }
         public bool IsMaleEquip { get; set; }
@@ -47,15 +47,15 @@ namespace FrontierDataTool.Structs
         public byte Unk8_3 { get; set; }
         public byte Unk8_4 { get; set; }
         public short Unk10 { get; set; }
-        public string SkillId1 { get; set; }
+        public string? SkillId1 { get; set; }
         public sbyte SkillPts1 { get; set; }
-        public string SkillId2 { get; set; }
+        public string? SkillId2 { get; set; }
         public sbyte SkillPts2 { get; set; }
-        public string SkillId3 { get; set; }
+        public string? SkillId3 { get; set; }
         public sbyte SkillPts3 { get; set; }
-        public string SkillId4 { get; set; }
+        public string? SkillId4 { get; set; }
         public sbyte SkillPts4 { get; set; }
-        public string SkillId5 { get; set; }
+        public string? SkillId5 { get; set; }
         public sbyte SkillPts5 { get; set; }
         public int SthHiden { get; set; }
         public int Unk12 { get; set; }

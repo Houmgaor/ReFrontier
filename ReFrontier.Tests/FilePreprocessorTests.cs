@@ -1,12 +1,10 @@
-using System;
-using System.IO;
 using System.Text;
+
 using LibReFrontier;
-using LibReFrontier.Abstractions;
+
 using ReFrontier.Jpk;
 using ReFrontier.Services;
 using ReFrontier.Tests.Mocks;
-using Xunit;
 
 namespace ReFrontier.Tests
 {
@@ -152,7 +150,7 @@ namespace ReFrontier.Tests
 
             // Encrypt the data first
             fileSystem.AddFile("/test/original.bin", originalData);
-            
+
             // Create a proper ECD meta header for encryption
             byte[] metaHeader = new byte[16];
             metaHeader[0] = 0x65; metaHeader[1] = 0x63; metaHeader[2] = 0x64; metaHeader[3] = 0x1A; // "ece" magic
@@ -169,7 +167,7 @@ namespace ReFrontier.Tests
             // Verify encryption created output
             Assert.True(fileSystem.FileExists(encryptedPath));
             byte[] encryptedData = fileSystem.ReadAllBytes(encryptedPath);
-            
+
             // Verify it's encrypted (first 4 bytes should be ECD magic)
             Assert.Equal((byte)0x65, encryptedData[0]);
             Assert.Equal((byte)0x63, encryptedData[1]);

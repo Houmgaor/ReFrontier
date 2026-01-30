@@ -5,14 +5,14 @@ namespace FrontierDataTool.Structs
     /// </summary>
     public class RangedWeaponEntry
     {
-        public string Name { get; set; }
+        public string? Name { get; set; }
         public short ModelId { get; set; }
-        public string ModelIdData { get; set; }
+        public string? ModelIdData { get; set; }
         public byte Rarity { get; set; }
         public byte MaxSlotsMaybe { get; set; }
-        public string ClassId { get; set; }
+        public string? ClassId { get; set; }
         public byte Unk2_1 { get; set; }
-        public string EqType { get; set; }
+        public string? EqType { get; set; }
         public byte Unk2_3 { get; set; }
         public byte Unk3_1 { get; set; }
         public byte Unk3_2 { get; set; }
@@ -34,7 +34,7 @@ namespace FrontierDataTool.Structs
         public sbyte Affinity { get; set; }
         public byte SortOrderMaybe { get; set; }
         public byte Unk6_1 { get; set; }
-        public string ElementId { get; set; }
+        public string? ElementId { get; set; }
         public int EleDamage { get; set; }
         public byte Unk6_4 { get; set; }
         public byte Unk7_1 { get; set; }

@@ -4,6 +4,7 @@ using System.IO;
 using System.Text;
 
 using FrontierDataTool.Structs;
+
 using LibReFrontier;
 
 namespace FrontierDataTool.Services

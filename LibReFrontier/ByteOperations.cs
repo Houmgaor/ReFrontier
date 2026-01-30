@@ -6,7 +6,7 @@ namespace LibReFrontier
     /// <summary>
     /// Raw bytes operations.
     /// </summary>
-    public class ByteOperations
+    public static class ByteOperations
     {
         /// <summary>
         /// Search for byte array

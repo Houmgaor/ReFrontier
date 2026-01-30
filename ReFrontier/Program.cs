@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using LibReFrontier;
 using LibReFrontier.Abstractions;
 using LibReFrontier.Exceptions;
+
 using ReFrontier.Jpk;
 using ReFrontier.Services;
 
@@ -36,6 +37,26 @@ namespace ReFrontier
         /// </summary>
         public bool rewriteOldFile;
         public Compression compression;
+
+        public override bool Equals(object obj)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override int GetHashCode()
+        {
+            throw new NotImplementedException();
+        }
+
+        public static bool operator ==(InputArguments left, InputArguments right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(InputArguments left, InputArguments right)
+        {
+            return !(left == right);
+        }
     }
 
     /// <summary>
@@ -364,7 +385,7 @@ namespace ReFrontier
         /// <param name="filePath">Input file path.</param>
         /// <param name="inputArguments">Configuration arguments from CLI.</param>
         /// <returns>Output path, can be file or folder.</returns>
-        public string ProcessFile(string filePath, InputArguments inputArguments)
+        public string? ProcessFile(string filePath, InputArguments inputArguments)
         {
             _logger.PrintWithSeparator($"Processing {filePath}", false);
 

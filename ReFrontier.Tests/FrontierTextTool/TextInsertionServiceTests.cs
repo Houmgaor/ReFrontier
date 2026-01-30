@@ -1,11 +1,7 @@
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text;
 
-using Xunit;
-
 using FrontierTextTool.Services;
+
 using ReFrontier.Tests.Mocks;
 
 namespace ReFrontier.Tests.TextToolTests

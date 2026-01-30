@@ -1,8 +1,7 @@
 using System.Text;
 
-using Xunit;
-
 using FrontierTextTool.Services;
+
 using ReFrontier.Tests.Mocks;
 
 namespace ReFrontier.Tests.TextToolTests

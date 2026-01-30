@@ -5,19 +5,19 @@ namespace FrontierDataTool.Structs
     /// </summary>
     public class MeleeWeaponEntry
     {
-        public string Name { get; set; }
+        public string? Name { get; set; }
         public short ModelId { get; set; }
-        public string ModelIdData { get; set; }
+        public string? ModelIdData { get; set; }
         public byte Rarity { get; set; }
-        public string ClassId { get; set; }
+        public string? ClassId { get; set; }
         public int ZennyCost { get; set; }
         public short SharpnessId { get; set; }
         public short RawDamage { get; set; }
         public short Defense { get; set; }
         public sbyte Affinity { get; set; }
-        public string ElementId { get; set; }
+        public string? ElementId { get; set; }
         public int EleDamage { get; set; }
-        public string AilmentId { get; set; }
+        public string? AilmentId { get; set; }
         public int AilDamage { get; set; }
         public byte Slots { get; set; }
         public byte Unk3 { get; set; }

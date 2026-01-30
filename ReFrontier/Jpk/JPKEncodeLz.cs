@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 
 namespace ReFrontier.Jpk
@@ -51,7 +51,7 @@ namespace ReFrontier.Jpk
         /// <summary>
         /// Buffer of data to compress.
         /// </summary>
-        private byte[] m_inputBuffer;
+        private byte[]? m_inputBuffer;
 
         /// <summary>
         /// Compression level, between 280 and 8191 (0x1fff)
@@ -68,7 +68,7 @@ namespace ReFrontier.Jpk
         /// <summary>
         /// Stream to write data to.
         /// </summary>
-        private Stream m_outStream;
+        private Stream? m_outStream;
 
         /// <summary>
         /// Temporary buffer of data to write to 

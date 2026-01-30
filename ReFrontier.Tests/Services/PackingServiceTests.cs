@@ -1,8 +1,6 @@
-using System;
-using Xunit;
-
 using LibReFrontier;
 using LibReFrontier.Exceptions;
+
 using ReFrontier.Jpk;
 using ReFrontier.Services;
 using ReFrontier.Tests.Mocks;

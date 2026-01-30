@@ -1,9 +1,5 @@
 using System.Text;
 
-using Xunit;
-
-using FrontierTextTool;
-
 namespace ReFrontier.Tests
 {
     /// <summary>

@@ -5,10 +5,10 @@ namespace FrontierDataTool.Structs
     /// </summary>
     public class QuestData
     {
-        public string Title { get; set; }
-        public string TextMain { get; set; }
-        public string TextSubA { get; set; }
-        public string TextSubB { get; set; }
+        public string? Title { get; set; }
+        public string? TextMain { get; set; }
+        public string? TextSubA { get; set; }
+        public string? TextSubB { get; set; }
 
         public byte Unk1 { get; set; }
         public byte Unk2 { get; set; }
@@ -37,13 +37,13 @@ namespace FrontierDataTool.Structs
         public byte Unk18 { get; set; }
         public byte Unk19 { get; set; }
         public byte Unk20 { get; set; }
-        public string MainGoalType { get; set; }
+        public string? MainGoalType { get; set; }
         public short MainGoalTarget { get; set; }
         public short MainGoalCount { get; set; }
-        public string SubAGoalType { get; set; }
+        public string? SubAGoalType { get; set; }
         public short SubAGoalTarget { get; set; }
         public short SubAGoalCount { get; set; }
-        public string SubBGoalType { get; set; }
+        public string? SubBGoalType { get; set; }
         public short SubBGoalTarget { get; set; }
         public short SubBGoalCount { get; set; }
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 
@@ -40,7 +40,7 @@ namespace ReFrontier.Jpk
         /// <summary>
         /// Huffman table length: 256 leaves + 254 internal nodes = 510 entries.
         /// </summary>
-        protected static readonly short m_hfTableLen = 0x1fe;
+        protected const short m_hfTableLen = 0x1fe;
 
         /// <summary>
         /// Huffman tree table. Values 0-255 are leaves, 256+ are internal nodes.

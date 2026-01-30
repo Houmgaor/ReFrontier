@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace ReFrontier.Tests
 {
     /// <summary>

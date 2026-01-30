@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 
 using LibReFrontier.Exceptions;
 
@@ -27,6 +27,7 @@ namespace ReFrontier.Jpk
         /// <summary>
         /// Read a single byte from the stream at the current position.
         /// </summary>
+        /// <param name="s"></param>
         /// <param name="stream">Stream to read from.</param>
         /// <returns>Read byte.</returns>
         /// <exception cref="CompressionException">Exception when end of file is reached unexpectedly.</exception>

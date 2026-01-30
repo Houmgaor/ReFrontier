@@ -1,8 +1,6 @@
-using System;
-using Xunit;
-
 using LibReFrontier;
 using LibReFrontier.Exceptions;
+
 using ReFrontier.Jpk;
 
 namespace ReFrontier.Tests.Jpk

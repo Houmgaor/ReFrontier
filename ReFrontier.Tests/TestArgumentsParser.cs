@@ -1,5 +1,4 @@
 using LibReFrontier;
-using Xunit;
 
 namespace ReFrontier.Tests
 {

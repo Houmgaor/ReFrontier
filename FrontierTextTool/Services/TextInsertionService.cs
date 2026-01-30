@@ -10,6 +10,7 @@ using CsvHelper.Configuration;
 
 using LibReFrontier;
 using LibReFrontier.Abstractions;
+
 using ReFrontier;
 
 namespace FrontierTextTool.Services
@@ -93,7 +94,7 @@ namespace FrontierTextTool.Services
 
             foreach (var obj in stringDatabase)
             {
-                if (obj.EString != "")
+                if (!string.IsNullOrEmpty(obj.EString))
                 {
                     eStringsOffsets.Add(obj.Offset);
                     eStringLengths.Add(GetNullterminatedStringLength(obj.EString));
@@ -119,7 +120,7 @@ namespace FrontierTextTool.Services
             byte[] eStringsArray = new byte[eStringsLength];
             for (int i = 0, j = 0; i < stringDatabase.Length; i++)
             {
-                if (stringDatabase[i].EString != "")
+                if (!string.IsNullOrEmpty(stringDatabase[i].EString))
                 {
                     if (verbose)
                         _logger.WriteLine($"String: '{stringDatabase[i].EString}', Length: {eStringLengths[j] - 1}");

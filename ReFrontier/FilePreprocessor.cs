@@ -1,8 +1,10 @@
 using System;
 using System.IO;
+
 using LibReFrontier;
 using LibReFrontier.Abstractions;
 using LibReFrontier.Exceptions;
+
 using ReFrontier.Jpk;
 
 namespace ReFrontier
@@ -226,7 +228,7 @@ namespace ReFrontier
             brInput.ReadUInt32(); // magic
             brInput.ReadUInt16(); // skip 2 bytes
             int type = brInput.ReadUInt16();
-            
+
             var compressionTypes = Enum.GetValues<CompressionType>();
             if (type < 0 || type >= compressionTypes.Length)
             {
@@ -243,7 +245,7 @@ namespace ReFrontier
             // Decompress using codec
             IJPKDecode decoder = _codecFactory.CreateDecoder(compressionType);
             byte[] decompressedData = new byte[decompressedSize];
-            
+
             msInput.Seek(startOffset, SeekOrigin.Begin);
             decoder.ProcessOnDecode(msInput, decompressedData);
 

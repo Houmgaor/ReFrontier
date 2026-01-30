@@ -26,5 +26,25 @@ namespace LibReFrontier
     {
         public CompressionType type;
         public int level;
+
+        public override bool Equals(object obj)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override int GetHashCode()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public static bool operator ==(Compression left, Compression right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(Compression left, Compression right)
+        {
+            return !(left == right);
+        }
     }
 }

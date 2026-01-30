@@ -9,8 +9,10 @@ using CsvHelper;
 using CsvHelper.Configuration;
 
 using FrontierDataTool.Structs;
+
 using LibReFrontier;
 using LibReFrontier.Abstractions;
+
 using ReFrontier;
 
 namespace FrontierDataTool.Services
@@ -25,8 +27,8 @@ namespace FrontierDataTool.Services
         private readonly BinaryReaderService _binaryReader;
 
         // Offset pointers for mhfpac.bin
-        private static readonly int _soStringSkillPt = 0xA20;
-        private static readonly int _eoStringSkillPt = 0xA1C;
+        private const int _soStringSkillPt = 0xA20;
+        private const int _eoStringSkillPt = 0xA1C;
 
         private static readonly string[] ArmorClasses = ["頭", "胴", "腕", "腰", "脚"];
 
