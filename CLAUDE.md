@@ -21,6 +21,10 @@ dotnet test
 # Run tests with verbose output
 dotnet test --verbosity normal
 
+# Run a single test by name
+dotnet test --filter "FullyQualifiedName~TestClassName.TestMethodName"
+# Example: dotnet test --filter "FullyQualifiedName~TestCrypto.TestEcdEncryption"
+
 # Run tests with code coverage
 dotnet test --collect:"XPlat Code Coverage"
 
@@ -108,56 +112,25 @@ Key options: `--log`, `--recursive`/`--nonRecursive`, `--compress=[type],[level]
 
 ## Testing
 
-### Test Structure
+Tests are in `ReFrontier.Tests/` using xUnit. The main project uses `InternalsVisibleTo` to expose internals to the test project.
 
-Tests are in `ReFrontier.Tests/` using xUnit:
-- `ReFrontier.Tests/Mocks/` - Test doubles for dependencies
-  - `InMemoryFileSystem` - Dictionary-based file system mock
-  - `TestLogger` - Captures output for assertions
-- `ReFrontier.Tests/Services/` - Service-level tests
-- `ReFrontier.Tests/TestFiles/` - Test data files
+### Test Organization
 
-### Writing Testable Code
+- `ReFrontier.Tests/Mocks/` - Test doubles (`InMemoryFileSystem`, `TestLogger`)
+- `ReFrontier.Tests/Services/` - Service-level unit tests
+- `ReFrontier.Tests/Integration/` - Integration tests (roundtrip, text tool)
+- `ReFrontier.Tests/Jpk/` - Codec factory tests
+- `ReFrontier.Tests/FrontierTextTool/` - Text extraction/insertion tests
+- `ReFrontier.Tests/FrontierDataTool/` - Data extraction/import tests
+- Root test files (`TestCrypto.cs`, `TestJpk*.cs`, etc.) - Component tests
 
-The codebase uses dependency injection for testability. To test services:
+### Testing Pattern
 
-```csharp
-// Create mocks
-var fileSystem = new InMemoryFileSystem();
-var logger = new TestLogger();
-var codecFactory = new DefaultCodecFactory();
-var config = FileProcessingConfig.Default();
-
-// Add test files to mock file system
-fileSystem.AddFile("/test/input.bin", testData);
-
-// Create service with mocks
-var service = new PackingService(fileSystem, logger, codecFactory, config);
-
-// Execute operation
-service.JPKEncode(compression, "/test/input.bin", "output/test.jkr");
-
-// Assert on mock state
-Assert.True(fileSystem.FileExists("output/test.jkr"));
-Assert.True(logger.ContainsMessage("compressed"));
-```
-
-### Backward Compatibility
-
-All static methods continue to work and use default implementations internally:
-
-```csharp
-// Static methods (backward compatible)
-Pack.JPKEncode(compression, inPath, outPath);
-Unpack.UnpackSimpleArchive(input, br, magicSize, log, cleanup, autoStage);
-
-// Instance methods (for testing)
-var pack = new Pack(fileSystem, logger, codecFactory, config);
-pack.JPKEncodeInstance(compression, inPath, outPath);
-```
+Services use constructor injection for testability. Static methods delegate to instance methods internally, allowing both backward-compatible static API and testable instance-based code
 
 ## Dependencies
 
+- Spectre.Console 0.49.1 (CLI interface)
 - CsvHelper 33.0.1 (FrontierTextTool, FrontierDataTool)
 - System.Text.Encoding.CodePages 9.0.0 (Shift-JIS support)
 - System.IO.Hashing 9.0.0 (CRC32)
