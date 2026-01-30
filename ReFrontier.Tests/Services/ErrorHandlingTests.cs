@@ -209,6 +209,62 @@ namespace ReFrontier.Tests.Services
 
         #endregion
 
+        #region Crypto EncodeEcd Error Tests
+
+        [Fact]
+        public void EncodeEcd_NullBuffer_ThrowsArgumentNullException()
+        {
+            // Arrange
+            byte[] meta = new byte[16];
+
+            // Act & Assert
+            Assert.Throws<ArgumentNullException>(() => Crypto.EncodeEcd(null, meta));
+        }
+
+        [Fact]
+        public void EncodeEcd_NullMeta_ThrowsArgumentNullException()
+        {
+            // Arrange
+            byte[] buffer = new byte[10];
+
+            // Act & Assert
+            Assert.Throws<ArgumentNullException>(() => Crypto.EncodeEcd(buffer, null));
+        }
+
+        [Fact]
+        public void EncodeEcd_MetaTooSmall_ThrowsDecryptionException()
+        {
+            // Arrange
+            byte[] buffer = new byte[10];
+            byte[] smallMeta = new byte[4]; // Needs at least 6 bytes
+
+            // Act & Assert
+            var ex = Assert.Throws<DecryptionException>(() => Crypto.EncodeEcd(buffer, smallMeta));
+            Assert.Contains("too small", ex.Message);
+            Assert.Contains("6 bytes", ex.Message);
+        }
+
+        [Fact]
+        public void EncodeEcd_ValidInputs_ReturnsEncryptedData()
+        {
+            // Arrange
+            byte[] buffer = new byte[] { 0x01, 0x02, 0x03, 0x04 };
+            byte[] meta = new byte[16];
+            meta[0] = 0x65; // 'e'
+            meta[1] = 0x63; // 'c'
+            meta[2] = 0x64; // 'd'
+            meta[3] = 0x1A; // magic
+
+            // Act
+            byte[] result = Crypto.EncodeEcd(buffer, meta);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(16 + buffer.Length, result.Length); // Header + payload
+        }
+
+        #endregion
+
         #region Exception Properties Tests
 
         [Fact]

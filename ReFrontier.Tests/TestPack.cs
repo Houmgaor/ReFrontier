@@ -1,5 +1,6 @@
 using ReFrontier;
 using LibReFrontier;
+using LibReFrontier.Exceptions;
 
 namespace ReFrontier.Tests;
 
@@ -105,7 +106,7 @@ public class TestPack
         string outputPath = filepath + ".jpk";
 
         var pack = new Pack();
-        Assert.Throws<InvalidOperationException>(() =>
+        Assert.Throws<CompressionException>(() =>
             pack.JPKEncode(compression, filepath, outputPath)
         );
     }

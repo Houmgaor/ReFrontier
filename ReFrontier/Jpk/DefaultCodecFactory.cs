@@ -1,5 +1,6 @@
 using System;
 using LibReFrontier;
+using LibReFrontier.Exceptions;
 
 namespace ReFrontier.Jpk
 {
@@ -17,7 +18,7 @@ namespace ReFrontier.Jpk
                 CompressionType.HFIRW => new JPKEncodeHFIRW(),
                 CompressionType.LZ => new JPKEncodeLz(),
                 CompressionType.HFI => new JPKEncodeHFI(),
-                _ => throw new InvalidOperationException($"Unsupported/invalid encoder type: {compressionType}")
+                _ => throw new CompressionException($"Unsupported/invalid encoder type: {compressionType}")
             };
         }
 
@@ -31,7 +32,7 @@ namespace ReFrontier.Jpk
                 CompressionType.HFIRW => new JPKDecodeHFIRW(),
                 CompressionType.LZ => new JPKDecodeLz(),
                 CompressionType.HFI => new JPKDecodeHFI(),
-                _ => throw new InvalidOperationException($"Unsupported/invalid decoder type: {compressionType}")
+                _ => throw new CompressionException($"Unsupported/invalid decoder type: {compressionType}")
             };
         }
     }

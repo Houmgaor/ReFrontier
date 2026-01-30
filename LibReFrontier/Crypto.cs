@@ -171,8 +171,17 @@ namespace LibReFrontier
         /// <param name="buffer">Plaintext file data to encrypt.</param>
         /// <param name="bufferMeta">Original ECD header (from .meta file) containing key index and magic.</param>
         /// <returns>Complete ECD file: 16-byte header + encrypted payload.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when buffer or bufferMeta is null.</exception>
+        /// <exception cref="DecryptionException">Thrown when bufferMeta is too small (less than 6 bytes).</exception>
         public static byte[] EncodeEcd(byte[] buffer, byte[] bufferMeta)
         {
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
+            if (bufferMeta == null)
+                throw new ArgumentNullException(nameof(bufferMeta));
+            if (bufferMeta.Length < 6)
+                throw new DecryptionException("ECD meta buffer too small: minimum 6 bytes required for key index.", (string)null);
+
             // Update meta data
             int payloadSize = buffer.Length;
             uint crc32w = Crc32.HashToUInt32(buffer);

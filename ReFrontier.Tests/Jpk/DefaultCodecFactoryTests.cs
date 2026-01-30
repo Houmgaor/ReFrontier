@@ -2,6 +2,7 @@ using System;
 using Xunit;
 
 using LibReFrontier;
+using LibReFrontier.Exceptions;
 using ReFrontier.Jpk;
 
 namespace ReFrontier.Tests.Jpk
@@ -36,10 +37,10 @@ namespace ReFrontier.Tests.Jpk
         }
 
         [Fact]
-        public void CreateEncoder_NoneType_ThrowsInvalidOperationException()
+        public void CreateEncoder_NoneType_ThrowsCompressionException()
         {
             // Act & Assert
-            var exception = Assert.Throws<InvalidOperationException>(() =>
+            var exception = Assert.Throws<CompressionException>(() =>
                 _factory.CreateEncoder(CompressionType.None));
 
             Assert.Contains("Unsupported", exception.Message);
@@ -58,10 +59,10 @@ namespace ReFrontier.Tests.Jpk
         }
 
         [Fact]
-        public void CreateEncoder_InvalidEnumValue_ThrowsInvalidOperationException()
+        public void CreateEncoder_InvalidEnumValue_ThrowsCompressionException()
         {
             // Act & Assert
-            var exception = Assert.Throws<InvalidOperationException>(() =>
+            var exception = Assert.Throws<CompressionException>(() =>
                 _factory.CreateEncoder((CompressionType)999));
 
             Assert.Contains("Unsupported", exception.Message);
@@ -88,10 +89,10 @@ namespace ReFrontier.Tests.Jpk
         }
 
         [Fact]
-        public void CreateDecoder_InvalidEnumValue_ThrowsInvalidOperationException()
+        public void CreateDecoder_InvalidEnumValue_ThrowsCompressionException()
         {
             // Act & Assert
-            var exception = Assert.Throws<InvalidOperationException>(() =>
+            var exception = Assert.Throws<CompressionException>(() =>
                 _factory.CreateDecoder((CompressionType)999));
 
             Assert.Contains("Unsupported", exception.Message);
