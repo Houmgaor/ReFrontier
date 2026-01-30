@@ -45,8 +45,6 @@ namespace ReFrontier
         /// </summary>
         const int MAX_PARALLEL_PROCESSES = 4;
 
-        private static readonly Lazy<Program> DefaultInstance = new(() => new Program());
-
         private readonly IFileSystem _fileSystem;
         private readonly ILogger _logger;
         private readonly FileProcessingService _fileProcessingService;
@@ -194,6 +192,9 @@ namespace ReFrontier
             if (compression.level != 0)
                 inputArguments.compression = compression;
 
+            // Create program instance and start processing
+            var program = new Program();
+
             // Start input processing
             if (File.GetAttributes(input).HasFlag(FileAttributes.Directory))
             {
@@ -202,126 +203,28 @@ namespace ReFrontier
                     throw new InvalidOperationException("Cannot compress a directory.");
                 if (inputArguments.encrypt)
                     throw new InvalidOperationException("Cannot encrypt a directory.");
-                StartProcessingDirectory(input, inputArguments);
+                program.StartProcessingDirectory(input, inputArguments);
             }
             else
             {
                 // Input is a file
                 if (inputArguments.repack)
                     throw new InvalidOperationException("A single file cannot be used while in repacking mode.");
-                StartProcessingFile(input, inputArguments);
+                program.StartProcessingFile(input, inputArguments);
             }
             Console.WriteLine("Done.");
             if (!autoClose)
                 Console.Read();
         }
 
-
-        /// <summary>
-        /// Encrypt a single file to a new file.
-        /// Static version for backward compatibility.
-        ///
-        /// If inputFile is "mhfdat.bin.decd",
-        /// metaFile should be "mhfdat.bin.meta" and
-        /// the output file will be "mhfdat.bin".
-        /// </summary>
-        /// <param name="inputFile">Input file to encrypt.</param>
-        /// <param name="metaFile">Data to use for encryption.</param>
-        /// <param name="cleanUp">Remove both inputFile and metaFile.</param>
-        /// <returns>Encrypted file path.</returns>
-        /// <exception cref="FileNotFoundException">Thrown if the meta file does not exist.</exception>
-        private static string EncryptEcdFile(string inputFile, string metaFile, bool cleanUp)
-        {
-            return DefaultInstance.Value._fileProcessingService.EncryptEcdFile(inputFile, metaFile, cleanUp);
-        }
-
-        /// <summary>
-        /// Encrypt a single file to a new file.
-        /// Instance method for testability.
-        /// </summary>
-        /// <param name="inputFile">Input file to encrypt.</param>
-        /// <param name="metaFile">Data to use for encryption.</param>
-        /// <param name="cleanUp">Remove both inputFile and metaFile.</param>
-        /// <returns>Encrypted file path.</returns>
-        public string EncryptEcdFileInstance(string inputFile, string metaFile, bool cleanUp)
-        {
-            return _fileProcessingService.EncryptEcdFile(inputFile, metaFile, cleanUp);
-        }
-
-        /// <summary>
-        /// Decrypt an ECD encoded file to a new file.
-        /// Static version for backward compatibility.
-        /// </summary>
-        /// <param name="inputFile">Input file path.</param>
-        /// <param name="createLog">True if we should create a log file with the header.</param>
-        /// <param name="cleanUp">true if the original file should be deleted.</param>
-        /// <param name="rewriteOldFile">Should we overwrite inputFile.</param>
-        /// <returns>Path to the decrypted file, in the form inputFile.decd</returns>
-        private static string DecryptEcdFile(string inputFile, bool createLog, bool cleanUp, bool rewriteOldFile)
-        {
-            return DefaultInstance.Value._fileProcessingService.DecryptEcdFile(inputFile, createLog, cleanUp, rewriteOldFile);
-        }
-
-        /// <summary>
-        /// Decrypt an ECD encoded file to a new file.
-        /// Instance method for testability.
-        /// </summary>
-        /// <param name="inputFile">Input file path.</param>
-        /// <param name="createLog">True if we should create a log file with the header.</param>
-        /// <param name="cleanUp">true if the original file should be deleted.</param>
-        /// <param name="rewriteOldFile">Should we overwrite inputFile.</param>
-        /// <returns>Path to the decrypted file, in the form inputFile.decd</returns>
-        public string DecryptEcdFileInstance(string inputFile, bool createLog, bool cleanUp, bool rewriteOldFile)
-        {
-            return _fileProcessingService.DecryptEcdFile(inputFile, createLog, cleanUp, rewriteOldFile);
-        }
-
-        /// <summary>
-        /// Decrypt an Exf file.
-        /// Static version for backward compatibility.
-        /// </summary>
-        /// <param name="inputFile">Input file path.</param>
-        /// <param name="cleanUp">Should the original file be removed.</param>
-        /// <returns>Output file at {inputFile}.dexf</returns>
-        private static string DecryptExfFile(string inputFile, bool cleanUp)
-        {
-            return DefaultInstance.Value._fileProcessingService.DecryptExfFile(inputFile, cleanUp);
-        }
-
-        /// <summary>
-        /// Decrypt an Exf file.
-        /// Instance method for testability.
-        /// </summary>
-        /// <param name="inputFile">Input file path.</param>
-        /// <param name="cleanUp">Should the original file be removed.</param>
-        /// <returns>Output file at {inputFile}.dexf</returns>
-        public string DecryptExfFileInstance(string inputFile, bool cleanUp)
-        {
-            return _fileProcessingService.DecryptExfFile(inputFile, cleanUp);
-        }
-
         /// <summary>
         /// Launches a directory processing.
-        /// Static version for backward compatibility.
         ///
         /// It can either pack the directory as a file, or uncompress the content.
         /// </summary>
         /// <param name="directoryPath">Directory path.</param>
         /// <param name="inputArguments">Configuration arguments from CLI.</param>
-        public static void StartProcessingDirectory(string directoryPath, InputArguments inputArguments)
-        {
-            DefaultInstance.Value.StartProcessingDirectoryInstance(directoryPath, inputArguments);
-        }
-
-        /// <summary>
-        /// Launches a directory processing.
-        /// Instance method for testability.
-        ///
-        /// It can either pack the directory as a file, or uncompress the content.
-        /// </summary>
-        /// <param name="directoryPath">Directory path.</param>
-        /// <param name="inputArguments">Configuration arguments from CLI.</param>
-        public void StartProcessingDirectoryInstance(string directoryPath, InputArguments inputArguments)
+        public void StartProcessingDirectory(string directoryPath, InputArguments inputArguments)
         {
             if (inputArguments.repack)
                 _packingService.ProcessPackInput(directoryPath);
@@ -331,32 +234,18 @@ namespace ReFrontier
                 string[] inputFiles = _fileSystem.GetFiles(
                     directoryPath, "*.*", SearchOption.AllDirectories
                 );
-                ProcessMultipleLevelsInstance(inputFiles, inputArguments);
+                ProcessMultipleLevels(inputFiles, inputArguments);
             }
         }
 
         /// <summary>
         /// Start the processing for a file.
-        /// Static version for backward compatibility.
         ///
         /// It will either compress the file, encrypt it or depack it as many files.
         /// </summary>
         /// <param name="filePath">File path.</param>
         /// <param name="inputArguments">Configuration arguments from CLI.</param>
-        public static void StartProcessingFile(string filePath, InputArguments inputArguments)
-        {
-            DefaultInstance.Value.StartProcessingFileInstance(filePath, inputArguments);
-        }
-
-        /// <summary>
-        /// Start the processing for a file.
-        /// Instance method for testability.
-        ///
-        /// It will either compress the file, encrypt it or depack it as many files.
-        /// </summary>
-        /// <param name="filePath">File path.</param>
-        /// <param name="inputArguments">Configuration arguments from CLI.</param>
-        public void StartProcessingFileInstance(string filePath, InputArguments inputArguments)
+        public void StartProcessingFile(string filePath, InputArguments inputArguments)
         {
             if (inputArguments.compression.level != 0)
             {
@@ -381,33 +270,18 @@ namespace ReFrontier
 
             // Try to depack the file as multiple files
             if (inputArguments.compression.level == 0 && !inputArguments.encrypt)
-                ProcessMultipleLevelsInstance([filePath], inputArguments);
+                ProcessMultipleLevels([filePath], inputArguments);
         }
 
         /// <summary>
         /// Unpack or (decrypt and decompress) a single file.
-        /// Static version for backward compatibility.
         ///
         /// If the file was an ECD, decompress it as well.
         /// </summary>
         /// <param name="filePath">Input file path.</param>
         /// <param name="inputArguments">Configuration arguments from CLI.</param>
         /// <returns>Output path, can be file or folder.</returns>
-        private static string ProcessFile(string filePath, InputArguments inputArguments)
-        {
-            return DefaultInstance.Value.ProcessFileInstance(filePath, inputArguments);
-        }
-
-        /// <summary>
-        /// Unpack or (decrypt and decompress) a single file.
-        /// Instance method for testability.
-        ///
-        /// If the file was an ECD, decompress it as well.
-        /// </summary>
-        /// <param name="filePath">Input file path.</param>
-        /// <param name="inputArguments">Configuration arguments from CLI.</param>
-        /// <returns>Output path, can be file or folder.</returns>
-        public string ProcessFileInstance(string filePath, InputArguments inputArguments)
+        public string ProcessFile(string filePath, InputArguments inputArguments)
         {
             _logger.PrintWithSeparator($"Processing {filePath}", false);
 
@@ -502,7 +376,7 @@ namespace ReFrontier
             if (fileMagic == 0x1A646365 && !inputArguments.decryptOnly)
             {
                 string decdFilePath = outputPath;
-                outputPath = ProcessFileInstance(decdFilePath, inputArguments);
+                outputPath = ProcessFile(decdFilePath, inputArguments);
                 if (inputArguments.cleanUp)
                     _fileSystem.DeleteFile(decdFilePath);
             }
@@ -511,26 +385,12 @@ namespace ReFrontier
 
         /// <summary>
         /// Process files on multiple container level.
-        /// Static version for backward compatibility.
         ///
         /// Try to use each file is considered a container of multiple files.
         /// </summary>
         /// <param name="filePathes">Files to process.</param>
         /// <param name="inputArguments">Configuration arguments from CLI.</param>
-        private static void ProcessMultipleLevels(string[] filePathes, InputArguments inputArguments)
-        {
-            DefaultInstance.Value.ProcessMultipleLevelsInstance(filePathes, inputArguments);
-        }
-
-        /// <summary>
-        /// Process files on multiple container level.
-        /// Instance method for testability.
-        ///
-        /// Try to use each file is considered a container of multiple files.
-        /// </summary>
-        /// <param name="filePathes">Files to process.</param>
-        /// <param name="inputArguments">Configuration arguments from CLI.</param>
-        public void ProcessMultipleLevelsInstance(string[] filePathes, InputArguments inputArguments)
+        public void ProcessMultipleLevels(string[] filePathes, InputArguments inputArguments)
         {
             var parallelOptions = new ParallelOptions()
             {
@@ -554,7 +414,7 @@ namespace ReFrontier
                 bool stageContainer = inputArguments.stageContainer;
                 Parallel.ForEach(fileWorkers, parallelOptions, inputFile =>
                 {
-                    string outputPath = ProcessFileInstance(inputFile, inputArguments);
+                    string outputPath = ProcessFile(inputFile, inputArguments);
 
                     // Disable stage processing files unpacked from parent
                     if (stageContainer)
@@ -563,7 +423,7 @@ namespace ReFrontier
                     // Check if a new directory was created
                     if (inputArguments.recursive && _fileSystem.DirectoryExists(outputPath))
                     {
-                        AddNewFilesInstance(outputPath, filesToProcess);
+                        AddNewFiles(outputPath, filesToProcess);
                     }
                 });
             }
@@ -571,26 +431,12 @@ namespace ReFrontier
 
         /// <summary>
         /// Add new files in the directory to filesQueue.
-        /// Static version for backward compatibility.
         ///
         /// It is a task producer in Task Parallel Library paradigm.
         /// </summary>
         /// <param name="directoryPath">Directory to search into.</param>
         /// <param name="filesQueue">Thread-safe queue where to add files to.</param>
-        private static void AddNewFiles(string directoryPath, ConcurrentQueue<string> filesQueue)
-        {
-            DefaultInstance.Value.AddNewFilesInstance(directoryPath, filesQueue);
-        }
-
-        /// <summary>
-        /// Add new files in the directory to filesQueue.
-        /// Instance method for testability.
-        ///
-        /// It is a task producer in Task Parallel Library paradigm.
-        /// </summary>
-        /// <param name="directoryPath">Directory to search into.</param>
-        /// <param name="filesQueue">Thread-safe queue where to add files to.</param>
-        public void AddNewFilesInstance(string directoryPath, ConcurrentQueue<string> filesQueue)
+        public void AddNewFiles(string directoryPath, ConcurrentQueue<string> filesQueue)
         {
             // Limit file search to these patterns
             string[] patterns = ["*.bin", "*.jkr", "*.ftxt", "*.snd"];

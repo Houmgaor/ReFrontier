@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.IO;
 
 using LibReFrontier;
 using LibReFrontier.Abstractions;
@@ -16,8 +14,6 @@ namespace ReFrontier
     /// </summary>
     public class Pack
     {
-        private static readonly Lazy<PackingService> DefaultService = new(() => new PackingService());
-
         private readonly PackingService _packingService;
 
         /// <summary>
@@ -50,52 +46,24 @@ namespace ReFrontier
 
         /// <summary>
         /// Standard packing of an input directory.
-        /// Static version for backward compatibility.
         ///
         /// It needs a log file to work.
         /// </summary>
         /// <param name="inputDir">Input directory path.</param>
         /// <exception cref="FileNotFoundException">The log file does not exist.</exception>
         /// <exception cref="NotImplementedException">The packing format does not exist.</exception>
-        public static void ProcessPackInput(string inputDir)
-        {
-            DefaultService.Value.ProcessPackInput(inputDir);
-        }
-
-        /// <summary>
-        /// Standard packing of an input directory.
-        /// Instance version for testability.
-        ///
-        /// It needs a log file to work.
-        /// </summary>
-        /// <param name="inputDir">Input directory path.</param>
-        /// <exception cref="FileNotFoundException">The log file does not exist.</exception>
-        /// <exception cref="NotImplementedException">The packing format does not exist.</exception>
-        public void ProcessPackInputInstance(string inputDir)
+        public void ProcessPackInput(string inputDir)
         {
             _packingService.ProcessPackInput(inputDir);
         }
 
         /// <summary>
         /// Compress a JPK file to a JKR type.
-        /// Static version for backward compatibility.
         /// </summary>
         /// <param name="compression">Compression to use.</param>
         /// <param name="inPath">Input file path.</param>
         /// <param name="otPath">Output file path.</param>
-        public static void JPKEncode(Compression compression, string inPath, string otPath)
-        {
-            DefaultService.Value.JPKEncode(compression, inPath, otPath);
-        }
-
-        /// <summary>
-        /// Compress a JPK file to a JKR type.
-        /// Instance version for testability.
-        /// </summary>
-        /// <param name="compression">Compression to use.</param>
-        /// <param name="inPath">Input file path.</param>
-        /// <param name="otPath">Output file path.</param>
-        public void JPKEncodeInstance(Compression compression, string inPath, string otPath)
+        public void JPKEncode(Compression compression, string inPath, string otPath)
         {
             _packingService.JPKEncode(compression, inPath, otPath);
         }

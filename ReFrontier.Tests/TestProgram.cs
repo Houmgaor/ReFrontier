@@ -18,7 +18,8 @@ public class TestProgram
         {
             File.Copy(TestDataFile, tmpFilePath, overwrite: true);
             InputArguments inputArguments = new();
-            Program.StartProcessingFile(tmpFilePath, inputArguments);
+            var program = new Program();
+            program.StartProcessingFile(tmpFilePath, inputArguments);
         }
         finally
         {

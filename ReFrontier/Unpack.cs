@@ -1,8 +1,6 @@
 using System;
 using System.IO;
-using System.Text;
 
-using LibReFrontier;
 using LibReFrontier.Abstractions;
 using ReFrontier.Jpk;
 using ReFrontier.Services;
@@ -14,8 +12,6 @@ namespace ReFrontier
     /// </summary>
     public class Unpack
     {
-        private static readonly Lazy<UnpackingService> DefaultService = new(() => new UnpackingService());
-
         private readonly UnpackingService _unpackingService;
 
         /// <summary>
@@ -48,7 +44,6 @@ namespace ReFrontier
 
         /// <summary>
         /// Unpack a simple archive file container.
-        /// Static version for backward compatibility.
         /// </summary>
         /// <param name="input">Input file name to read from.</param>
         /// <param name="brInput">Binary reader to the input file.</param>
@@ -57,26 +52,7 @@ namespace ReFrontier
         /// <param name="cleanUp">Remove the initial input file.</param>
         /// <param name="autoStage">Unpack stage container if true.</param>
         /// <returns>Output folder path.</returns>
-        public static string UnpackSimpleArchive(
-            string input, BinaryReader brInput, int magicSize, bool createLog,
-            bool cleanUp, bool autoStage
-        )
-        {
-            return DefaultService.Value.UnpackSimpleArchive(input, brInput, magicSize, createLog, cleanUp, autoStage);
-        }
-
-        /// <summary>
-        /// Unpack a simple archive file container.
-        /// Instance version for testability.
-        /// </summary>
-        /// <param name="input">Input file name to read from.</param>
-        /// <param name="brInput">Binary reader to the input file.</param>
-        /// <param name="magicSize">File magic size, depends on file type.</param>
-        /// <param name="createLog">true is a log file should be created.</param>
-        /// <param name="cleanUp">Remove the initial input file.</param>
-        /// <param name="autoStage">Unpack stage container if true.</param>
-        /// <returns>Output folder path.</returns>
-        public string UnpackSimpleArchiveInstance(
+        public string UnpackSimpleArchive(
             string input, BinaryReader brInput, int magicSize, bool createLog,
             bool cleanUp, bool autoStage
         )
@@ -86,100 +62,46 @@ namespace ReFrontier
 
         /// <summary>
         /// Unpack a MHA file container.
-        /// Static version for backward compatibility.
         /// </summary>
         /// <param name="input">Input file name to read from.</param>
         /// <param name="brInput">Binary reader to the input file.</param>
         /// <param name="createLog">true is a log file should be created.</param>
         /// <returns>Output folder path.</returns>
-        public static string UnpackMHA(string input, BinaryReader brInput, bool createLog)
-        {
-            return DefaultService.Value.UnpackMHA(input, brInput, createLog);
-        }
-
-        /// <summary>
-        /// Unpack a MHA file container.
-        /// Instance version for testability.
-        /// </summary>
-        /// <param name="input">Input file name to read from.</param>
-        /// <param name="brInput">Binary reader to the input file.</param>
-        /// <param name="createLog">true is a log file should be created.</param>
-        /// <returns>Output folder path.</returns>
-        public string UnpackMHAInstance(string input, BinaryReader brInput, bool createLog)
+        public string UnpackMHA(string input, BinaryReader brInput, bool createLog)
         {
             return _unpackingService.UnpackMHA(input, brInput, createLog);
         }
 
         /// <summary>
         /// Unpack, decompress, a JPK file.
-        /// Static version for backward compatibility.
         /// </summary>
         /// <param name="input">Input file path.</param>
         /// <returns>Output folder path.</returns>
-        public static string UnpackJPK(string input)
-        {
-            return DefaultService.Value.UnpackJPK(input);
-        }
-
-        /// <summary>
-        /// Unpack, decompress, a JPK file.
-        /// Instance version for testability.
-        /// </summary>
-        /// <param name="input">Input file path.</param>
-        /// <returns>Output folder path.</returns>
-        public string UnpackJPKInstance(string input)
+        public string UnpackJPK(string input)
         {
             return _unpackingService.UnpackJPK(input);
         }
 
         /// <summary>
         /// Unpack a stage file container.
-        /// Static version for backward compatibility.
         /// </summary>
         /// <param name="input">Input file name to read from.</param>
         /// <param name="brInput">Binary reader to the input file.</param>
         /// <param name="createLog">true is a log file should be created.</param>
         /// <param name="cleanUp">Remove the initial input file.</param>
         /// <returns>Output folder path.</returns>
-        public static string UnpackStageContainer(string input, BinaryReader brInput, bool createLog, bool cleanUp)
-        {
-            return DefaultService.Value.UnpackStageContainer(input, brInput, createLog, cleanUp);
-        }
-
-        /// <summary>
-        /// Unpack a stage file container.
-        /// Instance version for testability.
-        /// </summary>
-        /// <param name="input">Input file name to read from.</param>
-        /// <param name="brInput">Binary reader to the input file.</param>
-        /// <param name="createLog">true is a log file should be created.</param>
-        /// <param name="cleanUp">Remove the initial input file.</param>
-        /// <returns>Output folder path.</returns>
-        public string UnpackStageContainerInstance(string input, BinaryReader brInput, bool createLog, bool cleanUp)
+        public string UnpackStageContainer(string input, BinaryReader brInput, bool createLog, bool cleanUp)
         {
             return _unpackingService.UnpackStageContainer(input, brInput, createLog, cleanUp);
         }
 
         /// <summary>
         /// Write output to txt file.
-        /// Static version for backward compatibility.
         /// </summary>
         /// <param name="input">Input ftxt file, usually has MHF header.</param>
         /// <param name="brInput">Binary reader to the file.</param>
         /// <returns>Output file path.</returns>
-        public static string PrintFTXT(string input, BinaryReader brInput)
-        {
-            return DefaultService.Value.PrintFTXT(input, brInput);
-        }
-
-        /// <summary>
-        /// Write output to txt file.
-        /// Instance version for testability.
-        /// </summary>
-        /// <param name="input">Input ftxt file, usually has MHF header.</param>
-        /// <param name="brInput">Binary reader to the file.</param>
-        /// <returns>Output file path.</returns>
-        public string PrintFTXTInstance(string input, BinaryReader brInput)
+        public string PrintFTXT(string input, BinaryReader brInput)
         {
             return _unpackingService.PrintFTXT(input, brInput);
         }

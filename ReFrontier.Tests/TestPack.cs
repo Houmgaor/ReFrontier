@@ -31,7 +31,8 @@ public class TestPack
         string filepath = CreateTestFile("This is a random text, the number of bytes is important.");
         string outputPath = filepath + ".jpk";
 
-        Pack.JPKEncode(compression, filepath, outputPath);
+        var pack = new Pack();
+        pack.JPKEncode(compression, filepath, outputPath);
 
         Assert.True(File.Exists(outputPath));
         byte[] output = File.ReadAllBytes(outputPath);
@@ -53,7 +54,8 @@ public class TestPack
         string filepath = CreateTestFile("Test content for RW compression");
         string outputPath = filepath + ".jpk";
 
-        Pack.JPKEncode(compression, filepath, outputPath);
+        var pack = new Pack();
+        pack.JPKEncode(compression, filepath, outputPath);
 
         Assert.True(File.Exists(outputPath));
         byte[] output = File.ReadAllBytes(outputPath);
@@ -77,7 +79,8 @@ public class TestPack
         string filepath = CreateTestFile("Test content for HFI Huffman compression encoding test.");
         string outputPath = filepath + ".jpk";
 
-        Pack.JPKEncode(compression, filepath, outputPath);
+        var pack = new Pack();
+        pack.JPKEncode(compression, filepath, outputPath);
 
         Assert.True(File.Exists(outputPath));
         byte[] output = File.ReadAllBytes(outputPath);
@@ -101,8 +104,9 @@ public class TestPack
         string filepath = CreateTestFile("Test");
         string outputPath = filepath + ".jpk";
 
+        var pack = new Pack();
         Assert.Throws<InvalidOperationException>(() =>
-            Pack.JPKEncode(compression, filepath, outputPath)
+            pack.JPKEncode(compression, filepath, outputPath)
         );
     }
 
@@ -117,8 +121,9 @@ public class TestPack
         string filepath = CreateTestFile("Test");
         string outputPath = filepath + ".jpk";
 
+        var pack = new Pack();
         Assert.Throws<InvalidOperationException>(() =>
-            Pack.JPKEncode(compression, filepath, outputPath)
+            pack.JPKEncode(compression, filepath, outputPath)
         );
     }
 
@@ -136,11 +141,11 @@ public class TestPack
         // Create existing output file with dummy content
         File.WriteAllBytes(outputPath, [0x00, 0x01, 0x02]);
 
-        Pack.JPKEncode(compression, filepath, outputPath);
+        var pack = new Pack();
+        pack.JPKEncode(compression, filepath, outputPath);
 
         byte[] output = File.ReadAllBytes(outputPath);
         // Should have JKR magic, not the dummy content
         Assert.Equal(0x4A, output[0]);
     }
 }
-
