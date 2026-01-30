@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
+using System.CommandLine.Invocation;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -84,44 +85,183 @@ namespace FrontierDataTool
             // Root command
             var rootCommand = new RootCommand("FrontierDataTool - Extract and edit Monster Hunter Frontier game data");
 
-            // dump command
-            var dumpCommand = new Command("dump", "Extract weapon/armor/skill/quest data");
-            var suffixArg = new Argument<string>("suffix", "Output suffix for files");
-            var mhfpacArg = new Argument<string>("mhfpac", "Path to mhfpac.bin");
-            var mhfdatArg = new Argument<string>("mhfdat", "Path to mhfdat.bin");
-            var mhfinfArg = new Argument<string>("mhfinf", "Path to mhfinf.bin");
-            dumpCommand.AddArgument(suffixArg);
-            dumpCommand.AddArgument(mhfpacArg);
-            dumpCommand.AddArgument(mhfdatArg);
-            dumpCommand.AddArgument(mhfinfArg);
-            dumpCommand.SetHandler((string suffix, string mhfpac, string mhfdat, string mhfinf) =>
-            {
-                DumpData(suffix, mhfpac, mhfdat, mhfinf);
-                FinishCommand();
-            }, suffixArg, mhfpacArg, mhfdatArg, mhfinfArg);
-            rootCommand.AddCommand(dumpCommand);
+            // Action options
+            var dumpOption = new Option<bool>(
+                name: "--dump",
+                description: "Extract weapon/armor/skill/quest data (requires --suffix, --mhfpac, --mhfdat, --mhfinf)"
+            );
+            rootCommand.AddOption(dumpOption);
 
-            // modshop command
-            var modshopCommand = new Command("modshop", "Modify shop prices");
-            var mhfdatModArg = new Argument<string>("mhfdat", "Path to mhfdat.bin");
-            modshopCommand.AddArgument(mhfdatModArg);
-            modshopCommand.SetHandler((string mhfdat) =>
+            var modshopOption = new Option<bool>(
+                name: "--modshop",
+                description: "Modify shop prices (requires --mhfdat)"
+            );
+            rootCommand.AddOption(modshopOption);
+
+            // Parameter options
+            var suffixOption = new Option<string>(
+                name: "--suffix",
+                description: "Output suffix for files"
+            );
+            rootCommand.AddOption(suffixOption);
+
+            var mhfpacOption = new Option<string>(
+                name: "--mhfpac",
+                description: "Path to mhfpac.bin"
+            );
+            rootCommand.AddOption(mhfpacOption);
+
+            var mhfdatOption = new Option<string>(
+                name: "--mhfdat",
+                description: "Path to mhfdat.bin"
+            );
+            rootCommand.AddOption(mhfdatOption);
+
+            var mhfinfOption = new Option<string>(
+                name: "--mhfinf",
+                description: "Path to mhfinf.bin"
+            );
+            rootCommand.AddOption(mhfinfOption);
+
+            var closeOption = new Option<bool>(
+                name: "--close",
+                description: "Close terminal after command"
+            );
+            rootCommand.AddOption(closeOption);
+
+            // Set handler
+            rootCommand.SetHandler((InvocationContext context) =>
             {
-                ModShop(mhfdat);
-                FinishCommand();
-            }, mhfdatModArg);
-            rootCommand.AddCommand(modshopCommand);
+                var dump = context.ParseResult.GetValueForOption(dumpOption);
+                var modshop = context.ParseResult.GetValueForOption(modshopOption);
+                var suffix = context.ParseResult.GetValueForOption(suffixOption);
+                var mhfpac = context.ParseResult.GetValueForOption(mhfpacOption);
+                var mhfdat = context.ParseResult.GetValueForOption(mhfdatOption);
+                var mhfinf = context.ParseResult.GetValueForOption(mhfinfOption);
+                var close = context.ParseResult.GetValueForOption(closeOption);
+
+                // Count how many actions are specified
+                int actionCount = (dump ? 1 : 0) + (modshop ? 1 : 0);
+
+                if (actionCount == 0)
+                {
+                    Console.Error.WriteLine("Error: No action specified. Use --dump or --modshop.");
+                    context.ExitCode = 1;
+                    FinishCommand(close);
+                    return;
+                }
+
+                if (actionCount > 1)
+                {
+                    Console.Error.WriteLine("Error: Only one action can be specified at a time.");
+                    context.ExitCode = 1;
+                    FinishCommand(close);
+                    return;
+                }
+
+                try
+                {
+                    if (dump)
+                    {
+                        // Validate required parameters
+                        if (string.IsNullOrEmpty(suffix))
+                        {
+                            Console.Error.WriteLine("Error: --dump requires --suffix.");
+                            context.ExitCode = 1;
+                            FinishCommand(close);
+                            return;
+                        }
+                        if (string.IsNullOrEmpty(mhfpac))
+                        {
+                            Console.Error.WriteLine("Error: --dump requires --mhfpac.");
+                            context.ExitCode = 1;
+                            FinishCommand(close);
+                            return;
+                        }
+                        if (string.IsNullOrEmpty(mhfdat))
+                        {
+                            Console.Error.WriteLine("Error: --dump requires --mhfdat.");
+                            context.ExitCode = 1;
+                            FinishCommand(close);
+                            return;
+                        }
+                        if (string.IsNullOrEmpty(mhfinf))
+                        {
+                            Console.Error.WriteLine("Error: --dump requires --mhfinf.");
+                            context.ExitCode = 1;
+                            FinishCommand(close);
+                            return;
+                        }
+
+                        // Validate files exist
+                        if (!File.Exists(mhfpac))
+                        {
+                            Console.Error.WriteLine($"Error: File '{mhfpac}' does not exist.");
+                            context.ExitCode = 1;
+                            FinishCommand(close);
+                            return;
+                        }
+                        if (!File.Exists(mhfdat))
+                        {
+                            Console.Error.WriteLine($"Error: File '{mhfdat}' does not exist.");
+                            context.ExitCode = 1;
+                            FinishCommand(close);
+                            return;
+                        }
+                        if (!File.Exists(mhfinf))
+                        {
+                            Console.Error.WriteLine($"Error: File '{mhfinf}' does not exist.");
+                            context.ExitCode = 1;
+                            FinishCommand(close);
+                            return;
+                        }
+
+                        DumpData(suffix, mhfpac, mhfdat, mhfinf);
+                    }
+                    else if (modshop)
+                    {
+                        if (string.IsNullOrEmpty(mhfdat))
+                        {
+                            Console.Error.WriteLine("Error: --modshop requires --mhfdat.");
+                            context.ExitCode = 1;
+                            FinishCommand(close);
+                            return;
+                        }
+
+                        if (!File.Exists(mhfdat))
+                        {
+                            Console.Error.WriteLine($"Error: File '{mhfdat}' does not exist.");
+                            context.ExitCode = 1;
+                            FinishCommand(close);
+                            return;
+                        }
+
+                        ModShop(mhfdat);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"Error: {ex.Message}");
+                    context.ExitCode = 1;
+                }
+
+                FinishCommand(close);
+            });
 
             return rootCommand.Invoke(args);
         }
 
         /// <summary>
-        /// Finish command execution with wait and message.
+        /// Finish command execution with optional wait and message.
         /// </summary>
-        private static void FinishCommand()
+        /// <param name="close">If true, don't wait for user input.</param>
+        private static void FinishCommand(bool close)
         {
-            Console.WriteLine("Done");
-            Console.Read();
+            if (!close)
+            {
+                Console.WriteLine("Done");
+                Console.Read();
+            }
         }
 
         /// <summary>

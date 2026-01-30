@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
+using System.CommandLine.Invocation;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -35,106 +36,199 @@ namespace FrontierTextTool
             // Root command
             var rootCommand = new RootCommand($"FrontierTextTool v{fileVersionAttribute} - Extract and edit text data");
 
+            // Primary file argument
+            var fileArgument = new Argument<string>(
+                name: "file",
+                description: "Input file to process"
+            );
+            rootCommand.AddArgument(fileArgument);
+
+            // Action options (mutually exclusive actions)
+            var fulldumpOption = new Option<bool>(
+                name: "--fulldump",
+                description: "Dump all data from file"
+            );
+            rootCommand.AddOption(fulldumpOption);
+
+            var dumpOption = new Option<bool>(
+                name: "--dump",
+                description: "Dump data range from file (requires --startIndex and --endIndex)"
+            );
+            rootCommand.AddOption(dumpOption);
+
+            var insertOption = new Option<bool>(
+                name: "--insert",
+                description: "Add data from CSV to file (requires --csv)"
+            );
+            rootCommand.AddOption(insertOption);
+
+            var mergeOption = new Option<bool>(
+                name: "--merge",
+                description: "Merge two CSV files (requires --csv for new CSV)"
+            );
+            rootCommand.AddOption(mergeOption);
+
+            var cleanTradosOption = new Option<bool>(
+                name: "--cleanTrados",
+                description: "Clean up ill-encoded characters in file"
+            );
+            rootCommand.AddOption(cleanTradosOption);
+
+            var insertCatOption = new Option<bool>(
+                name: "--insertCAT",
+                description: "Insert CAT file to CSV file (requires --csv)"
+            );
+            rootCommand.AddOption(insertCatOption);
+
+            // Parameter options
+            var startIndexOption = new Option<int>(
+                name: "--startIndex",
+                description: "Start offset for dump",
+                getDefaultValue: () => 0
+            );
+            rootCommand.AddOption(startIndexOption);
+
+            var endIndexOption = new Option<int>(
+                name: "--endIndex",
+                description: "End offset for dump",
+                getDefaultValue: () => 0
+            );
+            rootCommand.AddOption(endIndexOption);
+
+            var csvOption = new Option<string>(
+                name: "--csv",
+                description: "Secondary CSV file for insert, merge, or insertCAT operations"
+            );
+            rootCommand.AddOption(csvOption);
+
             // Global options
             var verboseOption = new Option<bool>(
                 name: "--verbose",
                 description: "More verbosity"
             );
-            rootCommand.AddGlobalOption(verboseOption);
+            rootCommand.AddOption(verboseOption);
 
             var trueOffsetsOption = new Option<bool>(
                 name: "--trueOffsets",
                 description: "Correct the value of string offsets"
             );
-            rootCommand.AddGlobalOption(trueOffsetsOption);
+            rootCommand.AddOption(trueOffsetsOption);
 
             var nullStringsOption = new Option<bool>(
                 name: "--nullStrings",
                 description: "Check if strings are valid before outputting them"
             );
-            rootCommand.AddGlobalOption(nullStringsOption);
+            rootCommand.AddOption(nullStringsOption);
 
             var closeOption = new Option<bool>(
                 name: "--close",
                 description: "Close terminal after command"
             );
-            rootCommand.AddGlobalOption(closeOption);
+            rootCommand.AddOption(closeOption);
 
-            // fulldump command
-            var fulldumpCommand = new Command("fulldump", "Dump all data from file");
-            var fulldumpFileArg = new Argument<string>("file", "File to dump data from");
-            fulldumpCommand.AddArgument(fulldumpFileArg);
-            fulldumpCommand.SetHandler((string file, bool trueOffsets, bool nullStrings, bool close) =>
+            // Set handler
+            rootCommand.SetHandler((InvocationContext context) =>
             {
-                DumpAndHash(file, 0, 0, trueOffsets, nullStrings);
-                FinishCommand(close);
-            }, fulldumpFileArg, trueOffsetsOption, nullStringsOption, closeOption);
-            rootCommand.AddCommand(fulldumpCommand);
+                var file = context.ParseResult.GetValueForArgument(fileArgument);
+                var fulldump = context.ParseResult.GetValueForOption(fulldumpOption);
+                var dump = context.ParseResult.GetValueForOption(dumpOption);
+                var insert = context.ParseResult.GetValueForOption(insertOption);
+                var merge = context.ParseResult.GetValueForOption(mergeOption);
+                var cleanTrados = context.ParseResult.GetValueForOption(cleanTradosOption);
+                var insertCat = context.ParseResult.GetValueForOption(insertCatOption);
+                var startIndex = context.ParseResult.GetValueForOption(startIndexOption);
+                var endIndex = context.ParseResult.GetValueForOption(endIndexOption);
+                var csv = context.ParseResult.GetValueForOption(csvOption);
+                var verbose = context.ParseResult.GetValueForOption(verboseOption);
+                var trueOffsets = context.ParseResult.GetValueForOption(trueOffsetsOption);
+                var nullStrings = context.ParseResult.GetValueForOption(nullStringsOption);
+                var close = context.ParseResult.GetValueForOption(closeOption);
 
-            // dump command
-            var dumpCommand = new Command("dump", "Dump data range from file");
-            var dumpFileArg = new Argument<string>("file", "File to dump data from");
-            var startIndexArg = new Argument<int>("startIndex", "Start offset");
-            var endIndexArg = new Argument<int>("endIndex", "End offset");
-            dumpCommand.AddArgument(dumpFileArg);
-            dumpCommand.AddArgument(startIndexArg);
-            dumpCommand.AddArgument(endIndexArg);
-            dumpCommand.SetHandler((string file, int startIndex, int endIndex, bool trueOffsets, bool nullStrings, bool close) =>
-            {
-                DumpAndHash(file, startIndex, endIndex, trueOffsets, nullStrings);
-                FinishCommand(close);
-            }, dumpFileArg, startIndexArg, endIndexArg, trueOffsetsOption, nullStringsOption, closeOption);
-            rootCommand.AddCommand(dumpCommand);
+                // Count how many actions are specified
+                int actionCount = (fulldump ? 1 : 0) + (dump ? 1 : 0) + (insert ? 1 : 0) +
+                                  (merge ? 1 : 0) + (cleanTrados ? 1 : 0) + (insertCat ? 1 : 0);
 
-            // insert command
-            var insertCommand = new Command("insert", "Add data from CSV to file");
-            var outputFileArg = new Argument<string>("outputFile", "Output file");
-            var inputCsvArg = new Argument<string>("inputCsv", "Input CSV file");
-            insertCommand.AddArgument(outputFileArg);
-            insertCommand.AddArgument(inputCsvArg);
-            insertCommand.SetHandler((string outputFile, string inputCsv, bool verbose, bool trueOffsets, bool close) =>
-            {
-                InsertStrings(outputFile, inputCsv, verbose, trueOffsets);
-                FinishCommand(close);
-            }, outputFileArg, inputCsvArg, verboseOption, trueOffsetsOption, closeOption);
-            rootCommand.AddCommand(insertCommand);
+                if (actionCount == 0)
+                {
+                    Console.Error.WriteLine("Error: No action specified. Use --fulldump, --dump, --insert, --merge, --cleanTrados, or --insertCAT.");
+                    context.ExitCode = 1;
+                    FinishCommand(close);
+                    return;
+                }
 
-            // merge command
-            var mergeCommand = new Command("merge", "Merge two CSV files");
-            var oldCsvArg = new Argument<string>("oldCsv", "Old CSV file");
-            var newCsvArg = new Argument<string>("newCsv", "New CSV file");
-            mergeCommand.AddArgument(oldCsvArg);
-            mergeCommand.AddArgument(newCsvArg);
-            mergeCommand.SetHandler((string oldCsv, string newCsv, bool close) =>
-            {
-                Merge(oldCsv, newCsv);
-                FinishCommand(close);
-            }, oldCsvArg, newCsvArg, closeOption);
-            rootCommand.AddCommand(mergeCommand);
+                if (actionCount > 1)
+                {
+                    Console.Error.WriteLine("Error: Only one action can be specified at a time.");
+                    context.ExitCode = 1;
+                    FinishCommand(close);
+                    return;
+                }
 
-            // cleanTrados command
-            var cleanTradosCommand = new Command("cleanTrados", "Clean up ill-encoded characters in file");
-            var cleanTradosFileArg = new Argument<string>("file", "File to clean");
-            cleanTradosCommand.AddArgument(cleanTradosFileArg);
-            cleanTradosCommand.SetHandler((string file, bool close) =>
-            {
-                CleanTrados(file);
-                FinishCommand(close);
-            }, cleanTradosFileArg, closeOption);
-            rootCommand.AddCommand(cleanTradosCommand);
+                // Validate file exists
+                if (!File.Exists(file))
+                {
+                    Console.Error.WriteLine($"Error: File '{file}' does not exist.");
+                    context.ExitCode = 1;
+                    FinishCommand(close);
+                    return;
+                }
 
-            // insertCAT command
-            var insertCatCommand = new Command("insertCAT", "Insert CAT file to CSV file");
-            var catFileArg = new Argument<string>("file", "CAT file");
-            var csvFileArg = new Argument<string>("csvFile", "CSV file");
-            insertCatCommand.AddArgument(catFileArg);
-            insertCatCommand.AddArgument(csvFileArg);
-            insertCatCommand.SetHandler((string catFile, string csvFile, bool close) =>
-            {
-                InsertCatFile(catFile, csvFile);
+                try
+                {
+                    if (fulldump)
+                    {
+                        DumpAndHash(file, 0, 0, trueOffsets, nullStrings);
+                    }
+                    else if (dump)
+                    {
+                        DumpAndHash(file, startIndex, endIndex, trueOffsets, nullStrings);
+                    }
+                    else if (insert)
+                    {
+                        if (string.IsNullOrEmpty(csv))
+                        {
+                            Console.Error.WriteLine("Error: --insert requires --csv <csvFile>.");
+                            context.ExitCode = 1;
+                            FinishCommand(close);
+                            return;
+                        }
+                        InsertStrings(file, csv, verbose, trueOffsets);
+                    }
+                    else if (merge)
+                    {
+                        if (string.IsNullOrEmpty(csv))
+                        {
+                            Console.Error.WriteLine("Error: --merge requires --csv <newCsvFile>.");
+                            context.ExitCode = 1;
+                            FinishCommand(close);
+                            return;
+                        }
+                        Merge(file, csv);
+                    }
+                    else if (cleanTrados)
+                    {
+                        CleanTrados(file);
+                    }
+                    else if (insertCat)
+                    {
+                        if (string.IsNullOrEmpty(csv))
+                        {
+                            Console.Error.WriteLine("Error: --insertCAT requires --csv <csvFile>.");
+                            context.ExitCode = 1;
+                            FinishCommand(close);
+                            return;
+                        }
+                        InsertCatFile(file, csv);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"Error: {ex.Message}");
+                    context.ExitCode = 1;
+                }
+
                 FinishCommand(close);
-            }, catFileArg, csvFileArg, closeOption);
-            rootCommand.AddCommand(insertCatCommand);
+            });
 
             return rootCommand.Invoke(args);
         }
