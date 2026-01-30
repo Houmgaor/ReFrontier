@@ -61,7 +61,7 @@ Put in the the same folder as the executable.
 4. Compress and encrypt
 
     ```shell
-    ./ReFrontier.exe mhfdat.bin --compress=4,80 --encrypt
+    ./ReFrontier.exe mhfdat.bin --compress hfi --level 80 --encrypt
     ```
 
 5. Replace mhfdat.bin by the new file.
@@ -114,10 +114,18 @@ This solution also includes [FrontierTextTool](./FrontierTextTool/README.md) and
 
 ### Compress
 
-To compress it again JPK type 4, with maximal (100) compression use:
+To compress a file, use `--compress <type> --level <level>`.
+
+Available compression types:
+- `rw` (or `0`) - RW compression
+- `hfirw` (or `2`) - HFIRW compression (decode only)
+- `lz` (or `3`) - LZ compression
+- `hfi` (or `4`) - HFI Huffman compression
+
+Example with HFI compression at level 100:
 
 ```shell
-./ReFrontier.exe mhfdat.bin --compress=4,100
+./ReFrontier.exe mhfdat.bin --compress hfi --level 100
 ```
 
 The output will be a file, or a folder with the same name in the `output/` directory.

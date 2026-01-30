@@ -62,13 +62,20 @@ This solution also includes [FrontierTextTool](../FrontierTextTool/README.md) an
 You can compress back to supported formats.
 Neither the compression type nor level are really important, since the game will figure out how to decompress from the file header.
 
-A good match is JPK type 3, with any compression level from 50 to 90.
-You can declare compression up to "100%", but the compression efficiency frops sharply at "81.91".
+A good match is LZ compression with any level from 50 to 90.
+You can declare compression up to "100%", but the compression efficiency drops sharply at "81.91".
 
 The options are:
 
 ```text
---compress=[type],[level]: Pack file with jpk [type] at compression [level] (example: --compress=3,10)
+--compress <type>: Compression type (rw, hfirw, lz, hfi or numeric 0, 2, 3, 4)
+--level <level>: Compression level (e.g., 50, 100)
+```
+
+Example:
+
+```shell
+./ReFrontier.exe mhfdat.bin --compress lz --level 50
 ```
 
 The output will be a file, or a folder with the same name in the `output/` directory.
@@ -76,13 +83,13 @@ The output will be a file, or a folder with the same name in the `output/` direc
 It has the following output on vanilla mhfdat.bin:
 
 ```text
-File compressed using type 4 (level 1): 9453891 bytes (64,26 % saved) in 0:04.48
-File compressed using type 4 (level 2): 8589271 bytes (67,53 % saved) in 0:06.84
+File compressed using HFI compression level 1: 9453891 bytes (64,26 % saved) in 0:04.48
+File compressed using HFI compression level 2: 8589271 bytes (67,53 % saved) in 0:06.84
 
 [...]
 
-File compressed using type 4 (level 100): 6045761 bytes (77,15 % saved) in 2:05.03
-Vanilla file from COG with type 4       : 5363764 bytes (79,72 % saved)
+File compressed using HFI compression level 100: 6045761 bytes (77,15 % saved) in 2:05.03
+Vanilla file from COG with HFI                 : 5363764 bytes (79,72 % saved)
 ```
 
 #### Encrypt
