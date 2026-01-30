@@ -106,6 +106,12 @@ namespace FrontierDataTool
             );
             rootCommand.AddOption(modshopOption);
 
+            var importOption = new Option<bool>(
+                name: "--import",
+                description: "Import modified CSV back into game files (requires --csv, --mhfdat, --mhfpac)"
+            );
+            rootCommand.AddOption(importOption);
+
             // Parameter options
             var suffixOption = new Option<string>(
                 name: "--suffix",
@@ -131,6 +137,12 @@ namespace FrontierDataTool
             );
             rootCommand.AddOption(mhfinfOption);
 
+            var csvOption = new Option<string>(
+                name: "--csv",
+                description: "Path to the CSV file to import (e.g., Armor.csv)"
+            );
+            rootCommand.AddOption(csvOption);
+
             var closeOption = new Option<bool>(
                 name: "--close",
                 description: "Close terminal after command"
@@ -142,18 +154,20 @@ namespace FrontierDataTool
             {
                 var dump = context.ParseResult.GetValueForOption(dumpOption);
                 var modshop = context.ParseResult.GetValueForOption(modshopOption);
+                var import = context.ParseResult.GetValueForOption(importOption);
                 var suffix = context.ParseResult.GetValueForOption(suffixOption);
                 var mhfpac = context.ParseResult.GetValueForOption(mhfpacOption);
                 var mhfdat = context.ParseResult.GetValueForOption(mhfdatOption);
                 var mhfinf = context.ParseResult.GetValueForOption(mhfinfOption);
+                var csv = context.ParseResult.GetValueForOption(csvOption);
                 var close = context.ParseResult.GetValueForOption(closeOption);
 
                 // Count how many actions are specified
-                int actionCount = (dump ? 1 : 0) + (modshop ? 1 : 0);
+                int actionCount = (dump ? 1 : 0) + (modshop ? 1 : 0) + (import ? 1 : 0);
 
                 if (actionCount == 0)
                 {
-                    Console.Error.WriteLine("Error: No action specified. Use --dump or --modshop.");
+                    Console.Error.WriteLine("Error: No action specified. Use --dump, --modshop, or --import.");
                     context.ExitCode = 1;
                     FinishCommand(close);
                     return;
@@ -245,6 +259,54 @@ namespace FrontierDataTool
                         }
 
                         ModShop(mhfdat);
+                    }
+                    else if (import)
+                    {
+                        if (string.IsNullOrEmpty(csv))
+                        {
+                            Console.Error.WriteLine("Error: --import requires --csv.");
+                            context.ExitCode = 1;
+                            FinishCommand(close);
+                            return;
+                        }
+                        if (string.IsNullOrEmpty(mhfdat))
+                        {
+                            Console.Error.WriteLine("Error: --import requires --mhfdat.");
+                            context.ExitCode = 1;
+                            FinishCommand(close);
+                            return;
+                        }
+                        if (string.IsNullOrEmpty(mhfpac))
+                        {
+                            Console.Error.WriteLine("Error: --import requires --mhfpac.");
+                            context.ExitCode = 1;
+                            FinishCommand(close);
+                            return;
+                        }
+
+                        if (!File.Exists(csv))
+                        {
+                            Console.Error.WriteLine($"Error: File '{csv}' does not exist.");
+                            context.ExitCode = 1;
+                            FinishCommand(close);
+                            return;
+                        }
+                        if (!File.Exists(mhfdat))
+                        {
+                            Console.Error.WriteLine($"Error: File '{mhfdat}' does not exist.");
+                            context.ExitCode = 1;
+                            FinishCommand(close);
+                            return;
+                        }
+                        if (!File.Exists(mhfpac))
+                        {
+                            Console.Error.WriteLine($"Error: File '{mhfpac}' does not exist.");
+                            context.ExitCode = 1;
+                            FinishCommand(close);
+                            return;
+                        }
+
+                        ImportArmorData(mhfdat, csv, mhfpac);
                     }
                 }
                 catch (Exception ex)
@@ -996,6 +1058,210 @@ namespace FrontierDataTool
 
             // Write to file
             File.WriteAllBytes(file, outputArray);
+        }
+
+        /// <summary>
+        /// Import armor data from CSV back into mhfdat.bin.
+        /// </summary>
+        /// <param name="mhfdat">Path to mhfdat.bin.</param>
+        /// <param name="csvPath">Path to Armor.csv.</param>
+        /// <param name="mhfpac">Path to mhfpac.bin (for skill name lookup).</param>
+        private static void ImportArmorData(string mhfdat, string csvPath, string mhfpac)
+        {
+            string[] armorClasses = ["頭", "胴", "腕", "腰", "脚"];
+
+            // Build skill name to ID lookup from mhfpac
+            var skillLookup = BuildSkillLookup(mhfpac);
+            Console.WriteLine($"Loaded {skillLookup.Count} skill names for lookup.");
+
+            // Read armor entries from CSV
+            List<ArmorDataEntry> armorEntries;
+            using (var textReader = new StreamReader(csvPath, Encoding.GetEncoding("shift-jis")))
+            {
+                var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
+                {
+                    Delimiter = "\t",
+                };
+                using var csvReader = new CsvReader(textReader, configuration);
+                armorEntries = csvReader.GetRecords<ArmorDataEntry>().ToList();
+            }
+            Console.WriteLine($"Read {armorEntries.Count} armor entries from CSV.");
+
+            // Load mhfdat.bin
+            byte[] mhfdatData = File.ReadAllBytes(mhfdat);
+            using var ms = new MemoryStream(mhfdatData);
+            using var br = new BinaryReader(ms);
+            using var bw = new BinaryWriter(ms);
+
+            // Process each armor class
+            for (int i = 0; i < 5; i++)
+            {
+                // Get data section offset and count
+                br.BaseStream.Seek(_dataPointersArmor[i].Key, SeekOrigin.Begin);
+                int sOffset = br.ReadInt32();
+                br.BaseStream.Seek(_dataPointersArmor[i].Value, SeekOrigin.Begin);
+                int eOffset = br.ReadInt32();
+
+                int entryCount = (eOffset - sOffset) / ARMOR_ENTRY_SIZE;
+
+                // Filter CSV entries for this armor class
+                var classEntries = armorEntries.Where(e => e.EquipClass == armorClasses[i]).ToList();
+
+                if (classEntries.Count != entryCount)
+                {
+                    Console.Error.WriteLine($"Warning: CSV has {classEntries.Count} entries for {armorClasses[i]}, but mhfdat expects {entryCount}. Skipping this class.");
+                    continue;
+                }
+
+                Console.WriteLine($"Writing {entryCount} {armorClasses[i]} entries starting at 0x{sOffset:X8}");
+
+                // Write each entry
+                for (int j = 0; j < entryCount; j++)
+                {
+                    int entryOffset = sOffset + (j * ARMOR_ENTRY_SIZE);
+                    bw.BaseStream.Seek(entryOffset, SeekOrigin.Begin);
+                    WriteArmorEntry(bw, classEntries[j], skillLookup);
+                }
+            }
+
+            // Ensure output directory exists
+            Directory.CreateDirectory("output");
+            string outputPath = Path.Combine("output", "mhfdat.bin");
+            File.WriteAllBytes(outputPath, mhfdatData);
+            Console.WriteLine($"Wrote modified data to {outputPath}");
+        }
+
+        /// <summary>
+        /// Build a dictionary mapping skill names to their IDs.
+        /// </summary>
+        /// <param name="mhfpac">Path to mhfpac.bin.</param>
+        /// <returns>Dictionary of skill name to skill ID.</returns>
+        private static Dictionary<string, byte> BuildSkillLookup(string mhfpac)
+        {
+            var skillLookup = new Dictionary<string, byte>();
+
+            using var ms = new MemoryStream(File.ReadAllBytes(mhfpac));
+            using var br = new BinaryReader(ms);
+
+            br.BaseStream.Seek(_soStringSkillPt, SeekOrigin.Begin);
+            int sOffset = br.ReadInt32();
+            br.BaseStream.Seek(_eoStringSkillPt, SeekOrigin.Begin);
+            int eOffset = br.ReadInt32();
+
+            br.BaseStream.Seek(sOffset, SeekOrigin.Begin);
+            byte id = 0;
+            while (br.BaseStream.Position < eOffset)
+            {
+                string name = StringFromPointer(br);
+                if (!skillLookup.ContainsKey(name))
+                {
+                    skillLookup[name] = id;
+                }
+                id++;
+            }
+
+            return skillLookup;
+        }
+
+        /// <summary>
+        /// Reconstruct the bitfield byte from individual boolean fields.
+        /// </summary>
+        /// <param name="entry">Armor entry with boolean fields.</param>
+        /// <returns>Bitfield byte.</returns>
+        private static byte ReconstructArmorBitfield(ArmorDataEntry entry)
+        {
+            byte bitfield = 0;
+            if (entry.IsMaleEquip) bitfield |= (1 << 0);
+            if (entry.IsFemaleEquip) bitfield |= (1 << 1);
+            if (entry.IsBladeEquip) bitfield |= (1 << 2);
+            if (entry.IsGunnerEquip) bitfield |= (1 << 3);
+            if (entry.Bool1) bitfield |= (1 << 4);
+            if (entry.IsSPEquip) bitfield |= (1 << 5);
+            if (entry.Bool3) bitfield |= (1 << 6);
+            if (entry.Bool4) bitfield |= (1 << 7);
+            return bitfield;
+        }
+
+        /// <summary>
+        /// Write a single armor entry to the binary stream.
+        /// </summary>
+        /// <param name="bw">Binary writer positioned at the entry offset.</param>
+        /// <param name="entry">Armor entry to write.</param>
+        /// <param name="skillLookup">Dictionary mapping skill names to IDs.</param>
+        private static void WriteArmorEntry(BinaryWriter bw, ArmorDataEntry entry, Dictionary<string, byte> skillLookup)
+        {
+            bw.Write(entry.ModelIdMale);         // 0x00: short
+            bw.Write(entry.ModelIdFemale);       // 0x02: short
+            bw.Write(ReconstructArmorBitfield(entry)); // 0x04: byte
+            bw.Write(entry.Rarity);              // 0x05: byte
+            bw.Write(entry.MaxLevel);            // 0x06: byte
+            bw.Write(entry.Unk1_1);              // 0x07: byte
+            bw.Write(entry.Unk1_2);              // 0x08: byte
+            bw.Write(entry.Unk1_3);              // 0x09: byte
+            bw.Write(entry.Unk1_4);              // 0x0A: byte
+            bw.Write(entry.Unk2);                // 0x0B: byte
+            bw.Write(entry.ZennyCost);           // 0x0C: int
+            bw.Write(entry.Unk3);                // 0x10: short
+            bw.Write(entry.BaseDefense);         // 0x12: short
+            bw.Write(entry.FireRes);             // 0x14: sbyte
+            bw.Write(entry.WaterRes);            // 0x15: sbyte
+            bw.Write(entry.ThunderRes);          // 0x16: sbyte
+            bw.Write(entry.DragonRes);           // 0x17: sbyte
+            bw.Write(entry.IceRes);              // 0x18: sbyte
+            bw.Write(entry.Unk3_1);              // 0x19: short (note: sbyte + short = 3 bytes, offset would be 0x1B)
+            bw.Write(entry.BaseSlots);           // 0x1B: byte
+            bw.Write(entry.MaxSlots);            // 0x1C: byte
+            bw.Write(entry.SthEventCrown);       // 0x1D: byte
+            bw.Write(entry.Unk5);                // 0x1E: byte
+            bw.Write(entry.Unk6);                // 0x1F: byte
+            bw.Write(entry.Unk7_1);              // 0x20: byte
+            bw.Write(entry.Unk7_2);              // 0x21: byte
+            bw.Write(entry.Unk7_3);              // 0x22: byte
+            bw.Write(entry.Unk7_4);              // 0x23: byte
+            bw.Write(entry.Unk8_1);              // 0x24: byte
+            bw.Write(entry.Unk8_2);              // 0x25: byte
+            bw.Write(entry.Unk8_3);              // 0x26: byte
+            bw.Write(entry.Unk8_4);              // 0x27: byte
+            bw.Write(entry.Unk10);               // 0x28: short
+
+            // Write skill IDs (convert from name string to byte ID)
+            bw.Write(LookupSkillId(entry.SkillId1, skillLookup)); // 0x2A: byte
+            bw.Write(entry.SkillPts1);           // 0x2B: sbyte
+            bw.Write(LookupSkillId(entry.SkillId2, skillLookup)); // 0x2C: byte
+            bw.Write(entry.SkillPts2);           // 0x2D: sbyte
+            bw.Write(LookupSkillId(entry.SkillId3, skillLookup)); // 0x2E: byte
+            bw.Write(entry.SkillPts3);           // 0x2F: sbyte
+            bw.Write(LookupSkillId(entry.SkillId4, skillLookup)); // 0x30: byte
+            bw.Write(entry.SkillPts4);           // 0x31: sbyte
+            bw.Write(LookupSkillId(entry.SkillId5, skillLookup)); // 0x32: byte
+            bw.Write(entry.SkillPts5);           // 0x33: sbyte
+
+            bw.Write(entry.SthHiden);            // 0x34: int
+            bw.Write(entry.Unk12);               // 0x38: int
+            bw.Write(entry.Unk13);               // 0x3C: byte
+            bw.Write(entry.Unk14);               // 0x3D: byte
+            bw.Write(entry.Unk15);               // 0x3E: byte
+            bw.Write(entry.Unk16);               // 0x3F: byte
+            bw.Write(entry.Unk17);               // 0x40: int
+            bw.Write(entry.Unk18);               // 0x44: short
+            bw.Write(entry.Unk19);               // 0x46: short
+            // Total: 0x48 bytes
+        }
+
+        /// <summary>
+        /// Look up a skill ID by name, returning 0 if not found.
+        /// </summary>
+        /// <param name="skillName">Skill name to look up.</param>
+        /// <param name="skillLookup">Dictionary mapping skill names to IDs.</param>
+        /// <returns>Skill ID byte.</returns>
+        private static byte LookupSkillId(string skillName, Dictionary<string, byte> skillLookup)
+        {
+            if (string.IsNullOrEmpty(skillName))
+                return 0;
+            if (skillLookup.TryGetValue(skillName, out byte id))
+                return id;
+            Console.Error.WriteLine($"Warning: Unknown skill name '{skillName}', defaulting to 0.");
+            return 0;
         }
 
         /// <summary>

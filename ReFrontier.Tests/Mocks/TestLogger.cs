@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -64,6 +65,41 @@ namespace ReFrontier.Tests.Mocks
                 WriteLine(message);
                 WriteSeparator();
             }
+        }
+
+        /// <inheritdoc />
+        public void Log(LogLevel level, string message)
+        {
+            var prefix = level switch
+            {
+                LogLevel.Trace => "[TRACE] ",
+                LogLevel.Debug => "[DEBUG] ",
+                LogLevel.Information => "[INFO] ",
+                LogLevel.Warning => "[WARN] ",
+                LogLevel.Error => "[ERROR] ",
+                LogLevel.Fatal => "[FATAL] ",
+                _ => ""
+            };
+            WriteLine($"{prefix}{message}");
+        }
+
+        /// <inheritdoc />
+        public void Debug(string message) => WriteLine($"[DEBUG] {message}");
+
+        /// <inheritdoc />
+        public void Information(string message) => WriteLine(message);
+
+        /// <inheritdoc />
+        public void Warning(string message) => WriteLine($"[WARN] {message}");
+
+        /// <inheritdoc />
+        public void Error(string message) => WriteLine($"[ERROR] {message}");
+
+        /// <inheritdoc />
+        public void Error(Exception exception, string message)
+        {
+            WriteLine($"[ERROR] {message}");
+            WriteLine($"Exception: {exception.Message}");
         }
 
         /// <summary>
