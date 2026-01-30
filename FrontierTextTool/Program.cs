@@ -522,42 +522,60 @@ namespace FrontierTextTool
         private static void InsertStrings(string inputFile, string inputCsv, bool verbose, bool trueOffsets)
         {
             Console.WriteLine($"Processing {inputFile}...");
-            byte[] inputBytes = File.ReadAllBytes(inputFile);
-
-            // Read csv
-            var stringDatabase = LoadCsvToStringDatabase(inputCsv);
-
-            // Update the array
-            var updatedBytes = UpdateBinaryStrings(stringDatabase, inputBytes, verbose, trueOffsets);
-
-            // Output file
-            Directory.CreateDirectory("output");
-            string outputFile = $"output/{Path.GetFileName(inputFile)}";
-            File.WriteAllBytes(outputFile, updatedBytes);
-
-            // Pack with jpk type 0 and encrypt file with ecd
-            Compression compression = new()
+            
+            var preprocessor = new FilePreprocessor();
+            
+            // Preprocess input file (auto decrypt/decompress)
+            var (processedFile, cleanup) = preprocessor.AutoPreprocess(inputFile, createMetaFile: true);
+            
+            try
             {
-                type = CompressionType.RW,
-                level = 15
-            };
-            var pack = new Pack();
-            pack.JPKEncode(compression, outputFile, outputFile);
-            byte[] buffer = File.ReadAllBytes(outputFile);
-            if (!File.Exists($"{outputFile}.meta"))
-            {
-                throw new FileNotFoundException(
-                    $"META file {outputFile}.meta does not exist, did you use '--log' during decrypting to generate it?"
-                );
+                byte[] inputBytes = File.ReadAllBytes(processedFile);
+
+                // Read csv
+                var stringDatabase = LoadCsvToStringDatabase(inputCsv);
+
+                // Update the array
+                var updatedBytes = UpdateBinaryStrings(stringDatabase, inputBytes, verbose, trueOffsets);
+
+                // Output file
+                Directory.CreateDirectory("output");
+                string outputFile = $"output/{Path.GetFileName(inputFile)}";
+                File.WriteAllBytes(outputFile, updatedBytes);
+
+                // Pack with jpk type 0 and encrypt file with ecd
+                Compression compression = new()
+                {
+                    type = CompressionType.RW,
+                    level = 15
+                };
+                var pack = new Pack();
+                pack.JPKEncode(compression, outputFile, outputFile);
+                byte[] buffer = File.ReadAllBytes(outputFile);
+                
+                // Use the meta file from the original input file
+                string metaFile = $"{inputFile}.meta";
+                if (!File.Exists(metaFile))
+                {
+                    throw new FileNotFoundException(
+                        $"META file {metaFile} does not exist. " +
+                        "Make sure the original file is encrypted with ECD format, " +
+                        "or that you previously decrypted it with ReFrontier using the --log option."
+                    );
+                }
+                byte[] bufferMeta = File.ReadAllBytes(metaFile);
+                buffer = Crypto.EncodeEcd(buffer, bufferMeta);
+                Console.WriteLine($"Writing file to {outputFile}.");
+                File.WriteAllBytes(outputFile, buffer);
+
+                // Update list
+                string updEntry = FileOperations.GetUpdateEntry(outputFile);
+                UpdateList(updEntry);
             }
-            byte[] bufferMeta = File.ReadAllBytes($"{outputFile}.meta");
-            buffer = Crypto.EncodeEcd(buffer, bufferMeta);
-            Console.WriteLine($"Writing file to {outputFile}.");
-            File.WriteAllBytes(outputFile, buffer);
-
-            // Update list
-            string updEntry = FileOperations.GetUpdateEntry(outputFile);
-            UpdateList(updEntry);
+            finally
+            {
+                cleanup();
+            }
         }
 
         /// <summary>
@@ -572,9 +590,33 @@ namespace FrontierTextTool
             string input, int startOffset, int endOffset, bool trueOffsets, bool checkNullPredecessor
         )
         {
-            byte[] buffer = File.ReadAllBytes(input);
-            MemoryStream msInput = new(buffer);
-            BinaryReader brInput = new(msInput);
+            var preprocessor = new FilePreprocessor();
+            
+            // Preprocess input file (auto decrypt/decompress)
+            var (processedFile, cleanup) = preprocessor.AutoPreprocess(input, createMetaFile: true);
+            
+            try
+            {
+                byte[] buffer = File.ReadAllBytes(processedFile);
+                MemoryStream msInput = new(buffer);
+                BinaryReader brInput = new(msInput);
+                
+                DumpAndHashInternal(input, buffer, brInput, startOffset, endOffset, trueOffsets, checkNullPredecessor);
+            }
+            finally
+            {
+                cleanup();
+            }
+        }
+
+        /// <summary>
+        /// Internal implementation of DumpAndHash that works on preprocessed files.
+        /// </summary>
+        private static void DumpAndHashInternal(
+            string originalInput, byte[] buffer, BinaryReader brInput, 
+            int startOffset, int endOffset, bool trueOffsets, bool checkNullPredecessor
+        )
+        {
 
             if (endOffset == 0)
                 endOffset = (int)brInput.BaseStream.Length;
@@ -637,8 +679,8 @@ namespace FrontierTextTool
                     continue;
             }
 
-            // Write to file
-            string fileName = Path.GetFileNameWithoutExtension(input);
+            // Write to file (use original input filename)
+            string fileName = Path.GetFileNameWithoutExtension(originalInput);
             if (File.Exists($"{fileName}.csv"))
                 File.Delete($"{fileName}.csv");
             using StreamWriter txtOutput = new($"{fileName}.csv", true, Encoding.GetEncoding("shift-jis"));

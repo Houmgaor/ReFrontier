@@ -12,6 +12,7 @@ using CsvHelper.Configuration;
 
 using FrontierDataTool.Structs;
 using LibReFrontier;
+using ReFrontier;
 
 namespace FrontierDataTool
 {
@@ -343,17 +344,34 @@ namespace FrontierDataTool
         /// <param name="mhfinf">Path to mhfinf</param>
         private static void DumpData(string suffix, string mhfpac, string mhfdat, string mhfinf)
         {
-            var skillId = DumpSkillSystem(mhfpac, suffix);
+            var preprocessor = new FilePreprocessor();
 
-            DumpSkillData(mhfpac, suffix);
+            // Preprocess files (auto decrypt/decompress)
+            var (processedMhfpac, cleanupMhfpac) = preprocessor.AutoPreprocess(mhfpac, createMetaFile: true);
+            var (processedMhfdat, cleanupMhfdat) = preprocessor.AutoPreprocess(mhfdat, createMetaFile: true);
+            var (processedMhfinf, cleanupMhfinf) = preprocessor.AutoPreprocess(mhfinf, createMetaFile: true);
 
-            DumpItemData(mhfdat, suffix);
+            try
+            {
+                var skillId = DumpSkillSystem(processedMhfpac, suffix);
 
-            DumpEquipementData(mhfdat, suffix, skillId);
+                DumpSkillData(processedMhfpac, suffix);
 
-            DumpWeaponData(mhfdat);
+                DumpItemData(processedMhfdat, suffix);
 
-            DumpQuestData(mhfinf);
+                DumpEquipementData(processedMhfdat, suffix, skillId);
+
+                DumpWeaponData(processedMhfdat);
+
+                DumpQuestData(processedMhfinf);
+            }
+            finally
+            {
+                // Cleanup temporary files
+                cleanupMhfpac();
+                cleanupMhfdat();
+                cleanupMhfinf();
+            }
         }
 
         private static List<KeyValuePair<int, string>> DumpSkillSystem(string mhfpac, string suffix)
@@ -957,6 +975,27 @@ namespace FrontierDataTool
         /// <param name="file">Input file path, usually mhfdat.bin.</param>
         private static void ModShop(string file)
         {
+            var preprocessor = new FilePreprocessor();
+
+            // Preprocess file (auto decrypt/decompress)
+            var (processedFile, cleanup) = preprocessor.AutoPreprocess(file, createMetaFile: true);
+
+            try
+            {
+                ModShopInternal(processedFile);
+            }
+            finally
+            {
+                cleanup();
+            }
+        }
+
+        /// <summary>
+        /// Internal implementation of ModShop that works on preprocessed files.
+        /// </summary>
+        /// <param name="file">Preprocessed file path.</param>
+        private static void ModShopInternal(string file)
+        {
             int count;
 
             // Patch item and equip prices in file
@@ -1067,6 +1106,31 @@ namespace FrontierDataTool
         /// <param name="csvPath">Path to Armor.csv.</param>
         /// <param name="mhfpac">Path to mhfpac.bin (for skill name lookup).</param>
         private static void ImportArmorData(string mhfdat, string csvPath, string mhfpac)
+        {
+            var preprocessor = new FilePreprocessor();
+
+            // Preprocess files (auto decrypt/decompress)
+            var (processedMhfdat, cleanupMhfdat) = preprocessor.AutoPreprocess(mhfdat, createMetaFile: true);
+            var (processedMhfpac, cleanupMhfpac) = preprocessor.AutoPreprocess(mhfpac, createMetaFile: true);
+
+            try
+            {
+                ImportArmorDataInternal(processedMhfdat, csvPath, processedMhfpac);
+            }
+            finally
+            {
+                cleanupMhfdat();
+                cleanupMhfpac();
+            }
+        }
+
+        /// <summary>
+        /// Internal implementation of ImportArmorData that works on preprocessed files.
+        /// </summary>
+        /// <param name="mhfdat">Preprocessed path to mhfdat.bin.</param>
+        /// <param name="csvPath">Path to Armor.csv.</param>
+        /// <param name="mhfpac">Preprocessed path to mhfpac.bin (for skill name lookup).</param>
+        private static void ImportArmorDataInternal(string mhfdat, string csvPath, string mhfpac)
         {
             string[] armorClasses = ["頭", "胴", "腕", "腰", "脚"];
 

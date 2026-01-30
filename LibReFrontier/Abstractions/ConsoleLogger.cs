@@ -3,7 +3,8 @@ using System;
 namespace LibReFrontier.Abstractions
 {
     /// <summary>
-    /// Default implementation of ILogger that wraps Console output.
+    /// Simple implementation of ILogger that wraps Console output (backward compatible).
+    /// For structured logging, use SerilogLogger instead.
     /// </summary>
     public class ConsoleLogger : ILogger
     {
@@ -30,6 +31,45 @@ namespace LibReFrontier.Abstractions
             {
                 Console.WriteLine(message);
                 Console.WriteLine(Separator);
+            }
+        }
+
+        /// <inheritdoc />
+        public void Log(LogLevel level, string message)
+        {
+            var prefix = level switch
+            {
+                LogLevel.Trace => "[TRACE] ",
+                LogLevel.Debug => "[DEBUG] ",
+                LogLevel.Information => "[INFO] ",
+                LogLevel.Warning => "[WARN] ",
+                LogLevel.Error => "[ERROR] ",
+                LogLevel.Fatal => "[FATAL] ",
+                _ => ""
+            };
+            Console.WriteLine($"{prefix}{message}");
+        }
+
+        /// <inheritdoc />
+        public void Debug(string message) => Console.WriteLine($"[DEBUG] {message}");
+
+        /// <inheritdoc />
+        public void Information(string message) => Console.WriteLine(message);
+
+        /// <inheritdoc />
+        public void Warning(string message) => Console.WriteLine($"[WARN] {message}");
+
+        /// <inheritdoc />
+        public void Error(string message) => Console.Error.WriteLine($"[ERROR] {message}");
+
+        /// <inheritdoc />
+        public void Error(Exception exception, string message)
+        {
+            Console.Error.WriteLine($"[ERROR] {message}");
+            Console.Error.WriteLine($"Exception: {exception.Message}");
+            if (exception.StackTrace != null)
+            {
+                Console.Error.WriteLine($"Stack trace: {exception.StackTrace}");
             }
         }
     }
