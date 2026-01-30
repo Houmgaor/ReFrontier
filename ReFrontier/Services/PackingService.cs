@@ -338,16 +338,23 @@ namespace ReFrontier.Services
             {
                 encoder = _codecFactory.CreateEncoder(compression.type);
             }
-            catch (InvalidOperationException)
+            catch (ReFrontierException ex)
             {
                 fsot.Close();
                 _fileSystem.DeleteFile(otPath);
-                throw;
+                throw ex.WithFilePath(inPath);
             }
 
             DateTime start, finnish;
             start = DateTime.Now;
-            encoder.ProcessOnEncode(buffer, fsot, compression.level * 100);
+            try
+            {
+                encoder.ProcessOnEncode(buffer, fsot, compression.level * 100);
+            }
+            catch (ReFrontierException ex)
+            {
+                throw ex.WithFilePath(inPath);
+            }
             finnish = DateTime.Now;
             _logger.PrintWithSeparator(
                 $"File compressed using {compression.type} compression level {compression.level}: " +

@@ -295,5 +295,132 @@ namespace ReFrontier.Tests.Services
         }
 
         #endregion
+
+        #region WithFilePath Tests
+
+        [Fact]
+        public void WithFilePath_SetsFilePathWhenNull()
+        {
+            // Arrange
+            var ex = new DecryptionException("Test error");
+            Assert.Null(ex.FilePath);
+
+            // Act
+            var result = ex.WithFilePath("/test/file.bin");
+
+            // Assert
+            Assert.Same(ex, result); // Returns same instance
+            Assert.Equal("/test/file.bin", ex.FilePath);
+        }
+
+        [Fact]
+        public void WithFilePath_DoesNotOverwriteExistingPath()
+        {
+            // Arrange
+            var ex = new DecryptionException("Test error", "/original/path.bin");
+            Assert.Equal("/original/path.bin", ex.FilePath);
+
+            // Act
+            var result = ex.WithFilePath("/new/path.bin");
+
+            // Assert
+            Assert.Same(ex, result);
+            Assert.Equal("/original/path.bin", ex.FilePath); // Unchanged
+        }
+
+        [Fact]
+        public void WithFilePath_IgnoresNullPath()
+        {
+            // Arrange
+            var ex = new DecryptionException("Test error");
+            Assert.Null(ex.FilePath);
+
+            // Act
+            var result = ex.WithFilePath(null);
+
+            // Assert
+            Assert.Same(ex, result);
+            Assert.Null(ex.FilePath); // Still null
+        }
+
+        [Fact]
+        public void CompressionException_WithFilePath_SetsPath()
+        {
+            // Arrange
+            var ex = new CompressionException("Decompression failed");
+            Assert.Null(ex.FilePath);
+
+            // Act
+            var result = ex.WithFilePath("/test/compressed.jkr");
+
+            // Assert
+            Assert.Same(ex, result);
+            Assert.Equal("/test/compressed.jkr", ex.FilePath);
+        }
+
+        #endregion
+
+        #region Service Layer Exception Enrichment Tests
+
+        [Fact]
+        public void FileProcessingService_DecryptEcd_EnrichesExceptionWithFilePath()
+        {
+            // Arrange
+            byte[] tooSmall = new byte[8]; // Too small to be valid ECD
+            _fileSystem.AddFile("/test/small.ecd", tooSmall);
+            var service = new FileProcessingService(_fileSystem, _logger, _config);
+
+            // Act & Assert
+            var ex = Assert.Throws<DecryptionException>(() =>
+                service.DecryptEcdFile("/test/small.ecd", false, false, false)
+            );
+            Assert.Equal("/test/small.ecd", ex.FilePath);
+            Assert.Contains("too small", ex.Message);
+        }
+
+        [Fact]
+        public void FileProcessingService_DecryptExf_EnrichesExceptionWithFilePath()
+        {
+            // Arrange
+            byte[] tooSmall = new byte[8]; // Too small to be valid EXF
+            _fileSystem.AddFile("/test/small.exf", tooSmall);
+            var service = new FileProcessingService(_fileSystem, _logger, _config);
+
+            // Act & Assert
+            var ex = Assert.Throws<DecryptionException>(() =>
+                service.DecryptExfFile("/test/small.exf", false)
+            );
+            Assert.Equal("/test/small.exf", ex.FilePath);
+            Assert.Contains("too small", ex.Message);
+        }
+
+        [Fact]
+        public void UnpackingService_UnpackJPK_EnrichesDecoderExceptionWithFilePath()
+        {
+            // Arrange - Create a JKR file with valid header and some data but not enough
+            // to satisfy the output size, causing decoder to fail with unexpected end of stream
+            using var ms = new MemoryStream();
+            using var bw = new BinaryWriter(ms);
+            bw.Write((uint)0x1A524B4A); // JKR magic
+            bw.Write((ushort)0x108);    // padding
+            bw.Write((ushort)3);        // LZ compression type (LZ needs to read flag bits)
+            bw.Write((int)16);          // start offset
+            bw.Write((int)1000);        // output size (large, will fail)
+            // Add a few bytes of "compressed" data - not enough for 1000 byte output
+            bw.Write((byte)0xFF);       // flag byte
+            bw.Write((byte)0xFF);       // Will try to read more but hit EOF
+
+            byte[] truncatedJkr = ms.ToArray();
+            _fileSystem.AddFile("/test/truncated.jkr", truncatedJkr);
+
+            // Act & Assert
+            var ex = Assert.Throws<CompressionException>(() =>
+                _unpackingService.UnpackJPK("/test/truncated.jkr")
+            );
+            Assert.Equal("/test/truncated.jkr", ex.FilePath);
+            Assert.Contains("unexpected end of stream", ex.Message);
+        }
+
+        #endregion
     }
 }

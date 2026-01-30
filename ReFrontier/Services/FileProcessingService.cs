@@ -3,6 +3,7 @@ using System.IO;
 
 using LibReFrontier;
 using LibReFrontier.Abstractions;
+using LibReFrontier.Exceptions;
 
 namespace ReFrontier.Services
 {
@@ -69,7 +70,14 @@ namespace ReFrontier.Services
                 );
             }
             byte[] bufferMeta = _fileSystem.ReadAllBytes(metaFile);
-            buffer = Crypto.EncodeEcd(buffer, bufferMeta);
+            try
+            {
+                buffer = Crypto.EncodeEcd(buffer, bufferMeta);
+            }
+            catch (ReFrontierException ex)
+            {
+                throw ex.WithFilePath(inputFile);
+            }
             _fileSystem.WriteAllBytes(encryptedFilePath, buffer);
             _logger.PrintWithSeparator($"File encrypted to {encryptedFilePath}.", false);
             _fileOperations.GetUpdateEntryInstance(inputFile);
@@ -92,7 +100,14 @@ namespace ReFrontier.Services
         public string DecryptEcdFile(string inputFile, bool createLog, bool cleanUp, bool rewriteOldFile)
         {
             byte[] buffer = _fileSystem.ReadAllBytes(inputFile);
-            Crypto.DecodeEcd(buffer);
+            try
+            {
+                Crypto.DecodeEcd(buffer);
+            }
+            catch (ReFrontierException ex)
+            {
+                throw ex.WithFilePath(inputFile);
+            }
             const int headerLength = 0x10;
 
             byte[] ecdHeader = new byte[headerLength];
@@ -134,7 +149,14 @@ namespace ReFrontier.Services
         public string DecryptExfFile(string inputFile, bool cleanUp)
         {
             byte[] buffer = _fileSystem.ReadAllBytes(inputFile);
-            Crypto.DecodeExf(buffer);
+            try
+            {
+                Crypto.DecodeExf(buffer);
+            }
+            catch (ReFrontierException ex)
+            {
+                throw ex.WithFilePath(inputFile);
+            }
             const int headerLength = 0x10;
             byte[] bufferStripped = new byte[buffer.Length - headerLength];
             Array.Copy(buffer, headerLength, bufferStripped, 0, buffer.Length - headerLength);

@@ -277,14 +277,29 @@ namespace ReFrontier.Services
             }
             var compressionType = compressionTypes[type];
             _logger.WriteLine($"JPK {compressionType} (type {type})");
-            IJPKDecode decoder = _codecFactory.CreateDecoder(compressionType);
+            IJPKDecode decoder;
+            try
+            {
+                decoder = _codecFactory.CreateDecoder(compressionType);
+            }
+            catch (ReFrontierException ex)
+            {
+                throw ex.WithFilePath(input);
+            }
 
             // Decompress file
             int startOffset = br.ReadInt32();
             int outSize = br.ReadInt32();
             byte[] outBuffer = new byte[outSize];
             ms.Seek(startOffset, SeekOrigin.Begin);
-            decoder.ProcessOnDecode(ms, outBuffer);
+            try
+            {
+                decoder.ProcessOnDecode(ms, outBuffer);
+            }
+            catch (ReFrontierException ex)
+            {
+                throw ex.WithFilePath(input);
+            }
 
             // Get extension
             string extension = ByteOperations.DetectExtension(outBuffer, out _);

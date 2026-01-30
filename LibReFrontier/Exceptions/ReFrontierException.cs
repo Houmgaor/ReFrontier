@@ -35,5 +35,20 @@ namespace LibReFrontier.Exceptions
         {
             FilePath = filePath;
         }
+
+        /// <summary>
+        /// Sets the file path if not already set and returns this exception.
+        /// Useful for enriching exceptions caught from lower layers that don't have file context.
+        /// </summary>
+        /// <param name="filePath">File path to associate with this exception.</param>
+        /// <returns>This exception instance for chaining.</returns>
+        public ReFrontierException WithFilePath(string? filePath)
+        {
+            if (FilePath == null && filePath != null)
+            {
+                FilePath = filePath;
+            }
+            return this;
+        }
     }
 }
