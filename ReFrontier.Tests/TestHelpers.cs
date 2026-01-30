@@ -80,5 +80,21 @@ namespace ReFrontier.Tests
                 }
             }
         }
+
+        /// <summary>
+        /// Normalizes a path to use forward slashes for cross-platform testing.
+        /// </summary>
+        public static string NormalizePath(string path)
+        {
+            return path.Replace('\\', '/');
+        }
+
+        /// <summary>
+        /// Asserts that two paths are equal after normalization.
+        /// </summary>
+        public static void AssertPathsEqual(string expected, string actual)
+        {
+            Assert.Equal(NormalizePath(expected), NormalizePath(actual));
+        }
     }
 }

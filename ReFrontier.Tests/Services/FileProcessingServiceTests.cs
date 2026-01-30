@@ -47,7 +47,7 @@ namespace ReFrontier.Tests.Services
             string result = _service.DecryptEcdFile("/test/file.bin", createLog: false, cleanUp: false, rewriteOldFile: false);
 
             // Assert
-            Assert.Equal("/test/file.bin.decd", result);
+            TestHelpers.AssertPathsEqual("/test/file.bin.decd", result);
             Assert.True(_fileSystem.FileExists("/test/file.bin.decd"));
             Assert.True(_fileSystem.FileExists("/test/file.bin")); // Original not deleted
             Assert.True(_logger.ContainsMessage("decrypted"));
@@ -102,7 +102,7 @@ namespace ReFrontier.Tests.Services
             string result = _service.DecryptExfFile("/test/file.bin", cleanUp: false);
 
             // Assert
-            Assert.Equal("/test/file.bin.dexf", result);
+            TestHelpers.AssertPathsEqual("/test/file.bin.dexf", result);
             Assert.True(_fileSystem.FileExists("/test/file.bin.dexf"));
         }
 
@@ -135,7 +135,7 @@ namespace ReFrontier.Tests.Services
             string result = _service.EncryptEcdFile("/test/file.bin.decd", "/test/file.bin.meta", cleanUp: false);
 
             // Assert
-            Assert.Equal("/test/file.bin", result);
+            TestHelpers.AssertPathsEqual("/test/file.bin", result);
             Assert.True(_fileSystem.FileExists("/test/file.bin"));
             Assert.True(_logger.ContainsMessage("encrypted"));
         }

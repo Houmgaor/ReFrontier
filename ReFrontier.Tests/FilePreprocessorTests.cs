@@ -117,7 +117,7 @@ namespace ReFrontier.Tests
 
             string result = preprocessor.AutoDecrypt("/test/file.bin", createMetaFile: false);
 
-            Assert.Equal("/test/file.bin", result);
+            TestHelpers.AssertPathsEqual("/test/file.bin", result);
         }
 
         [Fact]
@@ -132,7 +132,7 @@ namespace ReFrontier.Tests
 
             string result = preprocessor.AutoDecompress("/test/file.bin");
 
-            Assert.Equal("/test/file.bin", result);
+            TestHelpers.AssertPathsEqual("/test/file.bin", result);
         }
 
         [Fact]
@@ -337,7 +337,7 @@ namespace ReFrontier.Tests
             var (processedPath, cleanup) = preprocessor.AutoPreprocess("/test/file.bin", createMetaFile: false);
 
             // Since it's not encrypted/compressed, path should be the same
-            Assert.Equal("/test/file.bin", processedPath);
+            TestHelpers.AssertPathsEqual("/test/file.bin", processedPath);
 
             // Cleanup should not remove the original file
             cleanup();
