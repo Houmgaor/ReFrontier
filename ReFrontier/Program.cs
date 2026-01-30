@@ -35,7 +35,7 @@ namespace ReFrontier
     /// <summary>
     /// Main program for ReFrontier to pack and depack game files.
     /// </summary>
-    internal class Program
+    public class Program
     {
         /// <summary>
         /// Number of parallel processes on reading folders.
@@ -68,7 +68,7 @@ namespace ReFrontier
                 assembly.GetCustomAttribute<AssemblyProductAttribute>().Product +
                 $" v{fileVersionAttribute} - " +
                 assembly.GetCustomAttribute<AssemblyDescriptionAttribute>().Description +
-                ", by MHVuze",
+                ", by MHVuze, additions by Houmgaor",
                 false
             );
 
@@ -295,7 +295,7 @@ namespace ReFrontier
         /// </summary>
         /// <param name="directoryPath">Directory path.</param>
         /// <param name="inputArguments">Configuration arguments from CLI.</param>
-        private static void StartProcessingDirectory(string directoryPath, InputArguments inputArguments)
+        public static void StartProcessingDirectory(string directoryPath, InputArguments inputArguments)
         {
             if (inputArguments.repack)
                 Pack.ProcessPackInput(directoryPath);
@@ -316,7 +316,7 @@ namespace ReFrontier
         /// </summary>
         /// <param name="filePath">File path.</param>
         /// <param name="inputArguments">Configuration arguments from CLI.</param>
-        private static void StartProcessingFile(string filePath, InputArguments inputArguments)
+        public static void StartProcessingFile(string filePath, InputArguments inputArguments)
         {
             if (inputArguments.compression.level != 0)
             {
