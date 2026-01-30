@@ -231,6 +231,79 @@ namespace ReFrontier.Tests
 
         #endregion
 
+        #region Large Data Tests
+
+        [Theory]
+        [InlineData(2048)]
+        [InlineData(4096)]
+        [InlineData(8192)]
+        public void RoundTrip_LargeRandomData(int size)
+        {
+            var encoder = new JPKEncodeLz();
+            var decoder = new JPKDecodeLz();
+            byte[] original = TestHelpers.RandomData(size, seed: size);
+
+            using var encodedStream = new MemoryStream();
+            encoder.ProcessOnEncode(original, encodedStream, level: 1000);
+            byte[] encoded = encodedStream.ToArray();
+
+            using var decodeStream = new MemoryStream(encoded);
+            byte[] decoded = new byte[original.Length];
+            decoder.ProcessOnDecode(decodeStream, decoded);
+
+            TestHelpers.AssertBytesEqual(original, decoded, $"LZ round-trip large size={size}");
+        }
+
+        [Fact]
+        public void RoundTrip_LongRepeatingPattern()
+        {
+            // This should trigger longer match cases in LZ compression
+            var encoder = new JPKEncodeLz();
+            var decoder = new JPKDecodeLz();
+
+            // Create a pattern that repeats every 16 bytes
+            byte[] original = new byte[2048];
+            for (int i = 0; i < original.Length; i++)
+                original[i] = (byte)(i % 16);
+
+            using var encodedStream = new MemoryStream();
+            encoder.ProcessOnEncode(original, encodedStream, level: 2000);
+            byte[] encoded = encodedStream.ToArray();
+
+            using var decodeStream = new MemoryStream(encoded);
+            byte[] decoded = new byte[original.Length];
+            decoder.ProcessOnDecode(decodeStream, decoded);
+
+            TestHelpers.AssertBytesEqual(original, decoded, "LZ round-trip long repeating pattern");
+        }
+
+        [Fact]
+        public void RoundTrip_AlternatingBlocks()
+        {
+            // Alternating blocks of zeros and ones to test different compression scenarios
+            var encoder = new JPKEncodeLz();
+            var decoder = new JPKDecodeLz();
+
+            byte[] original = new byte[1024];
+            for (int i = 0; i < original.Length; i++)
+            {
+                int block = i / 64;
+                original[i] = (block % 2 == 0) ? (byte)0x00 : (byte)0xFF;
+            }
+
+            using var encodedStream = new MemoryStream();
+            encoder.ProcessOnEncode(original, encodedStream, level: 500);
+            byte[] encoded = encodedStream.ToArray();
+
+            using var decodeStream = new MemoryStream(encoded);
+            byte[] decoded = new byte[original.Length];
+            decoder.ProcessOnDecode(decodeStream, decoded);
+
+            TestHelpers.AssertBytesEqual(original, decoded, "LZ round-trip alternating blocks");
+        }
+
+        #endregion
+
         #region Compression Ratio Tests
 
         [Fact]
