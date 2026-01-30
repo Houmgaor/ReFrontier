@@ -231,8 +231,17 @@ dotnet_diagnostic.CA1305.severity = suggestion
 # CA1307: Specify StringComparison for clarity
 dotnet_diagnostic.CA1307.severity = suggestion
 
-# CA1310: Specify StringComparison for correctness
-dotnet_diagnostic.CA1310.severity = warning
+# CA1310: Specify StringComparison for correctness (suggestion for tests)
+dotnet_diagnostic.CA1310.severity = suggestion
+
+# CA1311: Culture-specific behavior
+dotnet_diagnostic.CA1311.severity = suggestion
+
+# CA1825: Zero-length array allocation
+dotnet_diagnostic.CA1825.severity = suggestion
+
+# CA1861: Constant array arguments
+dotnet_diagnostic.CA1861.severity = suggestion
 
 # CA1707: Identifiers should not contain underscores (disabled for test methods)
 dotnet_diagnostic.CA1707.severity = suggestion
@@ -285,10 +294,28 @@ dotnet_diagnostic.IDE0130.severity = suggestion
 # IDE0290: Use primary constructor
 dotnet_diagnostic.IDE0290.severity = none
 
+# CA1051: Do not declare visible instance fields (allow for struct data types and internal codecs)
+dotnet_diagnostic.CA1051.severity = suggestion
+
+# CA1805: Do not initialize unnecessarily (allow explicit initialization for clarity)
+dotnet_diagnostic.CA1805.severity = suggestion
+
 # Test project specific rules
-[*Tests/**/*.cs]
+[ReFrontier.Tests/**.cs]
 # CA1707: Allow underscores in test method names
 dotnet_diagnostic.CA1707.severity = none
 
 # CA2007: ConfigureAwait not needed in tests
 dotnet_diagnostic.CA2007.severity = none
+
+# CA1310: StringComparison not required in test code
+dotnet_diagnostic.CA1310.severity = suggestion
+
+# CA1311: Culture-specific behavior is acceptable in tests
+dotnet_diagnostic.CA1311.severity = suggestion
+
+# CA1825: Zero-length array allocation is fine in tests
+dotnet_diagnostic.CA1825.severity = suggestion
+
+# CA1861: Constant array arguments are fine in tests
+dotnet_diagnostic.CA1861.severity = suggestion

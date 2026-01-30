@@ -273,14 +273,14 @@ namespace FrontierDataTool.Services
             {
                 _logger.WriteLine($"Found shop inventory to modify at 0x{offsetData:X8}.");
                 byte[] offsetArray = BitConverter.GetBytes(offsetData);
-                offsetArray.Reverse();
+                Array.Reverse(offsetArray);
                 int offsetPointer = ByteOperations.GetOffsetOfArray(outputArray, offsetArray);
 
                 if (offsetPointer != -1)
                 {
                     _logger.WriteLine($"Found shop pointer at 0x{offsetPointer:X8}.");
                     byte[] patchedPointer = BitConverter.GetBytes(inputArray.Length);
-                    patchedPointer.Reverse();
+                    Array.Reverse(patchedPointer);
                     Array.Copy(patchedPointer, 0, outputArray, offsetPointer, patchedPointer.Length);
                 }
                 else

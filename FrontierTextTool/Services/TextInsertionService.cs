@@ -218,7 +218,8 @@ namespace FrontierTextTool.Services
                 _fileSystem.WriteAllBytes(outputFile, buffer);
 
                 // Update list
-                string updEntry = FileOperations.GetUpdateEntry(outputFile);
+                var fileOps = new FileOperations();
+                string updEntry = fileOps.GetUpdateEntryInstance(outputFile);
                 UpdateList(updEntry);
             }
             finally

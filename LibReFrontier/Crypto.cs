@@ -202,8 +202,7 @@ namespace LibReFrontier
         /// <exception cref="DecryptionException">Thrown when buffer is too small (less than 16 bytes).</exception>
         public static void DecodeEcd(byte[] buffer)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
+            ArgumentNullException.ThrowIfNull(buffer);
             if (buffer.Length < 0x10)
                 throw new DecryptionException("ECD buffer too small: minimum 16 bytes required for header.");
 
@@ -254,10 +253,8 @@ namespace LibReFrontier
         /// <exception cref="DecryptionException">Thrown when bufferMeta is too small (less than 6 bytes).</exception>
         public static byte[] EncodeEcd(byte[] buffer, byte[] bufferMeta)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
-            if (bufferMeta == null)
-                throw new ArgumentNullException(nameof(bufferMeta));
+            ArgumentNullException.ThrowIfNull(buffer);
+            ArgumentNullException.ThrowIfNull(bufferMeta);
             if (bufferMeta.Length < 6)
                 throw new DecryptionException("ECD meta buffer too small: minimum 6 bytes required for key index.");
 
@@ -356,8 +353,7 @@ namespace LibReFrontier
         /// <exception cref="DecryptionException">Thrown when buffer is too small (less than 16 bytes).</exception>
         public static void DecodeExf(byte[] buffer)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
+            ArgumentNullException.ThrowIfNull(buffer);
             if (buffer.Length < 0x10)
                 throw new DecryptionException("EXF buffer too small: minimum 16 bytes required for header.");
 

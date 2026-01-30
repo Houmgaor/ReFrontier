@@ -23,8 +23,8 @@ namespace ReFrontier.Tests
         {
             var result = ArgumentsParser.ParseCompression(type, level);
 
-            Assert.Equal(expectedType, result.type);
-            Assert.Equal(expectedLevel, result.level);
+            Assert.Equal(expectedType, result.Type);
+            Assert.Equal(expectedLevel, result.Level);
         }
 
         [Theory]
@@ -39,8 +39,8 @@ namespace ReFrontier.Tests
         {
             var result = ArgumentsParser.ParseCompression(type, level);
 
-            Assert.Equal(expectedType, result.type);
-            Assert.Equal(expectedLevel, result.level);
+            Assert.Equal(expectedType, result.Type);
+            Assert.Equal(expectedLevel, result.Level);
         }
 
         [Fact]
@@ -109,8 +109,8 @@ namespace ReFrontier.Tests
         {
             var result = ArgumentsParser.ParseCompression(input);
 
-            Assert.Equal(expectedType, result.type);
-            Assert.Equal(expectedLevel, result.level);
+            Assert.Equal(expectedType, result.Type);
+            Assert.Equal(expectedLevel, result.Level);
         }
 
         [Theory]
@@ -123,8 +123,8 @@ namespace ReFrontier.Tests
         {
             var result = ArgumentsParser.ParseCompression(input);
 
-            Assert.Equal(expectedType, result.type);
-            Assert.Equal(expectedLevel, result.level);
+            Assert.Equal(expectedType, result.Type);
+            Assert.Equal(expectedLevel, result.Level);
         }
 
         [Fact]
@@ -185,6 +185,7 @@ namespace ReFrontier.Tests
 
         #region Print Tests
 
+#pragma warning disable CS0618 // Type or member is obsolete - intentionally testing obsolete methods
         [Fact]
         public void Print_PrintBefore_OutputsInCorrectOrder()
         {
@@ -235,6 +236,7 @@ namespace ReFrontier.Tests
                 Console.SetOut(originalOut);
             }
         }
+#pragma warning restore CS0618
 
         #endregion
     }

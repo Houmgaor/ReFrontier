@@ -46,6 +46,9 @@ namespace LibReFrontier
         /// <returns>The decoded string found.</returns>
         public static string ReadNullterminatedString(BinaryReader brInput, Encoding encoding)
         {
+            ArgumentNullException.ThrowIfNull(brInput);
+            ArgumentNullException.ThrowIfNull(encoding);
+
             var charByteList = new List<byte>();
             string str;
             if (brInput.BaseStream.Position == brInput.BaseStream.Length)
@@ -129,6 +132,8 @@ namespace LibReFrontier
         /// <returns>Modified data in custom format for MHFUP_00.DAT</returns>
         public string GetUpdateEntryInstance(string fileName)
         {
+            ArgumentNullException.ThrowIfNull(fileName);
+
             var result = ComputeUpdateEntry(fileName, _fileSystem);
             _logger.WriteLine($"{result.crc32:X8},{result.dateHex1},{result.dateHex2},{fileName.Replace("output", "dat")},{result.fileSize},0");
             return $"{result.crc32:X8},{result.dateHex1},{result.dateHex2},{fileName},{result.fileSize},0";
@@ -143,6 +148,8 @@ namespace LibReFrontier
         public static (uint crc32, string dateHex1, string dateHex2, int fileSize) ComputeUpdateEntry(
             string fileName, IFileSystem fileSystem)
         {
+            ArgumentNullException.ThrowIfNull(fileSystem);
+
             DateTime date = fileSystem.GetLastWriteTime(fileName);
             string dateHex2 = date.Subtract(new DateTime(1601, 1, 1)).Ticks.ToString("X16")[..8];
             string dateHex1 = date.Subtract(new DateTime(1601, 1, 1)).Ticks.ToString("X16")[8..];

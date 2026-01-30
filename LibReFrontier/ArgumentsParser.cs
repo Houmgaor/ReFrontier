@@ -10,7 +10,7 @@ namespace LibReFrontier
     /// </summary>
     public class ArgumentsParser
     {
-        private static readonly ILogger DefaultLogger = new ConsoleLogger();
+        private static readonly ConsoleLogger DefaultLogger = new();
 
         private readonly ILogger _logger;
 
@@ -123,6 +123,8 @@ namespace LibReFrontier
         [Obsolete("Use ParseCompression(string compressionType, int compressionLevel) instead.")]
         public static Compression ParseCompression(string inputArg)
         {
+            ArgumentNullException.ThrowIfNull(inputArg);
+
             var matches = inputArg.Split(",");
             if (matches.Length != 2)
             {

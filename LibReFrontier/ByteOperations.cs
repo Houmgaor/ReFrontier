@@ -16,6 +16,9 @@ namespace LibReFrontier
         /// <returns>Offset if found, -1 otherwise.</returns>
         public static int GetOffsetOfArray(byte[] haystack, byte[] needle)
         {
+            ArgumentNullException.ThrowIfNull(haystack);
+            ArgumentNullException.ThrowIfNull(needle);
+
             // Edge case: empty needle
             if (needle.Length == 0)
                 return 0;
@@ -63,6 +66,8 @@ namespace LibReFrontier
         /// <returns></returns>
         public static string? CheckForMagic(uint headerInt, byte[] data)
         {
+            ArgumentNullException.ThrowIfNull(data);
+
             byte[] header;
             string? extension = null;
 
@@ -92,6 +97,10 @@ namespace LibReFrontier
     /// </summary>
     public enum FileExtension
     {
+        /// <summary>
+        /// Unknown or unrecognized file extension
+        /// </summary>
+        None = 0,
         dds = 542327876,
         /// <summary>
         /// Custom extension

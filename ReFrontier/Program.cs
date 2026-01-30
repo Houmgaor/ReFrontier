@@ -259,10 +259,8 @@ namespace ReFrontier
                 var encrypt = context.ParseResult.GetValueForOption(encryptOption);
                 var close = context.ParseResult.GetValueForOption(closeOption);
 
-                ArgumentsParser.Print(
-                    $"{productName} v{fileVersionAttribute} - {description}, by MHVuze, additions by Houmgaor",
-                    false
-                );
+                Console.WriteLine($"{productName} v{fileVersionAttribute} - {description}, by MHVuze, additions by Houmgaor");
+                Console.WriteLine("==============================");
 
                 // Validate file exists
                 if (!File.Exists(file) && !Directory.Exists(file))
@@ -320,7 +318,7 @@ namespace ReFrontier
                     if (File.GetAttributes(file).HasFlag(FileAttributes.Directory))
                     {
                         // Input is directory
-                        if (compression.level != 0)
+                        if (compression.Level != 0)
                             throw new InvalidOperationException("Cannot compress a directory.");
                         if (inputArguments.encrypt)
                             throw new InvalidOperationException("Cannot encrypt a directory.");
@@ -380,7 +378,7 @@ namespace ReFrontier
         /// <param name="inputArguments">Configuration arguments from CLI.</param>
         public void StartProcessingFile(string filePath, InputArguments inputArguments)
         {
-            if (inputArguments.compression.level != 0)
+            if (inputArguments.compression.Level != 0)
             {
                 // From mhfdat.bin.decd.bin to output/mhfdat.bin.decd
                 _packingService.JPKEncode(
@@ -402,7 +400,7 @@ namespace ReFrontier
             }
 
             // Try to depack the file as multiple files
-            if (inputArguments.compression.level == 0 && !inputArguments.encrypt)
+            if (inputArguments.compression.Level == 0 && !inputArguments.encrypt)
                 ProcessMultipleLevels([filePath], inputArguments);
         }
 

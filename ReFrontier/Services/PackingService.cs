@@ -322,21 +322,21 @@ namespace ReFrontier.Services
             if (_fileSystem.FileExists(otPath))
                 _fileSystem.DeleteFile(otPath);
             _logger.WriteLine(
-                $"Starting file compression, type {compression.type}, level {compression.level} to {otPath}"
+                $"Starting file compression, type {compression.Type}, level {compression.Level} to {otPath}"
             );
             using var fsot = _fileSystem.Create(otPath);
             using BinaryWriter br = new(fsot);
             // JKR header
             br.Write(FileMagic.JKR);
             br.Write((ushort)0x108);
-            br.Write((ushort)compression.type);
+            br.Write((ushort)compression.Type);
             br.Write((uint)0x10);
             br.Write(insize);
 
             IJPKEncode encoder;
             try
             {
-                encoder = _codecFactory.CreateEncoder(compression.type);
+                encoder = _codecFactory.CreateEncoder(compression.Type);
             }
             catch (ReFrontierException ex)
             {
@@ -349,7 +349,7 @@ namespace ReFrontier.Services
             start = DateTime.Now;
             try
             {
-                encoder.ProcessOnEncode(buffer, fsot, compression.level * 100);
+                encoder.ProcessOnEncode(buffer, fsot, compression.Level * 100);
             }
             catch (ReFrontierException ex)
             {
@@ -357,7 +357,7 @@ namespace ReFrontier.Services
             }
             finnish = DateTime.Now;
             _logger.PrintWithSeparator(
-                $"File compressed using {compression.type} compression level {compression.level}: " +
+                $"File compressed using {compression.Type} compression level {compression.Level}: " +
                 $"{fsot.Length} bytes ({1 - (decimal)fsot.Length / insize:P} saved) in {finnish - start:%m\\:ss\\.ff}",
                 false
             );

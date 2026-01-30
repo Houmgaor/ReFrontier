@@ -2,6 +2,8 @@
 Stuff related to compression.
 */
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace LibReFrontier
 {
     /// <summary>
@@ -22,15 +24,24 @@ namespace LibReFrontier
     /// <summary>
     /// A JPK compression format defintion.
     /// </summary>
+    [SuppressMessage("Naming", "CA1724:Type names should not match namespaces",
+        Justification = "Compression is a domain-specific term that doesn't conflict in practice with System.IO.Compression")]
     public readonly struct Compression : System.IEquatable<Compression>
     {
-        public readonly CompressionType type;
-        public readonly int level;
+        /// <summary>
+        /// Gets the compression type.
+        /// </summary>
+        public CompressionType Type { get; }
+
+        /// <summary>
+        /// Gets the compression level.
+        /// </summary>
+        public int Level { get; }
 
         public Compression(CompressionType type, int level)
         {
-            this.type = type;
-            this.level = level;
+            Type = type;
+            Level = level;
         }
 
         public override bool Equals(object? obj)
@@ -40,12 +51,12 @@ namespace LibReFrontier
 
         public bool Equals(Compression other)
         {
-            return type == other.type && level == other.level;
+            return Type == other.Type && Level == other.Level;
         }
 
         public override int GetHashCode()
         {
-            return System.HashCode.Combine(type, level);
+            return System.HashCode.Combine(Type, Level);
         }
 
         public static bool operator ==(Compression left, Compression right)

@@ -65,6 +65,8 @@ namespace LibReFrontier.Abstractions
         /// <inheritdoc />
         public void Error(Exception exception, string message)
         {
+            ArgumentNullException.ThrowIfNull(exception);
+
             Console.Error.WriteLine($"[ERROR] {message}");
             Console.Error.WriteLine($"Exception: {exception.Message}");
             if (exception.StackTrace != null)
