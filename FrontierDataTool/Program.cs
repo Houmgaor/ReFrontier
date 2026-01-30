@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.CommandLine;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -75,42 +76,50 @@ namespace FrontierDataTool
         /// Get weapon and armor data from game files.
         /// </summary>
         /// <param name="args">Input argument from console.</param>
-        /// <exception cref="ArgumentException">For wring arguments entered.</exception>
-        private static void Main(string[] args)
+        /// <returns>Exit code (0 for success).</returns>
+        private static int Main(string[] args)
         {
-            if (args.Length < 2)
-            {
-                throw new ArgumentException($"{args.Length} arguments provided, 2 required.");
-            }
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-            switch (args[0])
+            // Root command
+            var rootCommand = new RootCommand("FrontierDataTool - Extract and edit Monster Hunter Frontier game data");
+
+            // dump command
+            var dumpCommand = new Command("dump", "Extract weapon/armor/skill/quest data");
+            var suffixArg = new Argument<string>("suffix", "Output suffix for files");
+            var mhfpacArg = new Argument<string>("mhfpac", "Path to mhfpac.bin");
+            var mhfdatArg = new Argument<string>("mhfdat", "Path to mhfdat.bin");
+            var mhfinfArg = new Argument<string>("mhfinf", "Path to mhfinf.bin");
+            dumpCommand.AddArgument(suffixArg);
+            dumpCommand.AddArgument(mhfpacArg);
+            dumpCommand.AddArgument(mhfdatArg);
+            dumpCommand.AddArgument(mhfinfArg);
+            dumpCommand.SetHandler((string suffix, string mhfpac, string mhfdat, string mhfinf) =>
             {
-                case "dump":
-                    if (args.Length < 5)
-                    {
-                        throw new ArgumentException(
-                            "You must provide 5 positional arguments with 'dump':\n" +
-                            "dump [suffix] [mhfpac.bin] [mhfdat.bin] [mhfinf.bin]"
-                        );
-                    }
-                    // suffix, mhfpac.bin, mhfdat.bin, mhfinf.bin
-                    DumpData(args[1], args[2], args[3], args[4]);
-                    break;
-                case "modshop":
-                    if (args.Length < 2)
-                    {
-                        throw new ArgumentException(
-                            "You must provide the path to mhfdat.bin as a positional argument");
-                    }
-                    // mhfdat.bin
-                    ModShop(args[1]);
-                    break;
-                default:
-                    throw new ArgumentException($"Argument {args[0]} is unknown.");
+                DumpData(suffix, mhfpac, mhfdat, mhfinf);
+                FinishCommand();
+            }, suffixArg, mhfpacArg, mhfdatArg, mhfinfArg);
+            rootCommand.AddCommand(dumpCommand);
 
-            }
+            // modshop command
+            var modshopCommand = new Command("modshop", "Modify shop prices");
+            var mhfdatModArg = new Argument<string>("mhfdat", "Path to mhfdat.bin");
+            modshopCommand.AddArgument(mhfdatModArg);
+            modshopCommand.SetHandler((string mhfdat) =>
+            {
+                ModShop(mhfdat);
+                FinishCommand();
+            }, mhfdatModArg);
+            rootCommand.AddCommand(modshopCommand);
 
+            return rootCommand.Invoke(args);
+        }
+
+        /// <summary>
+        /// Finish command execution with wait and message.
+        /// </summary>
+        private static void FinishCommand()
+        {
             Console.WriteLine("Done");
             Console.Read();
         }
@@ -796,7 +805,7 @@ namespace FrontierDataTool
                 Array.Copy(item, 0, shopArray, i * 8, 8);
             }
 
-            // Append modshop data to file          
+            // Append modshop data to file
             byte[] inputArray = File.ReadAllBytes(file);
             byte[] outputArray = new byte[inputArray.Length + shopArray.Length];
             Array.Copy(inputArray, outputArray, inputArray.Length);

@@ -8,101 +8,37 @@ namespace ReFrontier.Tests
     /// </summary>
     public class TestArgumentsParser
     {
-        #region ParseArguments Tests
-
-        [Fact]
-        public void ParseArguments_EmptyArray_ReturnsEmptyDictionary()
-        {
-            string[] args = [];
-            var result = ArgumentsParser.ParseArguments(args);
-            Assert.Empty(result);
-        }
-
-        [Fact]
-        public void ParseArguments_SingleArgWithoutValue_ReturnsKeyWithNullValue()
-        {
-            string[] args = ["--log"];
-            var result = ArgumentsParser.ParseArguments(args);
-
-            Assert.Single(result);
-            Assert.True(result.ContainsKey("--log"));
-            Assert.Null(result["--log"]);
-        }
-
-        [Fact]
-        public void ParseArguments_SingleArgWithValue_ReturnsKeyValuePair()
-        {
-            string[] args = ["--compress=3,50"];
-            var result = ArgumentsParser.ParseArguments(args);
-
-            Assert.Single(result);
-            Assert.True(result.ContainsKey("--compress"));
-            Assert.Equal("3,50", result["--compress"]);
-        }
-
-        [Fact]
-        public void ParseArguments_MultipleArgsWithValues_ReturnsAllKeyValuePairs()
-        {
-            string[] args = ["--compress=3,50", "--output=dir"];
-            var result = ArgumentsParser.ParseArguments(args);
-
-            Assert.Equal(2, result.Count);
-            Assert.Equal("3,50", result["--compress"]);
-            Assert.Equal("dir", result["--output"]);
-        }
-
-        [Fact]
-        public void ParseArguments_MixedArgsWithAndWithoutValues_ParsesCorrectly()
-        {
-            string[] args = ["--log", "--compress=3,50", "--recursive", "--output=test"];
-            var result = ArgumentsParser.ParseArguments(args);
-
-            Assert.Equal(4, result.Count);
-            Assert.Null(result["--log"]);
-            Assert.Equal("3,50", result["--compress"]);
-            Assert.Null(result["--recursive"]);
-            Assert.Equal("test", result["--output"]);
-        }
-
-        [Fact]
-        public void ParseArguments_ArgWithMultipleEquals_SplitsOnFirstEquals()
-        {
-            // "key=value=extra" splits to ["key", "value=extra"], then only first two are used
-            string[] args = ["--key=value=extra"];
-            var result = ArgumentsParser.ParseArguments(args);
-
-            // With simple Split('='), this creates 3 parts, so parts.Length != 2
-            // Therefore, the whole arg becomes a key with null value
-            Assert.Single(result);
-            Assert.True(result.ContainsKey("--key=value=extra"));
-            Assert.Null(result["--key=value=extra"]);
-        }
-
-        [Fact]
-        public void ParseArguments_DuplicateKeys_LastValueWins()
-        {
-            string[] args = ["--level=1", "--level=2"];
-            var result = ArgumentsParser.ParseArguments(args);
-
-            Assert.Single(result);
-            Assert.Equal("2", result["--level"]);
-        }
-
-        #endregion
-
-        #region ParseCompression Tests
+        #region ParseCompression Tests (New API with separate type and level)
 
         [Theory]
-        [InlineData("0,50", CompressionType.RW, 50)]
-        [InlineData("0,100", CompressionType.RW, 100)]
-        [InlineData("2,75", CompressionType.HFIRW, 75)]
-        [InlineData("3,100", CompressionType.LZ, 100)]
-        [InlineData("3,200", CompressionType.LZ, 200)]
-        [InlineData("4,150", CompressionType.HFI, 150)]
-        public void ParseCompression_ValidInput_ReturnsCorrectCompression(
-            string input, CompressionType expectedType, int expectedLevel)
+        [InlineData("rw", 50, CompressionType.RW, 50)]
+        [InlineData("RW", 100, CompressionType.RW, 100)]
+        [InlineData("hfirw", 75, CompressionType.HFIRW, 75)]
+        [InlineData("HFIRW", 75, CompressionType.HFIRW, 75)]
+        [InlineData("lz", 100, CompressionType.LZ, 100)]
+        [InlineData("LZ", 200, CompressionType.LZ, 200)]
+        [InlineData("hfi", 150, CompressionType.HFI, 150)]
+        [InlineData("HFI", 150, CompressionType.HFI, 150)]
+        public void ParseCompression_NamedType_ReturnsCorrectCompression(
+            string type, int level, CompressionType expectedType, int expectedLevel)
         {
-            var result = ArgumentsParser.ParseCompression(input);
+            var result = ArgumentsParser.ParseCompression(type, level);
+
+            Assert.Equal(expectedType, result.type);
+            Assert.Equal(expectedLevel, result.level);
+        }
+
+        [Theory]
+        [InlineData("0", 50, CompressionType.RW, 50)]
+        [InlineData("0", 100, CompressionType.RW, 100)]
+        [InlineData("2", 75, CompressionType.HFIRW, 75)]
+        [InlineData("3", 100, CompressionType.LZ, 100)]
+        [InlineData("3", 200, CompressionType.LZ, 200)]
+        [InlineData("4", 150, CompressionType.HFI, 150)]
+        public void ParseCompression_NumericType_ReturnsCorrectCompression(
+            string type, int level, CompressionType expectedType, int expectedLevel)
+        {
+            var result = ArgumentsParser.ParseCompression(type, level);
 
             Assert.Equal(expectedType, result.type);
             Assert.Equal(expectedLevel, result.level);
@@ -113,13 +49,96 @@ namespace ReFrontier.Tests
         {
             // Type 1 is "None" which is not allowed for compression
             var exception = Assert.Throws<InvalidCastException>(
+                () => ArgumentsParser.ParseCompression("1", 50)
+            );
+            Assert.Contains("compression type", exception.Message.ToLower());
+        }
+
+        [Theory]
+        [InlineData("lz", 0)]
+        [InlineData("rw", -1)]
+        [InlineData("hfi", -100)]
+        public void ParseCompression_InvalidLevel_ThrowsArgumentException(string type, int level)
+        {
+            var exception = Assert.Throws<ArgumentException>(
+                () => ArgumentsParser.ParseCompression(type, level)
+            );
+            Assert.Contains("compression level", exception.Message.ToLower());
+        }
+
+        [Fact]
+        public void ParseCompression_InvalidNamedType_ThrowsInvalidCastException()
+        {
+            var exception = Assert.Throws<InvalidCastException>(
+                () => ArgumentsParser.ParseCompression("invalid", 50)
+            );
+            Assert.Contains("invalid compression type", exception.Message.ToLower());
+        }
+
+        [Fact]
+        public void ParseCompression_OutOfRangeNumericType_ThrowsInvalidCastException()
+        {
+            var exception = Assert.Throws<InvalidCastException>(
+                () => ArgumentsParser.ParseCompression("5", 50)
+            );
+            Assert.Contains("invalid compression type", exception.Message.ToLower());
+        }
+
+        [Fact]
+        public void ParseCompression_NegativeNumericType_ThrowsInvalidCastException()
+        {
+            var exception = Assert.Throws<InvalidCastException>(
+                () => ArgumentsParser.ParseCompression("-1", 50)
+            );
+            Assert.Contains("invalid compression type", exception.Message.ToLower());
+        }
+
+        #endregion
+
+        #region ParseCompression Tests (Legacy API - backward compatibility)
+
+#pragma warning disable CS0618 // Type or member is obsolete
+        [Theory]
+        [InlineData("0,50", CompressionType.RW, 50)]
+        [InlineData("0,100", CompressionType.RW, 100)]
+        [InlineData("2,75", CompressionType.HFIRW, 75)]
+        [InlineData("3,100", CompressionType.LZ, 100)]
+        [InlineData("3,200", CompressionType.LZ, 200)]
+        [InlineData("4,150", CompressionType.HFI, 150)]
+        public void ParseCompression_LegacyFormat_ReturnsCorrectCompression(
+            string input, CompressionType expectedType, int expectedLevel)
+        {
+            var result = ArgumentsParser.ParseCompression(input);
+
+            Assert.Equal(expectedType, result.type);
+            Assert.Equal(expectedLevel, result.level);
+        }
+
+        [Theory]
+        [InlineData("rw,50", CompressionType.RW, 50)]
+        [InlineData("lz,100", CompressionType.LZ, 100)]
+        [InlineData("hfirw,75", CompressionType.HFIRW, 75)]
+        [InlineData("hfi,150", CompressionType.HFI, 150)]
+        public void ParseCompression_LegacyFormatNamedType_ReturnsCorrectCompression(
+            string input, CompressionType expectedType, int expectedLevel)
+        {
+            var result = ArgumentsParser.ParseCompression(input);
+
+            Assert.Equal(expectedType, result.type);
+            Assert.Equal(expectedLevel, result.level);
+        }
+
+        [Fact]
+        public void ParseCompression_LegacyTypeOne_ThrowsInvalidCastException()
+        {
+            var exception = Assert.Throws<InvalidCastException>(
                 () => ArgumentsParser.ParseCompression("1,50")
             );
             Assert.Contains("compression type", exception.Message.ToLower());
         }
 
         [Fact]
-        public void ParseCompression_LevelZero_ThrowsArgumentException()
+        public void ParseCompression_LegacyLevelZero_ThrowsArgumentException()
         {
             var exception = Assert.Throws<ArgumentException>(
                 () => ArgumentsParser.ParseCompression("3,0")
@@ -128,7 +147,7 @@ namespace ReFrontier.Tests
         }
 
         [Fact]
-        public void ParseCompression_MissingComma_ThrowsArgumentException()
+        public void ParseCompression_LegacyMissingComma_ThrowsArgumentException()
         {
             var exception = Assert.Throws<ArgumentException>(
                 () => ArgumentsParser.ParseCompression("3")
@@ -137,7 +156,7 @@ namespace ReFrontier.Tests
         }
 
         [Fact]
-        public void ParseCompression_TooManyParts_ThrowsArgumentException()
+        public void ParseCompression_LegacyTooManyParts_ThrowsArgumentException()
         {
             var exception = Assert.Throws<ArgumentException>(
                 () => ArgumentsParser.ParseCompression("3,50,extra")
@@ -146,15 +165,7 @@ namespace ReFrontier.Tests
         }
 
         [Fact]
-        public void ParseCompression_NonNumericType_ThrowsFormatException()
-        {
-            Assert.Throws<FormatException>(
-                () => ArgumentsParser.ParseCompression("abc,50")
-            );
-        }
-
-        [Fact]
-        public void ParseCompression_NonNumericLevel_ThrowsFormatException()
+        public void ParseCompression_LegacyNonNumericLevel_ThrowsFormatException()
         {
             Assert.Throws<FormatException>(
                 () => ArgumentsParser.ParseCompression("3,abc")
@@ -162,13 +173,14 @@ namespace ReFrontier.Tests
         }
 
         [Fact]
-        public void ParseCompression_EmptyString_ThrowsArgumentException()
+        public void ParseCompression_LegacyEmptyString_ThrowsArgumentException()
         {
             var exception = Assert.Throws<ArgumentException>(
                 () => ArgumentsParser.ParseCompression("")
             );
             Assert.Contains("compress", exception.Message.ToLower());
         }
+#pragma warning restore CS0618 // Type or member is obsolete
 
         #endregion
 

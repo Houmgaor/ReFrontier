@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.CommandLine;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -23,81 +24,127 @@ namespace FrontierTextTool
         /// Main CLI for text edition.
         /// </summary>
         /// <param name="args">Arguments passed</param>
-        private static void Main(string[] args)
+        /// <returns>Exit code (0 for success).</returns>
+        private static int Main(string[] args)
         {
-            var parsedArgs = ArgumentsParser.ParseArguments(args);
-            var keyArgs = parsedArgs.Keys;
-
-            if (keyArgs.Contains("--help"))
-            {
-                var assembly = Assembly.GetExecutingAssembly();
-                var fileVersionAttribute = assembly.GetCustomAttribute<AssemblyFileVersionAttribute>().Version;
-                ArgumentsParser.Print(
-                    $"FrontierTextTool v{fileVersionAttribute} - extract and edit text data.\n" +
-                    "=========================\n" +
-                    "General commands\n" +
-                    "================\n" +
-                    "dump <file> <startIndex> <endIndex> [--trueOffsets] [--nullStrings]: dump data from file to CSV.\n" +
-                    "fulldump <file> [--trueOffsets] [--nullStrings]: dump all data from file.\n" +
-                    "insert <output file> <input CSV> [--verbose] [--trueOffsets]: add data from CSV to file.\n" +
-                    "merge <old CSV> <new CSV>: merge two CSV files\n" +
-                    "cleanTrados <file>: clean-up ill-encoded characters in file.\n" +
-                    "insertCAT <file> <csvFile>: insert CAT file to CSV file.\n" +
-                    "Options\n" +
-                    "===============\n" +
-                    "--trueOffsets: correct the value of string offsets. It is recommended to use it with --nullStrings.\n" +
-                    "--nullStrings: check if strings are valid before outputing them.\n" +
-                    "--verbose: more verbosity.\n" +
-                    "--close: close the terminal after command.\n" +
-                    "--help: display this message.",
-                    false
-                );
-                return;
-            }
-
-            if (parsedArgs.Count < 2)
-            {
-                throw new ArgumentException($"Too few arguments: {parsedArgs.Count}. Need at least 2 arguments.");
-            }
-
-            bool verbose = keyArgs.Contains("--verbose") || keyArgs.Contains("-verbose");
-            bool autoClose = keyArgs.Contains("--close") || keyArgs.Contains("-close");
-            bool trueOffsets = keyArgs.Contains("--trueOffsets") || keyArgs.Contains("-trueoffsets");
-            bool nullStrings = keyArgs.Contains("--nullStrings") || keyArgs.Contains("-nullstrings");
+            var assembly = Assembly.GetExecutingAssembly();
+            var fileVersionAttribute = assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version ?? "unknown";
 
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
+            // Root command
+            var rootCommand = new RootCommand($"FrontierTextTool v{fileVersionAttribute} - Extract and edit text data");
 
-            switch (args[0])
+            // Global options
+            var verboseOption = new Option<bool>(
+                name: "--verbose",
+                description: "More verbosity"
+            );
+            rootCommand.AddGlobalOption(verboseOption);
+
+            var trueOffsetsOption = new Option<bool>(
+                name: "--trueOffsets",
+                description: "Correct the value of string offsets"
+            );
+            rootCommand.AddGlobalOption(trueOffsetsOption);
+
+            var nullStringsOption = new Option<bool>(
+                name: "--nullStrings",
+                description: "Check if strings are valid before outputting them"
+            );
+            rootCommand.AddGlobalOption(nullStringsOption);
+
+            var closeOption = new Option<bool>(
+                name: "--close",
+                description: "Close terminal after command"
+            );
+            rootCommand.AddGlobalOption(closeOption);
+
+            // fulldump command
+            var fulldumpCommand = new Command("fulldump", "Dump all data from file");
+            var fulldumpFileArg = new Argument<string>("file", "File to dump data from");
+            fulldumpCommand.AddArgument(fulldumpFileArg);
+            fulldumpCommand.SetHandler((string file, bool trueOffsets, bool nullStrings, bool close) =>
             {
-                case "fulldump":
-                    DumpAndHash(args[1], 0, 0, trueOffsets, nullStrings);
-                    break;
-                case "dump":
-                    DumpAndHash(
-                        args[1],
-                        Convert.ToInt32(args[2]),
-                        Convert.ToInt32(args[3]),
-                        trueOffsets,
-                        nullStrings
-                    );
-                    break;
-                case "insert":
-                    InsertStrings(args[1], args[2], verbose, trueOffsets);
-                    break;
-                case "merge":
-                    Merge(args[1], args[2]);
-                    break;
-                case "cleanTrados":
-                    CleanTrados(args[1]);
-                    break;
-                case "insertCAT":
-                    InsertCatFile(args[1], args[2]);
-                    break;
-                default:
-                    throw new ArgumentException($"{args[0]} is not a valid argument.");
-            }
+                DumpAndHash(file, 0, 0, trueOffsets, nullStrings);
+                FinishCommand(close);
+            }, fulldumpFileArg, trueOffsetsOption, nullStringsOption, closeOption);
+            rootCommand.AddCommand(fulldumpCommand);
 
+            // dump command
+            var dumpCommand = new Command("dump", "Dump data range from file");
+            var dumpFileArg = new Argument<string>("file", "File to dump data from");
+            var startIndexArg = new Argument<int>("startIndex", "Start offset");
+            var endIndexArg = new Argument<int>("endIndex", "End offset");
+            dumpCommand.AddArgument(dumpFileArg);
+            dumpCommand.AddArgument(startIndexArg);
+            dumpCommand.AddArgument(endIndexArg);
+            dumpCommand.SetHandler((string file, int startIndex, int endIndex, bool trueOffsets, bool nullStrings, bool close) =>
+            {
+                DumpAndHash(file, startIndex, endIndex, trueOffsets, nullStrings);
+                FinishCommand(close);
+            }, dumpFileArg, startIndexArg, endIndexArg, trueOffsetsOption, nullStringsOption, closeOption);
+            rootCommand.AddCommand(dumpCommand);
+
+            // insert command
+            var insertCommand = new Command("insert", "Add data from CSV to file");
+            var outputFileArg = new Argument<string>("outputFile", "Output file");
+            var inputCsvArg = new Argument<string>("inputCsv", "Input CSV file");
+            insertCommand.AddArgument(outputFileArg);
+            insertCommand.AddArgument(inputCsvArg);
+            insertCommand.SetHandler((string outputFile, string inputCsv, bool verbose, bool trueOffsets, bool close) =>
+            {
+                InsertStrings(outputFile, inputCsv, verbose, trueOffsets);
+                FinishCommand(close);
+            }, outputFileArg, inputCsvArg, verboseOption, trueOffsetsOption, closeOption);
+            rootCommand.AddCommand(insertCommand);
+
+            // merge command
+            var mergeCommand = new Command("merge", "Merge two CSV files");
+            var oldCsvArg = new Argument<string>("oldCsv", "Old CSV file");
+            var newCsvArg = new Argument<string>("newCsv", "New CSV file");
+            mergeCommand.AddArgument(oldCsvArg);
+            mergeCommand.AddArgument(newCsvArg);
+            mergeCommand.SetHandler((string oldCsv, string newCsv, bool close) =>
+            {
+                Merge(oldCsv, newCsv);
+                FinishCommand(close);
+            }, oldCsvArg, newCsvArg, closeOption);
+            rootCommand.AddCommand(mergeCommand);
+
+            // cleanTrados command
+            var cleanTradosCommand = new Command("cleanTrados", "Clean up ill-encoded characters in file");
+            var cleanTradosFileArg = new Argument<string>("file", "File to clean");
+            cleanTradosCommand.AddArgument(cleanTradosFileArg);
+            cleanTradosCommand.SetHandler((string file, bool close) =>
+            {
+                CleanTrados(file);
+                FinishCommand(close);
+            }, cleanTradosFileArg, closeOption);
+            rootCommand.AddCommand(cleanTradosCommand);
+
+            // insertCAT command
+            var insertCatCommand = new Command("insertCAT", "Insert CAT file to CSV file");
+            var catFileArg = new Argument<string>("file", "CAT file");
+            var csvFileArg = new Argument<string>("csvFile", "CSV file");
+            insertCatCommand.AddArgument(catFileArg);
+            insertCatCommand.AddArgument(csvFileArg);
+            insertCatCommand.SetHandler((string catFile, string csvFile, bool close) =>
+            {
+                InsertCatFile(catFile, csvFile);
+                FinishCommand(close);
+            }, catFileArg, csvFileArg, closeOption);
+            rootCommand.AddCommand(insertCatCommand);
+
+            return rootCommand.Invoke(args);
+        }
+
+        /// <summary>
+        /// Finish command execution with optional wait and message.
+        /// </summary>
+        /// <param name="autoClose">If true, don't wait for user input.</param>
+        private static void FinishCommand(bool autoClose)
+        {
             if (!autoClose)
             {
                 Console.WriteLine("Done");
@@ -361,7 +408,7 @@ namespace FrontierTextTool
 
         /// <summary>
         /// Append translations and update pointers.
-        /// 
+        ///
         /// The output generated in output will be compressed and encoded.
         /// </summary>
         /// <param name="inputFile">File to insert the translation to, such as mhfdat.bin</param>
@@ -390,7 +437,8 @@ namespace FrontierTextTool
                 type = CompressionType.RW,
                 level = 15
             };
-            Pack.JPKEncode(compression, outputFile, outputFile);
+            var pack = new Pack();
+            pack.JPKEncode(compression, outputFile, outputFile);
             byte[] buffer = File.ReadAllBytes(outputFile);
             if (File.Exists($"{outputFile}.meta"))
             {

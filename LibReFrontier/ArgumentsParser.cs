@@ -15,6 +15,17 @@ namespace LibReFrontier
         private readonly ILogger _logger;
 
         /// <summary>
+        /// Mapping of named compression types to their enum values.
+        /// </summary>
+        private static readonly Dictionary<string, CompressionType> NamedCompressionTypes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            { "rw", CompressionType.RW },
+            { "hfirw", CompressionType.HFIRW },
+            { "lz", CompressionType.LZ },
+            { "hfi", CompressionType.HFI }
+        };
+
+        /// <summary>
         /// Create a new ArgumentsParser instance with default dependencies.
         /// </summary>
         public ArgumentsParser() : this(DefaultLogger)
@@ -28,29 +39,6 @@ namespace LibReFrontier
         public ArgumentsParser(ILogger logger)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        }
-
-        /// <summary>
-        /// Simple arguments parser.
-        /// </summary>
-        /// <param name="args">Input arguments from the CLI</param>
-        /// <returns>Dictionary of arguments. Arguments with no value have a null value assigned.</returns>
-        public static Dictionary<string, string> ParseArguments(string[] args)
-        {
-            var arguments = new Dictionary<string, string>();
-            foreach (var arg in args)
-            {
-                string[] parts = arg.Split('=');
-                if (parts.Length == 2)
-                {
-                    arguments[parts[0]] = parts[1];
-                }
-                else
-                {
-                    arguments[arg] = null;
-                }
-            }
-            return arguments;
         }
 
 
@@ -77,15 +65,67 @@ namespace LibReFrontier
         }
 
         /// <summary>
-        /// Parse input compresion argument.
+        /// Parse input compression argument.
+        /// Supports both named types (rw, hfirw, lz, hfi) and numeric types (0, 2, 3, 4).
+        /// </summary>
+        /// <param name="compressionType">The compression type, either named (rw, hfirw, lz, hfi) or numeric (0, 2, 3, 4).</param>
+        /// <param name="compressionLevel">The compression level (must be greater than 0).</param>
+        /// <returns>Corresponding compression.</returns>
+        /// <exception cref="ArgumentException">Compression level is invalid.</exception>
+        /// <exception cref="InvalidCastException">The compression type is invalid.</exception>
+        public static Compression ParseCompression(string compressionType, int compressionLevel)
+        {
+            if (compressionLevel <= 0)
+            {
+                throw new ArgumentException("Cannot set a compression level of 0 or less!");
+            }
+
+            CompressionType type;
+
+            // Try to parse as named type first
+            if (NamedCompressionTypes.TryGetValue(compressionType, out type))
+            {
+                // Named type found
+            }
+            else if (int.TryParse(compressionType, out int numericType))
+            {
+                // Numeric type
+                if (numericType == 1)
+                {
+                    throw new InvalidCastException("Check compression type, cannot be 1 (None)!");
+                }
+                if (numericType < 0 || numericType > 4)
+                {
+                    throw new InvalidCastException($"Invalid compression type: {numericType}. Valid types are 0 (RW), 2 (HFIRW), 3 (LZ), 4 (HFI).");
+                }
+                type = Enum.GetValues<CompressionType>()[numericType];
+            }
+            else
+            {
+                throw new InvalidCastException(
+                    $"Invalid compression type: '{compressionType}'. " +
+                    "Valid named types are: rw, hfirw, lz, hfi. " +
+                    "Valid numeric types are: 0 (RW), 2 (HFIRW), 3 (LZ), 4 (HFI)."
+                );
+            }
+
+            return new Compression
+            {
+                type = type,
+                level = compressionLevel
+            };
+        }
+
+        /// <summary>
+        /// Parse input compression argument from legacy format.
         /// </summary>
         /// <param name="inputArg">The value entered for compression, format ("type,level").</param>
         /// <returns>Corresponding compression.</returns>
         /// <exception cref="ArgumentException">Input argument is ill-formed.</exception>
         /// <exception cref="InvalidCastException">The compression type is invalid.</exception>
+        [Obsolete("Use ParseCompression(string compressionType, int compressionLevel) instead.")]
         public static Compression ParseCompression(string inputArg)
         {
-
             var matches = inputArg.Split(",");
             if (matches.Length != 2)
             {
@@ -93,25 +133,16 @@ namespace LibReFrontier
                     $"Check the input of compress! " +
                     $"Received: {inputArg}. " +
                     "Cannot split as compression [type],[level]. " +
-                    "Example: --compress=3,50"
+                    "Example: --compress 3 50"
                 );
             }
-            int compressionType = int.Parse(matches[0]);
-            if (compressionType == 1)
+
+            if (!int.TryParse(matches[1], out int compressionLevel))
             {
-                throw new InvalidCastException("Check compression type, cannot be 1!");
+                throw new FormatException($"Invalid compression level: '{matches[1]}'. Must be a number.");
             }
-            int compressionLevel = int.Parse(matches[1]);
-            if (compressionLevel == 0)
-            {
-                throw new ArgumentException("Cannot set a compression level of 0!");
-            }
-            Compression compression = new()
-            {
-                type = Enum.GetValues<CompressionType>()[compressionType],
-                level = compressionLevel
-            };
-            return compression;
+
+            return ParseCompression(matches[0], compressionLevel);
         }
     }
 }
