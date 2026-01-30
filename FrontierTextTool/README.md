@@ -1,88 +1,92 @@
 # FrontierTextTool
 
-FrontierTextTool let's you read, edit and write game texts using a custom CSV format.
-Both command generate a "CSV" separated by tabulation (`\t`), and encoded in shift-jis.
+Extract, edit, and reinsert game text using CSV format.
 
-> [!WARNING]
-> By Houmgaor: if you want to work on text data, I recommend using [FrontierTextHandler](https://github.com/Houmgaor/FrontierTextHandler). It is a simple Python tool that is more reliable than this project with less bloating.
+> **Note**: For text editing, consider using [FrontierTextHandler](https://github.com/Houmgaor/FrontierTextHandler), a simpler Python alternative.
 
-## Automatic File Processing
+## Features
 
-**New in v1.1.0**: FrontierTextTool now automatically detects and handles encrypted and compressed files. You no longer need to manually decrypt or decompress files before using the tool!
+- Automatically handles encrypted (ECD/EXF) and compressed (JPK) files
+- Exports to tab-separated CSV in Shift-JIS encoding
+- Preserves metadata for re-encryption
 
-The tool automatically:
-- Detects ECD/EXF encryption and decrypts files
-- Detects JPK compression and decompresses files
-- Creates `.meta` files for re-encryption when needed
-- Cleans up temporary files after processing
+## Quick Start
 
-## Usage
+1. **Extract** text to CSV:
+   ```shell
+   ./FrontierTextTool mhfdat.bin --fulldump --trueOffsets --nullStrings
+   ```
 
-1. Extract data with `./FrontierTextTool mhfdat.bin --fulldump --trueOffsets --nullStrings --close`
-2. Edit the generated CSV, for instance `mhfdat.csv`
-3. Change the original file with `./FrontierTextTool mhfdat.bin --insert --csv mhfdat.csv --verbose --close`
+2. **Edit** the generated `mhfdat.csv` file.
 
-**Files can be encrypted and/or compressed** - the tool will automatically process them!
+3. **Reinsert** modified text:
+   ```shell
+   ./FrontierTextTool mhfdat.bin --insert --csv mhfdat.csv
+   ```
 
-This file includes a `--help` command with detailed explanations on each option.
+Output is automatically compressed and encrypted to `output/mhfdat.bin`.
 
-## Extract data
+## Commands
 
-Use `--dump` with `--startIndex` and `--endIndex` if you know which portion of the file to extract.
-Otherwise use `--fulldump --trueOffsets --nullStrings`.
-This second command will find all text, but will output many unreadable text as a side effect.
+### Extract Text
 
-**Files can be encrypted and/or compressed** - the tool will automatically process them!
-
+**Full dump** (finds all text, may include some garbage):
 ```shell
-# Dump specific range (works with encrypted/compressed files!)
-./FrontierTextTool mhfdat.bin --dump --startIndex 3040 --endIndex 3328506
-
-# Dump all text (works with encrypted/compressed files!)
 ./FrontierTextTool mhfdat.bin --fulldump --trueOffsets --nullStrings
 ```
 
-The result will be a CSV with name pattern `<file>.csv`.
+**Range dump** (if you know the byte offsets):
+```shell
+./FrontierTextTool mhfdat.bin --dump --startIndex 3040 --endIndex 3328506
+```
 
-Some recommended offsets:
+Recommended offsets:
+- `mhfdat.bin`: 3040 to 3328506
+- `mhfpac.bin`: 4416 to 1278736
 
-- mhfdat.bin: 3040 3328506 or 3072 3328538
-- mhfpac.bin: 4416 1278736 (conservative) 4416 1278872 (complete)
-
-## Insert back
-
-Use `--insert` with `--csv` to specify the CSV file.
-You can add verbosity with `--verbose`.
-
-**Important**: When using `--insert`, make sure you have a `.meta` file for the original encrypted file (e.g., `mhfdat.bin.meta`). This file is automatically created when you extract data from an encrypted file, or you can create it by decrypting the original file with ReFrontier using the `--log` option.
+### Insert Text
 
 ```shell
-# Works with encrypted/compressed files directly!
 ./FrontierTextTool mhfdat.bin --insert --csv mhfdat.csv --verbose
 ```
 
-The output will be compressed and encrypted automatically to `output/mhfdat.bin`.
+Requires a `.meta` file from the original extraction (created automatically).
 
-## Merge two CSV
+### Merge CSV Files
 
-Use `--merge` with `--csv` to merge an old CSV with a new one.
-
+Combine an old CSV with a new one:
 ```shell
 ./FrontierTextTool old.csv --merge --csv new.csv
 ```
 
-## Clean Trados
+### Clean Trados Artifacts
 
-Use `--cleanTrados` to clean up ill-encoded characters from CAT tools.
-
+Fix encoding issues from CAT tools:
 ```shell
 ./FrontierTextTool file.txt --cleanTrados
 ```
 
-## Insert CAT file
-
-Use `--insertCAT` with `--csv` to insert a CAT file into a CSV.
+### Insert CAT File
 
 ```shell
 ./FrontierTextTool catfile.txt --insertCAT --csv target.csv
 ```
+
+## Options
+
+| Option | Description |
+|--------|-------------|
+| `--fulldump` | Extract all text from file |
+| `--dump` | Extract text in specified range |
+| `--startIndex` | Start byte offset for `--dump` |
+| `--endIndex` | End byte offset for `--dump` |
+| `--trueOffsets` | Use pointer table offsets |
+| `--nullStrings` | Include empty strings |
+| `--insert` | Insert CSV back into file |
+| `--csv <file>` | Specify CSV file path |
+| `--verbose` | Show detailed output |
+| `--merge` | Merge two CSV files |
+| `--cleanTrados` | Fix CAT tool encoding |
+| `--insertCAT` | Insert CAT file into CSV |
+| `--close` | Close terminal after execution |
+| `--help` | Show help |

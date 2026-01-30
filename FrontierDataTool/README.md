@@ -1,62 +1,90 @@
 # FrontierDataTool
 
-FrontierDataTool is a small utility to work on game values.
-It has three actions: `--dump`, `--modshop`, and `--import`.
+Extract and modify game data structures (armor, weapons, quests, shop prices).
 
-## Automatic File Processing
+## Features
 
-**New in v1.1.0**: FrontierDataTool now automatically detects and handles encrypted and compressed files. You no longer need to manually decrypt or decompress files before using the tool!
+- Automatically handles encrypted (ECD/EXF) and compressed (JPK) files
+- Exports to tab-separated CSV (Shift-JIS encoding)
+- Supports importing modified data back into game files
 
-The tool automatically:
-- Detects ECD/EXF encryption and decrypts files
-- Detects JPK compression and decompresses files
-- Creates `.meta` files for re-encryption when needed
-- Cleans up temporary files after processing
+## Commands
 
-## Action `--dump`
+### Dump Data (`--dump`)
 
-The `--dump` action dumps all data from the main files to CSV files.
-It needs all data files: mhfpac.bin, mhfdat.bin, mhfinf.bin.
-
-**The files can be encrypted and/or compressed** - the tool will automatically process them.
+Export all game data to CSV files:
 
 ```shell
-# Replace "demo" by any file suffix you want
-# Works with encrypted/compressed files directly!
 ./FrontierDataTool --dump --suffix demo --mhfpac mhfpac.bin --mhfdat mhfdat.bin --mhfinf mhfinf.bin
 ```
 
-The output will look like `mhsx_[data type]_{suffix}.txt` and `Armor.csv`, `Melee.csv`, `Ranged.csv`, `InfQuests.csv`.
+Generates:
+- `Armor.csv` - Armor data
+- `Melee.csv` - Melee weapon data
+- `Ranged.csv` - Ranged weapon data
+- `InfQuests.csv` - Quest data
+- `mhsx_[type]_demo.txt` - Various data files
 
-## Action `--modshop`
+### Import Data (`--import`)
 
-Change various prices from the shop by editing "mhfdat.bin".
-The buy prices is divided by 50, and the sell price multiplied by 5.
+Import modified CSV data back into game files. The CSV type is **auto-detected from the filename**.
 
-**The file can be encrypted and/or compressed** - the tool will automatically process it.
-
-```shell
-# Works with encrypted/compressed files directly!
-./FrontierDataTool --modshop --mhfdat mhfdat.bin
-```
-
-## Action `--import`
-
-Import modified armor data from a CSV file back into the game files.
-
-**The game files can be encrypted and/or compressed** - the tool will automatically process them.
+#### Import Armor
 
 ```shell
-# Import modified armor data
 ./FrontierDataTool --import --csv Armor.csv --mhfdat mhfdat.bin --mhfpac mhfpac.bin
 ```
 
-The output will be written to `output/mhfdat.bin`.
-
-## Help
-
-Use `--help` for detailed explanations on all options.
+#### Import Melee Weapons
 
 ```shell
-./FrontierDataTool --help
+./FrontierDataTool --import --csv Melee.csv --mhfdat mhfdat.bin
 ```
+
+#### Import Ranged Weapons
+
+```shell
+./FrontierDataTool --import --csv Ranged.csv --mhfdat mhfdat.bin
+```
+
+#### Import Quest Data
+
+```shell
+./FrontierDataTool --import --csv InfQuests.csv --mhfinf mhfinf.bin
+```
+
+> **Note**: Quest text fields (Title, TextMain, TextSubA, TextSubB) are **read-only** and cannot be modified through CSV import.
+
+Output is written to the `output/` directory.
+
+### Modify Shop Prices (`--modshop`)
+
+Adjust shop prices in `mhfdat.bin` (buy price / 50, sell price * 5):
+
+```shell
+./FrontierDataTool --modshop --mhfdat mhfdat.bin
+```
+
+## Import Requirements Summary
+
+| CSV File | Required Files |
+|----------|----------------|
+| `Armor.csv` | `--mhfdat`, `--mhfpac` |
+| `Melee.csv` | `--mhfdat` |
+| `Ranged.csv` | `--mhfdat` |
+| `InfQuests.csv` | `--mhfinf` |
+
+## Options
+
+| Option | Description |
+|--------|-------------|
+| `--dump` | Export game data to CSV |
+| `--import` | Import CSV data back into game files |
+| `--modshop` | Modify shop prices |
+| `--suffix <name>` | Suffix for output files (required for `--dump`) |
+| `--csv <file>` | CSV file path (required for `--import`) |
+| `--mhfdat <file>` | Path to mhfdat.bin |
+| `--mhfpac <file>` | Path to mhfpac.bin |
+| `--mhfinf <file>` | Path to mhfinf.bin |
+| `--close` | Close terminal after execution |
+| `--help` | Show help |
