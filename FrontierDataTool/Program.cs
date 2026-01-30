@@ -142,8 +142,8 @@ namespace FrontierDataTool
             #region SkillSystem
             // Get and dump skill system dictionary
             Console.WriteLine("Dumping skill tree names.");
-            MemoryStream msInput = new(File.ReadAllBytes(mhfpac));
-            BinaryReader brInput = new(msInput);
+            using MemoryStream msInput = new(File.ReadAllBytes(mhfpac));
+            using BinaryReader brInput = new(msInput);
             brInput.BaseStream.Seek(_soStringSkillPt, SeekOrigin.Begin);
             int sOffset = brInput.ReadInt32();
             brInput.BaseStream.Seek(_eoStringSkillPt, SeekOrigin.Begin);
@@ -171,8 +171,8 @@ namespace FrontierDataTool
 
         private static void DumpSkillData(string mhfpac, string suffix)
         {
-            MemoryStream msInput = new(File.ReadAllBytes(mhfpac));
-            BinaryReader brInput = new(msInput);
+            using MemoryStream msInput = new(File.ReadAllBytes(mhfpac));
+            using BinaryReader brInput = new(msInput);
 
 
             #region ActiveSkill
@@ -243,8 +243,8 @@ namespace FrontierDataTool
         {
             #region Items
             Console.WriteLine("Dumping item names.");
-            var msInput = new MemoryStream(File.ReadAllBytes(mhfdat));
-            var brInput = new BinaryReader(msInput);
+            using var msInput = new MemoryStream(File.ReadAllBytes(mhfdat));
+            using var brInput = new BinaryReader(msInput);
             brInput.BaseStream.Seek(_soStringItem, SeekOrigin.Begin);
             int sOffset = brInput.ReadInt32();
             brInput.BaseStream.Seek(_eoStringItem, SeekOrigin.Begin);
@@ -304,8 +304,8 @@ namespace FrontierDataTool
             // Dump armor data
             int totalCount = 0;
             int sOffset, eOffset;
-            var msInput = new MemoryStream(File.ReadAllBytes(mhfdat));
-            var brInput = new BinaryReader(msInput);
+            using var msInput = new MemoryStream(File.ReadAllBytes(mhfdat));
+            using var brInput = new BinaryReader(msInput);
             for (int i = 0; i < 5; i++)
             {
                 // Get raw data
@@ -444,8 +444,8 @@ namespace FrontierDataTool
 
             #region WeaponData
             // Dump melee weapon data
-            var msInput = new MemoryStream(File.ReadAllBytes(mhfdat));
-            var brInput = new BinaryReader(msInput);
+            using var msInput = new MemoryStream(File.ReadAllBytes(mhfdat));
+            using var brInput = new BinaryReader(msInput);
             brInput.BaseStream.Seek(_soMelee, SeekOrigin.Begin);
             int sOffset = brInput.ReadInt32();
             brInput.BaseStream.Seek(_eoMelee, SeekOrigin.Begin);
@@ -639,8 +639,8 @@ namespace FrontierDataTool
 
             #region QuestData
             // Dump inf quest data
-            var msInput = new MemoryStream(File.ReadAllBytes(mhfinf));
-            var brInput = new BinaryReader(msInput);
+            using var msInput = new MemoryStream(File.ReadAllBytes(mhfinf));
+            using var brInput = new BinaryReader(msInput);
 
             int totalCount = 0;
             for (int j = 0; j < offsetInfQuestData.Count; j++)
@@ -738,50 +738,51 @@ namespace FrontierDataTool
         /// <param name="file">Input file path, usually mhfdat.bin.</param>
         private static void ModShop(string file)
         {
-            MemoryStream msInput = new(File.ReadAllBytes(file));
-            BinaryReader brInput = new(msInput);
-            BinaryWriter brOutput = new(File.Open(file, FileMode.Open));
+            int count;
 
-            // Patch item prices
-            brInput.BaseStream.Seek(0xFC, SeekOrigin.Begin);
-            int sOffset = brInput.ReadInt32();
-            brInput.BaseStream.Seek(0xA70, SeekOrigin.Begin);
-            int eOffset = brInput.ReadInt32();
-
-            int count = (eOffset - sOffset) / 0x24;
-            Console.WriteLine($"Patching prices for {count} items starting at 0x{sOffset:X8}");
-            for (int i = 0; i < count; i++)
+            // Patch item and equip prices in file
+            using (MemoryStream msInput = new(File.ReadAllBytes(file)))
+            using (BinaryReader brInput = new(msInput))
+            using (BinaryWriter brOutput = new(File.Open(file, FileMode.Open)))
             {
-                brOutput.BaseStream.Seek(sOffset + (i * 0x24) + 12, SeekOrigin.Begin);
-                brInput.BaseStream.Seek(sOffset + (i * 0x24) + 12, SeekOrigin.Begin);
-                int buyPrice = brInput.ReadInt32() / 50;
-                brOutput.Write(buyPrice);
+                // Patch item prices
+                brInput.BaseStream.Seek(0xFC, SeekOrigin.Begin);
+                int sOffset = brInput.ReadInt32();
+                brInput.BaseStream.Seek(0xA70, SeekOrigin.Begin);
+                int eOffset = brInput.ReadInt32();
 
-                brOutput.BaseStream.Seek(sOffset + (i * 0x24) + 16, SeekOrigin.Begin);
-                brInput.BaseStream.Seek(sOffset + (i * 0x24) + 16, SeekOrigin.Begin);
-                int sellPrice = brInput.ReadInt32() * 5;
-                brOutput.Write(sellPrice);
-            }
-
-            // Patch equip prices
-            for (int i = 0; i < 5; i++)
-            {
-                brInput.BaseStream.Seek(_dataPointersArmor[i].Key, SeekOrigin.Begin);
-                sOffset = brInput.ReadInt32();
-                brInput.BaseStream.Seek(_dataPointersArmor[i].Value, SeekOrigin.Begin);
-                eOffset = brInput.ReadInt32();
-
-                count = (eOffset - sOffset) / 0x48;
-                Console.WriteLine($"Patching prices for {count} armor pieces starting at 0x{sOffset:X8}");
-                for (int j = 0; j < count; j++)
+                count = (eOffset - sOffset) / 0x24;
+                Console.WriteLine($"Patching prices for {count} items starting at 0x{sOffset:X8}");
+                for (int i = 0; i < count; i++)
                 {
-                    brOutput.BaseStream.Seek(sOffset + (j * 0x48) + 12, SeekOrigin.Begin);
-                    brOutput.Write(50);
+                    brOutput.BaseStream.Seek(sOffset + (i * 0x24) + 12, SeekOrigin.Begin);
+                    brInput.BaseStream.Seek(sOffset + (i * 0x24) + 12, SeekOrigin.Begin);
+                    int buyPrice = brInput.ReadInt32() / 50;
+                    brOutput.Write(buyPrice);
+
+                    brOutput.BaseStream.Seek(sOffset + (i * 0x24) + 16, SeekOrigin.Begin);
+                    brInput.BaseStream.Seek(sOffset + (i * 0x24) + 16, SeekOrigin.Begin);
+                    int sellPrice = brInput.ReadInt32() * 5;
+                    brOutput.Write(sellPrice);
+                }
+
+                // Patch equip prices
+                for (int i = 0; i < 5; i++)
+                {
+                    brInput.BaseStream.Seek(_dataPointersArmor[i].Key, SeekOrigin.Begin);
+                    sOffset = brInput.ReadInt32();
+                    brInput.BaseStream.Seek(_dataPointersArmor[i].Value, SeekOrigin.Begin);
+                    eOffset = brInput.ReadInt32();
+
+                    count = (eOffset - sOffset) / 0x48;
+                    Console.WriteLine($"Patching prices for {count} armor pieces starting at 0x{sOffset:X8}");
+                    for (int j = 0; j < count; j++)
+                    {
+                        brOutput.BaseStream.Seek(sOffset + (j * 0x48) + 12, SeekOrigin.Begin);
+                        brOutput.Write(50);
+                    }
                 }
             }
-
-            brOutput.Close();
-            brInput.Close();
 
             // Generate shop array
             count = 16700;
