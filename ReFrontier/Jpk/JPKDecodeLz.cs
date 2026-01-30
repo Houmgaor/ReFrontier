@@ -117,12 +117,12 @@ namespace ReFrontier.Jpk
         /// </summary>
         /// <param name="stream">Stream to read from.</param>
         /// <returns>Read byte.</returns>
-        /// <exception cref="NotImplementedException">Exception when end of file is reached.</exception>
+        /// <exception cref="EndOfStreamException">Exception when end of file is reached.</exception>
         public virtual byte ReadByte(Stream stream)
         {
             int value = stream.ReadByte();
             if (value < 0)
-                throw new NotImplementedException("Reached end of file too early!");
+                throw new EndOfStreamException("Reached end of file too early!");
             return (byte)value;
         }
     }

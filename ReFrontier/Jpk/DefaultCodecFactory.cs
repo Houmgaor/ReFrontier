@@ -26,10 +26,11 @@ namespace ReFrontier.Jpk
             return compressionType switch
             {
                 CompressionType.RW => new JPKDecodeRW(),
+                CompressionType.None => new JPKDecodeRW(), // None is raw bytes, same as RW
                 CompressionType.HFIRW => new JPKDecodeHFIRW(),
                 CompressionType.LZ => new JPKDecodeLz(),
                 CompressionType.HFI => new JPKDecodeHFI(),
-                _ => throw new NotImplementedException($"JPK type {compressionType} is not supported.")
+                _ => throw new InvalidOperationException($"Unsupported/invalid decoder type: {compressionType}")
             };
         }
     }

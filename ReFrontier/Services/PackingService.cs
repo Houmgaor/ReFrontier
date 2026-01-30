@@ -50,7 +50,7 @@ namespace ReFrontier.Services
         /// </summary>
         /// <param name="inputDir">Input directory path.</param>
         /// <exception cref="FileNotFoundException">The log file does not exist.</exception>
-        /// <exception cref="NotImplementedException">The packing format does not exist.</exception>
+        /// <exception cref="InvalidOperationException">The packing format does not exist.</exception>
         public void ProcessPackInput(string inputDir)
         {
             string logFile = Path.Join(
@@ -80,7 +80,7 @@ namespace ReFrontier.Services
                     PackStageContainer(logContent, inputDir);
                     break;
                 default:
-                    throw new NotImplementedException("Unknown container type: " + logContent[0]);
+                    throw new InvalidOperationException("Unknown container type: " + logContent[0]);
             }
             _logger.WriteSeparator();
         }

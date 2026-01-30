@@ -20,7 +20,7 @@ namespace ReFrontier.Jpk
         /// </summary>
         /// <param name="compressionType">Type of compression.</param>
         /// <returns>Decoder instance.</returns>
-        /// <exception cref="System.NotImplementedException">If compression type is not supported.</exception>
+        /// <exception cref="System.InvalidOperationException">If compression type is not supported.</exception>
         IJPKDecode CreateDecoder(CompressionType compressionType);
     }
 }

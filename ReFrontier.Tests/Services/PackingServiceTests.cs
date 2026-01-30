@@ -158,14 +158,14 @@ namespace ReFrontier.Tests.Services
         }
 
         [Fact]
-        public void ProcessPackInput_UnknownType_ThrowsNotImplementedException()
+        public void ProcessPackInput_UnknownType_ThrowsInvalidOperationException()
         {
             // Arrange
             string logContent = "UnknownType\ntest.bin";
             _fileSystem.AddFile("/test/dir.unpacked/dir.unpacked.log", logContent);
 
             // Act & Assert
-            Assert.Throws<System.NotImplementedException>(() =>
+            Assert.Throws<System.InvalidOperationException>(() =>
                 _service.ProcessPackInput("/test/dir.unpacked"));
         }
     }

@@ -51,7 +51,7 @@ namespace ReFrontier
         /// </summary>
         /// <param name="inputDir">Input directory path.</param>
         /// <exception cref="FileNotFoundException">The log file does not exist.</exception>
-        /// <exception cref="NotImplementedException">The packing format does not exist.</exception>
+        /// <exception cref="InvalidOperationException">The packing format does not exist.</exception>
         public void ProcessPackInput(string inputDir)
         {
             _packingService.ProcessPackInput(inputDir);
