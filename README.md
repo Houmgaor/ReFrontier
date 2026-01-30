@@ -3,6 +3,7 @@
 [![CI](https://github.com/Houmgaor/ReFrontier/actions/workflows/ci.yml/badge.svg)](https://github.com/Houmgaor/ReFrontier/actions/workflows/ci.yml)
 [![.NET 8.0](https://img.shields.io/badge/.NET-8.0-blue)](https://dotnet.microsoft.com/download/dotnet/8.0)
 [![Platform](https://img.shields.io/badge/platform-windows%20%7C%20linux%20%7C%20macos-lightgrey)](https://github.com/Houmgaor/ReFrontier/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Tools for (un)packing, (de)crypting and editing various Monster Hunter Frontier Online files.
 
@@ -166,3 +167,9 @@ Some more useful tools and projects:
 - [Blender addon](https://github.com/Houmgaor/MHFrontier-Blender-Addon) to import 3D models.
 
 To run a server: [MHFrontier Server](https://github.com/ZeruLight/Erupe).
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
+This fork is published with the agreement of the original author ([mhvuze](https://github.com/mhvuze)).
