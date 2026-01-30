@@ -30,6 +30,30 @@ namespace FrontierDataTool.Services
         private const int _soStringSkillPt = 0xA20;
         private const int _eoStringSkillPt = 0xA1C;
 
+        // Offset pointers for mhfdat.bin weapon data
+        private const int _soMelee = 0x7C;
+        private const int _eoMelee = 0x90;
+        private const int _soRanged = 0x80;
+        private const int _eoRanged = 0x7C;
+
+        // Offset and count pairs for mhfinf.bin quest data
+        private static readonly List<KeyValuePair<int, int>> OffsetInfQuestData =
+        [
+            new(0x6bd60, 95),
+            new(0x74100, 62),
+            new(0x797e0, 99),
+            new(0x821a0, 98),
+            new(0x8aa00, 99),
+            new(0x933c0, 99),
+            new(0x9bd80, 99),
+            new(0xa4740, 99),
+            new(0xad100, 99),
+            new(0xb5b40, 36),
+            new(0xb8e60, 96),
+            new(0xc1400, 91),
+            new(0x161220, 20),
+        ];
+
         private static readonly string[] ArmorClasses = ["頭", "胴", "腕", "腰", "脚"];
 
         /// <summary>
@@ -142,6 +166,263 @@ namespace FrontierDataTool.Services
             };
             using var csvReader = new CsvReader(textReader, configuration);
             return csvReader.GetRecords<ArmorDataEntry>().ToList();
+        }
+
+        /// <summary>
+        /// Import melee weapon data from CSV back into mhfdat.bin.
+        /// </summary>
+        /// <param name="mhfdat">Path to mhfdat.bin.</param>
+        /// <param name="csvPath">Path to Melee.csv.</param>
+        public void ImportMeleeData(string mhfdat, string csvPath)
+        {
+            var preprocessor = new FilePreprocessor();
+
+            var (processedMhfdat, cleanupMhfdat) = preprocessor.AutoPreprocess(mhfdat, createMetaFile: true);
+
+            try
+            {
+                ImportMeleeDataInternal(processedMhfdat, csvPath);
+            }
+            finally
+            {
+                cleanupMhfdat();
+            }
+        }
+
+        /// <summary>
+        /// Internal implementation of ImportMeleeData that works on preprocessed files.
+        /// </summary>
+        public void ImportMeleeDataInternal(string mhfdat, string csvPath)
+        {
+            // Read melee entries from CSV
+            var meleeEntries = LoadMeleeCsv(csvPath);
+            _logger.WriteLine($"Read {meleeEntries.Count} melee weapon entries from CSV.");
+
+            // Load mhfdat.bin
+            byte[] mhfdatData = _fileSystem.ReadAllBytes(mhfdat);
+            using var ms = new MemoryStream(mhfdatData);
+            using var br = new BinaryReader(ms);
+            using var bw = new BinaryWriter(ms);
+
+            // Get melee weapon data offsets
+            br.BaseStream.Seek(_soMelee, SeekOrigin.Begin);
+            int sOffset = br.ReadInt32();
+            br.BaseStream.Seek(_eoMelee, SeekOrigin.Begin);
+            int eOffset = br.ReadInt32();
+
+            int entryCount = (eOffset - sOffset) / BinaryReaderService.MELEE_WEAPON_ENTRY_SIZE;
+
+            if (meleeEntries.Count != entryCount)
+            {
+                _logger.Error($"Warning: CSV has {meleeEntries.Count} entries, but mhfdat expects {entryCount}. Aborting.");
+                return;
+            }
+
+            _logger.WriteLine($"Writing {entryCount} melee weapon entries starting at 0x{sOffset:X8}");
+
+            for (int i = 0; i < entryCount; i++)
+            {
+                int entryOffset = sOffset + (i * BinaryReaderService.MELEE_WEAPON_ENTRY_SIZE);
+                bw.BaseStream.Seek(entryOffset, SeekOrigin.Begin);
+                _binaryReader.WriteMeleeWeaponEntry(bw, meleeEntries[i]);
+            }
+
+            _fileSystem.CreateDirectory("output");
+            string outputPath = Path.Combine("output", "mhfdat.bin");
+            _fileSystem.WriteAllBytes(outputPath, mhfdatData);
+            _logger.WriteLine($"Wrote modified melee data to {outputPath}");
+        }
+
+        /// <summary>
+        /// Load melee weapon entries from a CSV file.
+        /// </summary>
+        public List<MeleeWeaponEntry> LoadMeleeCsv(string csvPath)
+        {
+            using var textReader = new StreamReader(
+                _fileSystem.OpenRead(csvPath),
+                Encoding.GetEncoding("shift-jis")
+            );
+            var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
+            {
+                Delimiter = "\t",
+            };
+            using var csvReader = new CsvReader(textReader, configuration);
+            return csvReader.GetRecords<MeleeWeaponEntry>().ToList();
+        }
+
+        /// <summary>
+        /// Import ranged weapon data from CSV back into mhfdat.bin.
+        /// </summary>
+        /// <param name="mhfdat">Path to mhfdat.bin.</param>
+        /// <param name="csvPath">Path to Ranged.csv.</param>
+        public void ImportRangedData(string mhfdat, string csvPath)
+        {
+            var preprocessor = new FilePreprocessor();
+
+            var (processedMhfdat, cleanupMhfdat) = preprocessor.AutoPreprocess(mhfdat, createMetaFile: true);
+
+            try
+            {
+                ImportRangedDataInternal(processedMhfdat, csvPath);
+            }
+            finally
+            {
+                cleanupMhfdat();
+            }
+        }
+
+        /// <summary>
+        /// Internal implementation of ImportRangedData that works on preprocessed files.
+        /// </summary>
+        public void ImportRangedDataInternal(string mhfdat, string csvPath)
+        {
+            // Read ranged entries from CSV
+            var rangedEntries = LoadRangedCsv(csvPath);
+            _logger.WriteLine($"Read {rangedEntries.Count} ranged weapon entries from CSV.");
+
+            // Load mhfdat.bin
+            byte[] mhfdatData = _fileSystem.ReadAllBytes(mhfdat);
+            using var ms = new MemoryStream(mhfdatData);
+            using var br = new BinaryReader(ms);
+            using var bw = new BinaryWriter(ms);
+
+            // Get ranged weapon data offsets
+            br.BaseStream.Seek(_soRanged, SeekOrigin.Begin);
+            int sOffset = br.ReadInt32();
+            br.BaseStream.Seek(_eoRanged, SeekOrigin.Begin);
+            int eOffset = br.ReadInt32();
+
+            int entryCount = (eOffset - sOffset) / BinaryReaderService.RANGED_WEAPON_ENTRY_SIZE;
+
+            if (rangedEntries.Count != entryCount)
+            {
+                _logger.Error($"Warning: CSV has {rangedEntries.Count} entries, but mhfdat expects {entryCount}. Aborting.");
+                return;
+            }
+
+            _logger.WriteLine($"Writing {entryCount} ranged weapon entries starting at 0x{sOffset:X8}");
+
+            for (int i = 0; i < entryCount; i++)
+            {
+                int entryOffset = sOffset + (i * BinaryReaderService.RANGED_WEAPON_ENTRY_SIZE);
+                bw.BaseStream.Seek(entryOffset, SeekOrigin.Begin);
+                _binaryReader.WriteRangedWeaponEntry(bw, rangedEntries[i]);
+            }
+
+            _fileSystem.CreateDirectory("output");
+            string outputPath = Path.Combine("output", "mhfdat.bin");
+            _fileSystem.WriteAllBytes(outputPath, mhfdatData);
+            _logger.WriteLine($"Wrote modified ranged data to {outputPath}");
+        }
+
+        /// <summary>
+        /// Load ranged weapon entries from a CSV file.
+        /// </summary>
+        public List<RangedWeaponEntry> LoadRangedCsv(string csvPath)
+        {
+            using var textReader = new StreamReader(
+                _fileSystem.OpenRead(csvPath),
+                Encoding.GetEncoding("shift-jis")
+            );
+            var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
+            {
+                Delimiter = "\t",
+            };
+            using var csvReader = new CsvReader(textReader, configuration);
+            return csvReader.GetRecords<RangedWeaponEntry>().ToList();
+        }
+
+        /// <summary>
+        /// Import quest data from CSV back into mhfinf.bin.
+        /// Note: Quest string fields (Title, TextMain, TextSubA, TextSubB) are READ-ONLY
+        /// and cannot be modified - they live in a separate string table.
+        /// </summary>
+        /// <param name="mhfinf">Path to mhfinf.bin.</param>
+        /// <param name="csvPath">Path to InfQuests.csv.</param>
+        public void ImportQuestData(string mhfinf, string csvPath)
+        {
+            var preprocessor = new FilePreprocessor();
+
+            var (processedMhfinf, cleanupMhfinf) = preprocessor.AutoPreprocess(mhfinf, createMetaFile: true);
+
+            try
+            {
+                ImportQuestDataInternal(processedMhfinf, csvPath);
+            }
+            finally
+            {
+                cleanupMhfinf();
+            }
+        }
+
+        /// <summary>
+        /// Internal implementation of ImportQuestData that works on preprocessed files.
+        /// </summary>
+        public void ImportQuestDataInternal(string mhfinf, string csvPath)
+        {
+            // Read quest entries from CSV
+            var questEntries = LoadQuestCsv(csvPath);
+            _logger.WriteLine($"Read {questEntries.Count} quest entries from CSV.");
+
+            // Calculate expected total count
+            int expectedCount = 0;
+            foreach (var offset in OffsetInfQuestData)
+                expectedCount += offset.Value;
+
+            if (questEntries.Count != expectedCount)
+            {
+                _logger.Error($"Warning: CSV has {questEntries.Count} entries, but mhfinf expects {expectedCount}. Aborting.");
+                return;
+            }
+
+            // Load mhfinf.bin
+            byte[] mhfinfData = _fileSystem.ReadAllBytes(mhfinf);
+            using var ms = new MemoryStream(mhfinfData);
+            using var bw = new BinaryWriter(ms);
+
+            int currentEntry = 0;
+
+            foreach (var offset in OffsetInfQuestData)
+            {
+                _logger.WriteLine($"Writing {offset.Value} quest entries starting at 0x{offset.Key:X8}");
+
+                bw.BaseStream.Seek(offset.Key, SeekOrigin.Begin);
+
+                for (int i = 0; i < offset.Value; i++)
+                {
+                    long entryStart = bw.BaseStream.Position;
+                    _binaryReader.WriteQuestEntry(bw, questEntries[currentEntry]);
+                    currentEntry++;
+
+                    // Skip to next entry (0x128 bytes per entry based on read structure)
+                    // The read advances: header + monetary + unknowns + goals + 0x5C skip + GRP + 0x90 skip + 4 pointers + 0x10 skip
+                    // Total read: 12 + 24 + 4 + 8 + 24 + 0x5C + 12 + 0x90 + 16 + 0x10 = 0x128
+                    bw.BaseStream.Seek(entryStart + 0x128, SeekOrigin.Begin);
+                }
+            }
+
+            _fileSystem.CreateDirectory("output");
+            string outputPath = Path.Combine("output", "mhfinf.bin");
+            _fileSystem.WriteAllBytes(outputPath, mhfinfData);
+            _logger.WriteLine($"Wrote modified quest data to {outputPath}");
+            _logger.WriteLine("Note: Quest string fields (Title, TextMain, TextSubA, TextSubB) are read-only and were not modified.");
+        }
+
+        /// <summary>
+        /// Load quest entries from a CSV file.
+        /// </summary>
+        public List<QuestData> LoadQuestCsv(string csvPath)
+        {
+            using var textReader = new StreamReader(
+                _fileSystem.OpenRead(csvPath),
+                Encoding.GetEncoding("shift-jis")
+            );
+            var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
+            {
+                Delimiter = "\t",
+            };
+            using var csvReader = new CsvReader(textReader, configuration);
+            return csvReader.GetRecords<QuestData>().ToList();
         }
 
         /// <summary>

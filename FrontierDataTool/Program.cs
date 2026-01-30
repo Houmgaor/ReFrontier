@@ -58,7 +58,7 @@ namespace FrontierDataTool
 
             var importOption = new Option<bool>(
                 name: "--import",
-                description: "Import modified CSV back into game files (requires --csv, --mhfdat, --mhfpac)"
+                description: "Import modified CSV back into game files. Auto-detects CSV type from filename: Armor.csv (requires --mhfdat, --mhfpac), Melee.csv (requires --mhfdat), Ranged.csv (requires --mhfdat), InfQuests.csv (requires --mhfinf)"
             );
             rootCommand.AddOption(importOption);
 
@@ -219,20 +219,6 @@ namespace FrontierDataTool
                             FinishCommand(close);
                             return;
                         }
-                        if (string.IsNullOrEmpty(mhfdat))
-                        {
-                            Console.Error.WriteLine("Error: --import requires --mhfdat.");
-                            context.ExitCode = 1;
-                            FinishCommand(close);
-                            return;
-                        }
-                        if (string.IsNullOrEmpty(mhfpac))
-                        {
-                            Console.Error.WriteLine("Error: --import requires --mhfpac.");
-                            context.ExitCode = 1;
-                            FinishCommand(close);
-                            return;
-                        }
 
                         if (!File.Exists(csv))
                         {
@@ -241,22 +227,111 @@ namespace FrontierDataTool
                             FinishCommand(close);
                             return;
                         }
-                        if (!File.Exists(mhfdat))
-                        {
-                            Console.Error.WriteLine($"Error: File '{mhfdat}' does not exist.");
-                            context.ExitCode = 1;
-                            FinishCommand(close);
-                            return;
-                        }
-                        if (!File.Exists(mhfpac))
-                        {
-                            Console.Error.WriteLine($"Error: File '{mhfpac}' does not exist.");
-                            context.ExitCode = 1;
-                            FinishCommand(close);
-                            return;
-                        }
 
-                        program._importService.ImportArmorData(mhfdat, csv, mhfpac);
+                        // Auto-detect CSV type from filename
+                        string csvFilename = Path.GetFileName(csv).ToLowerInvariant();
+
+                        if (csvFilename.StartsWith("armor"))
+                        {
+                            // Armor import requires mhfdat and mhfpac
+                            if (string.IsNullOrEmpty(mhfdat))
+                            {
+                                Console.Error.WriteLine("Error: Armor.csv import requires --mhfdat.");
+                                context.ExitCode = 1;
+                                FinishCommand(close);
+                                return;
+                            }
+                            if (string.IsNullOrEmpty(mhfpac))
+                            {
+                                Console.Error.WriteLine("Error: Armor.csv import requires --mhfpac.");
+                                context.ExitCode = 1;
+                                FinishCommand(close);
+                                return;
+                            }
+                            if (!File.Exists(mhfdat))
+                            {
+                                Console.Error.WriteLine($"Error: File '{mhfdat}' does not exist.");
+                                context.ExitCode = 1;
+                                FinishCommand(close);
+                                return;
+                            }
+                            if (!File.Exists(mhfpac))
+                            {
+                                Console.Error.WriteLine($"Error: File '{mhfpac}' does not exist.");
+                                context.ExitCode = 1;
+                                FinishCommand(close);
+                                return;
+                            }
+
+                            program._importService.ImportArmorData(mhfdat, csv, mhfpac);
+                        }
+                        else if (csvFilename.StartsWith("melee"))
+                        {
+                            // Melee import requires mhfdat
+                            if (string.IsNullOrEmpty(mhfdat))
+                            {
+                                Console.Error.WriteLine("Error: Melee.csv import requires --mhfdat.");
+                                context.ExitCode = 1;
+                                FinishCommand(close);
+                                return;
+                            }
+                            if (!File.Exists(mhfdat))
+                            {
+                                Console.Error.WriteLine($"Error: File '{mhfdat}' does not exist.");
+                                context.ExitCode = 1;
+                                FinishCommand(close);
+                                return;
+                            }
+
+                            program._importService.ImportMeleeData(mhfdat, csv);
+                        }
+                        else if (csvFilename.StartsWith("ranged"))
+                        {
+                            // Ranged import requires mhfdat
+                            if (string.IsNullOrEmpty(mhfdat))
+                            {
+                                Console.Error.WriteLine("Error: Ranged.csv import requires --mhfdat.");
+                                context.ExitCode = 1;
+                                FinishCommand(close);
+                                return;
+                            }
+                            if (!File.Exists(mhfdat))
+                            {
+                                Console.Error.WriteLine($"Error: File '{mhfdat}' does not exist.");
+                                context.ExitCode = 1;
+                                FinishCommand(close);
+                                return;
+                            }
+
+                            program._importService.ImportRangedData(mhfdat, csv);
+                        }
+                        else if (csvFilename.StartsWith("infquest"))
+                        {
+                            // Quest import requires mhfinf
+                            if (string.IsNullOrEmpty(mhfinf))
+                            {
+                                Console.Error.WriteLine("Error: InfQuests.csv import requires --mhfinf.");
+                                context.ExitCode = 1;
+                                FinishCommand(close);
+                                return;
+                            }
+                            if (!File.Exists(mhfinf))
+                            {
+                                Console.Error.WriteLine($"Error: File '{mhfinf}' does not exist.");
+                                context.ExitCode = 1;
+                                FinishCommand(close);
+                                return;
+                            }
+
+                            program._importService.ImportQuestData(mhfinf, csv);
+                        }
+                        else
+                        {
+                            Console.Error.WriteLine($"Error: Unknown CSV type '{csvFilename}'. Expected Armor.csv, Melee.csv, Ranged.csv, or InfQuests.csv.");
+                            context.ExitCode = 1;
+                            FinishCommand(close);
+                            return;
+                        }
                     }
                 }
                 catch (Exception ex)

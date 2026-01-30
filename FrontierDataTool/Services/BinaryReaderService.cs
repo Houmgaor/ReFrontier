@@ -435,6 +435,170 @@ namespace FrontierDataTool.Services
         }
 
         /// <summary>
+        /// Write a single melee weapon entry to the binary stream.
+        /// </summary>
+        /// <param name="bw">Binary writer positioned at the entry offset.</param>
+        /// <param name="entry">Melee weapon entry to write.</param>
+        public void WriteMeleeWeaponEntry(BinaryWriter bw, MeleeWeaponEntry entry)
+        {
+            bw.Write(entry.ModelId);
+            bw.Write(entry.Rarity);
+            bw.Write(LookupWeaponClassId(entry.ClassId));
+            bw.Write(entry.ZennyCost);
+            bw.Write(entry.SharpnessId);
+            bw.Write(entry.RawDamage);
+            bw.Write(entry.Defense);
+            bw.Write(entry.Affinity);
+            bw.Write(LookupElementId(entry.ElementId));
+            bw.Write((byte)(entry.EleDamage / 10));
+            bw.Write(LookupAilmentId(entry.AilmentId));
+            bw.Write((byte)(entry.AilDamage / 10));
+            bw.Write(entry.Slots);
+            bw.Write(entry.Unk3);
+            bw.Write(entry.Unk4);
+            bw.Write(entry.Unk5);
+            bw.Write(entry.Unk6);
+            bw.Write(entry.Unk7);
+            bw.Write(entry.Unk8);
+            bw.Write(entry.Unk9);
+            bw.Write(entry.Unk10);
+            bw.Write(entry.Unk11);
+            bw.Write(entry.Unk12);
+            bw.Write(entry.Unk13);
+            bw.Write(entry.Unk14);
+            bw.Write(entry.Unk15);
+            bw.Write(entry.Unk16);
+            bw.Write(entry.Unk17);
+        }
+
+        /// <summary>
+        /// Write a single ranged weapon entry to the binary stream.
+        /// </summary>
+        /// <param name="bw">Binary writer positioned at the entry offset.</param>
+        /// <param name="entry">Ranged weapon entry to write.</param>
+        public void WriteRangedWeaponEntry(BinaryWriter bw, RangedWeaponEntry entry)
+        {
+            bw.Write(entry.ModelId);
+            bw.Write(entry.Rarity);
+            bw.Write(entry.MaxSlotsMaybe);
+            bw.Write(LookupWeaponClassId(entry.ClassId));
+            bw.Write(entry.Unk2_1);
+            bw.Write(byte.TryParse(entry.EqType, out byte eqType) ? eqType : (byte)0);
+            bw.Write(entry.Unk2_3);
+            bw.Write(entry.Unk3_1);
+            bw.Write(entry.Unk3_2);
+            bw.Write(entry.Unk3_3);
+            bw.Write(entry.Unk3_4);
+            bw.Write(entry.Unk4_1);
+            bw.Write(entry.Unk4_2);
+            bw.Write(entry.Unk4_3);
+            bw.Write(entry.Unk4_4);
+            bw.Write(entry.Unk5_1);
+            bw.Write(entry.Unk5_2);
+            bw.Write(entry.Unk5_3);
+            bw.Write(entry.Unk5_4);
+            bw.Write(entry.ZennyCost);
+            bw.Write(entry.RawDamage);
+            bw.Write(entry.Defense);
+            bw.Write(entry.RecoilMaybe);
+            bw.Write(entry.Slots);
+            bw.Write(entry.Affinity);
+            bw.Write(entry.SortOrderMaybe);
+            bw.Write(entry.Unk6_1);
+            bw.Write(LookupElementId(entry.ElementId));
+            bw.Write((byte)(entry.EleDamage / 10));
+            bw.Write(entry.Unk6_4);
+            bw.Write(entry.Unk7_1);
+            bw.Write(entry.Unk7_2);
+            bw.Write(entry.Unk7_3);
+            bw.Write(entry.Unk7_4);
+            bw.Write(entry.Unk8_1);
+            bw.Write(entry.Unk8_2);
+            bw.Write(entry.Unk8_3);
+            bw.Write(entry.Unk8_4);
+            bw.Write(entry.Unk9_1);
+            bw.Write(entry.Unk9_2);
+            bw.Write(entry.Unk9_3);
+            bw.Write(entry.Unk9_4);
+            bw.Write(entry.Unk10_1);
+            bw.Write(entry.Unk10_2);
+            bw.Write(entry.Unk10_3);
+            bw.Write(entry.Unk10_4);
+            bw.Write(entry.Unk11_1);
+            bw.Write(entry.Unk11_2);
+            bw.Write(entry.Unk11_3);
+            bw.Write(entry.Unk11_4);
+            bw.Write(entry.Unk12_1);
+            bw.Write(entry.Unk12_2);
+            bw.Write(entry.Unk12_3);
+            bw.Write(entry.Unk12_4);
+        }
+
+        /// <summary>
+        /// Write quest entry numeric fields to the binary stream.
+        /// Note: String fields (Title, TextMain, TextSubA, TextSubB) are READ-ONLY
+        /// and cannot be modified - they live in a separate string table.
+        /// </summary>
+        /// <param name="bw">Binary writer positioned at the entry offset.</param>
+        /// <param name="entry">Quest entry to write.</param>
+        public void WriteQuestEntry(BinaryWriter bw, QuestData entry)
+        {
+            // Write header bytes (12 bytes)
+            bw.Write(entry.Unk1);
+            bw.Write(entry.Unk2);
+            bw.Write(entry.Unk3);
+            bw.Write(entry.Unk4);
+            bw.Write(entry.Level);
+            bw.Write(entry.Unk5);
+            bw.Write(entry.CourseType);
+            bw.Write(entry.Unk7);
+            bw.Write(entry.Unk8);
+            bw.Write(entry.Unk9);
+            bw.Write(entry.Unk10);
+            bw.Write(entry.Unk11);
+
+            // Write monetary values (24 bytes)
+            bw.Write(entry.Fee);
+            bw.Write(entry.ZennyMain);
+            bw.Write(entry.ZennyKo);
+            bw.Write(entry.ZennySubA);
+            bw.Write(entry.ZennySubB);
+            bw.Write(entry.Time);
+
+            // Write Unk12 (4 bytes) and Unk13-20 (8 bytes)
+            bw.Write(entry.Unk12);
+            bw.Write(entry.Unk13);
+            bw.Write(entry.Unk14);
+            bw.Write(entry.Unk15);
+            bw.Write(entry.Unk16);
+            bw.Write(entry.Unk17);
+            bw.Write(entry.Unk18);
+            bw.Write(entry.Unk19);
+            bw.Write(entry.Unk20);
+
+            // Write goal data (24 bytes - 3 goals × 8 bytes each)
+            bw.Write(LookupQuestType(entry.MainGoalType));
+            bw.Write(entry.MainGoalTarget);
+            bw.Write(entry.MainGoalCount);
+
+            bw.Write(LookupQuestType(entry.SubAGoalType));
+            bw.Write(entry.SubAGoalTarget);
+            bw.Write(entry.SubAGoalCount);
+
+            bw.Write(LookupQuestType(entry.SubBGoalType));
+            bw.Write(entry.SubBGoalTarget);
+            bw.Write(entry.SubBGoalCount);
+
+            // Skip 0x5C bytes (preserve original data)
+            bw.BaseStream.Seek(0x5C, SeekOrigin.Current);
+
+            // Write GRP data (12 bytes)
+            bw.Write(entry.MainGRP);
+            bw.Write(entry.SubAGRP);
+            bw.Write(entry.SubBGRP);
+        }
+
+        /// <summary>
         /// Look up a skill ID by name, returning 0 if not found.
         /// </summary>
         /// <param name="skillName">Skill name to look up.</param>
@@ -446,6 +610,71 @@ namespace FrontierDataTool.Services
                 return 0;
             if (skillLookup.TryGetValue(skillName, out byte id))
                 return id;
+            return 0;
+        }
+
+        /// <summary>
+        /// Look up an element ID by name, returning 0 if not found.
+        /// </summary>
+        /// <param name="name">Element name (e.g., "火", "水").</param>
+        /// <returns>Element ID byte.</returns>
+        public static byte LookupElementId(string? name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return 0;
+            int index = Array.IndexOf(ElementIds, name);
+            return index >= 0 ? (byte)index : (byte)0;
+        }
+
+        /// <summary>
+        /// Look up an ailment ID by name, returning 0 if not found.
+        /// </summary>
+        /// <param name="name">Ailment name (e.g., "毒", "麻痺").</param>
+        /// <returns>Ailment ID byte.</returns>
+        public static byte LookupAilmentId(string? name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return 0;
+            int index = Array.IndexOf(AilmentIds, name);
+            return index >= 0 ? (byte)index : (byte)0;
+        }
+
+        /// <summary>
+        /// Look up a weapon class ID by name, returning 0 if not found.
+        /// </summary>
+        /// <param name="name">Weapon class name (e.g., "大剣", "太刀").</param>
+        /// <returns>Weapon class ID byte.</returns>
+        public static byte LookupWeaponClassId(string? name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return 0;
+            int index = Array.IndexOf(WeaponClassIds, name);
+            return index >= 0 ? (byte)index : (byte)0;
+        }
+
+        /// <summary>
+        /// Look up a quest type by name or hex string, returning 0 if not found.
+        /// </summary>
+        /// <param name="typeName">Quest type name (e.g., "Hunt") or hex string (e.g., "00000001").</param>
+        /// <returns>Quest type int value.</returns>
+        public static int LookupQuestType(string? typeName)
+        {
+            if (string.IsNullOrEmpty(typeName))
+                return 0;
+
+            // If it starts with a digit, treat it as a hex string (e.g., "00000001")
+            // This prevents Enum.TryParse from treating numeric strings as integers
+            if (char.IsDigit(typeName[0]))
+            {
+                if (int.TryParse(typeName, System.Globalization.NumberStyles.HexNumber, null, out int hexValue))
+                    return hexValue;
+                return 0;
+            }
+
+            // Try to parse as enum name (e.g., "Hunt", "Capture")
+            if (Enum.TryParse<QuestTypes>(typeName, out var questType))
+                return (int)questType;
+
             return 0;
         }
     }
