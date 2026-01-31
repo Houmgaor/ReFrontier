@@ -23,36 +23,6 @@ namespace FrontierDataTool.Services
         private readonly ILogger _logger;
         private readonly BinaryReaderService _binaryReader;
 
-        // Offset pointers for mhfpac.bin
-        private const int _soStringSkillPt = 0xA20;
-        private const int _eoStringSkillPt = 0xA1C;
-
-        // Offset pointers for mhfdat.bin weapon data
-        private const int _soMelee = 0x7C;
-        private const int _eoMelee = 0x90;
-        private const int _soRanged = 0x80;
-        private const int _eoRanged = 0x7C;
-
-        // Offset and count pairs for mhfinf.bin quest data
-        private static readonly List<KeyValuePair<int, int>> OffsetInfQuestData =
-        [
-            new(0x6bd60, 95),
-            new(0x74100, 62),
-            new(0x797e0, 99),
-            new(0x821a0, 98),
-            new(0x8aa00, 99),
-            new(0x933c0, 99),
-            new(0x9bd80, 99),
-            new(0xa4740, 99),
-            new(0xad100, 99),
-            new(0xb5b40, 36),
-            new(0xb8e60, 96),
-            new(0xc1400, 91),
-            new(0x161220, 20),
-        ];
-
-        private static readonly string[] ArmorClasses = ["頭", "胴", "腕", "腰", "脚"];
-
         /// <summary>
         /// Create a new DataImportService with default dependencies.
         /// </summary>
@@ -115,24 +85,27 @@ namespace FrontierDataTool.Services
             using var bw = new BinaryWriter(ms);
 
             // Process each armor class
-            for (int i = 0; i < 5; i++)
+            var dataPointers = MhfDataOffsets.MhfDat.Armor.DataPointers;
+            var slotNames = MhfDataOffsets.MhfDat.Armor.SlotNames;
+
+            for (int i = 0; i < dataPointers.Count; i++)
             {
-                br.BaseStream.Seek(DataExtractionService.DataPointersArmor[i].Key, SeekOrigin.Begin);
+                br.BaseStream.Seek(dataPointers[i].Start, SeekOrigin.Begin);
                 int sOffset = br.ReadInt32();
-                br.BaseStream.Seek(DataExtractionService.DataPointersArmor[i].Value, SeekOrigin.Begin);
+                br.BaseStream.Seek(dataPointers[i].End, SeekOrigin.Begin);
                 int eOffset = br.ReadInt32();
 
                 int entryCount = (eOffset - sOffset) / BinaryReaderService.ARMOR_ENTRY_SIZE;
 
-                var classEntries = armorEntries.Where(e => e.EquipClass == ArmorClasses[i]).ToList();
+                var classEntries = armorEntries.Where(e => e.EquipClass == slotNames[i]).ToList();
 
                 if (classEntries.Count != entryCount)
                 {
-                    _logger.Error($"Warning: CSV has {classEntries.Count} entries for {ArmorClasses[i]}, but mhfdat expects {entryCount}. Skipping this class.");
+                    _logger.Error($"Warning: CSV has {classEntries.Count} entries for {slotNames[i]}, but mhfdat expects {entryCount}. Skipping this class.");
                     continue;
                 }
 
-                _logger.WriteLine($"Writing {entryCount} {ArmorClasses[i]} entries starting at 0x{sOffset:X8}");
+                _logger.WriteLine($"Writing {entryCount} {slotNames[i]} entries starting at 0x{sOffset:X8}");
 
                 for (int j = 0; j < entryCount; j++)
                 {
@@ -198,9 +171,9 @@ namespace FrontierDataTool.Services
             using var bw = new BinaryWriter(ms);
 
             // Get melee weapon data offsets
-            br.BaseStream.Seek(_soMelee, SeekOrigin.Begin);
+            br.BaseStream.Seek(MhfDataOffsets.MhfDat.Weapons.MeleeStart, SeekOrigin.Begin);
             int sOffset = br.ReadInt32();
-            br.BaseStream.Seek(_eoMelee, SeekOrigin.Begin);
+            br.BaseStream.Seek(MhfDataOffsets.MhfDat.Weapons.MeleeEnd, SeekOrigin.Begin);
             int eOffset = br.ReadInt32();
 
             int entryCount = (eOffset - sOffset) / BinaryReaderService.MELEE_WEAPON_ENTRY_SIZE;
@@ -276,9 +249,9 @@ namespace FrontierDataTool.Services
             using var bw = new BinaryWriter(ms);
 
             // Get ranged weapon data offsets
-            br.BaseStream.Seek(_soRanged, SeekOrigin.Begin);
+            br.BaseStream.Seek(MhfDataOffsets.MhfDat.Weapons.RangedStart, SeekOrigin.Begin);
             int sOffset = br.ReadInt32();
-            br.BaseStream.Seek(_eoRanged, SeekOrigin.Begin);
+            br.BaseStream.Seek(MhfDataOffsets.MhfDat.Weapons.RangedEnd, SeekOrigin.Begin);
             int eOffset = br.ReadInt32();
 
             int entryCount = (eOffset - sOffset) / BinaryReaderService.RANGED_WEAPON_ENTRY_SIZE;
@@ -350,9 +323,8 @@ namespace FrontierDataTool.Services
             _logger.WriteLine($"Read {questEntries.Count} quest entries from CSV.");
 
             // Calculate expected total count
-            int expectedCount = 0;
-            foreach (var offset in OffsetInfQuestData)
-                expectedCount += offset.Value;
+            var questSections = MhfDataOffsets.MhfInf.QuestSections;
+            int expectedCount = MhfDataOffsets.MhfInf.TotalQuestCount;
 
             if (questEntries.Count != expectedCount)
             {
@@ -367,13 +339,13 @@ namespace FrontierDataTool.Services
 
             int currentEntry = 0;
 
-            foreach (var offset in OffsetInfQuestData)
+            foreach (var section in questSections)
             {
-                _logger.WriteLine($"Writing {offset.Value} quest entries starting at 0x{offset.Key:X8}");
+                _logger.WriteLine($"Writing {section.Count} quest entries starting at 0x{section.Offset:X8}");
 
-                bw.BaseStream.Seek(offset.Key, SeekOrigin.Begin);
+                bw.BaseStream.Seek(section.Offset, SeekOrigin.Begin);
 
-                for (int i = 0; i < offset.Value; i++)
+                for (int i = 0; i < section.Count; i++)
                 {
                     long entryStart = bw.BaseStream.Position;
                     _binaryReader.WriteQuestEntry(bw, questEntries[currentEntry]);
@@ -416,9 +388,9 @@ namespace FrontierDataTool.Services
             using var ms = new MemoryStream(_fileSystem.ReadAllBytes(mhfpac));
             using var br = new BinaryReader(ms);
 
-            br.BaseStream.Seek(_soStringSkillPt, SeekOrigin.Begin);
+            br.BaseStream.Seek(MhfDataOffsets.MhfPac.Skills.TreeNameStart, SeekOrigin.Begin);
             int sOffset = br.ReadInt32();
-            br.BaseStream.Seek(_eoStringSkillPt, SeekOrigin.Begin);
+            br.BaseStream.Seek(MhfDataOffsets.MhfPac.Skills.TreeNameEnd, SeekOrigin.Begin);
             int eOffset = br.ReadInt32();
 
             br.BaseStream.Seek(sOffset, SeekOrigin.Begin);
@@ -491,11 +463,12 @@ namespace FrontierDataTool.Services
                 }
 
                 // Patch equip prices
-                for (int i = 0; i < 5; i++)
+                var armorDataPointers = MhfDataOffsets.MhfDat.Armor.DataPointers;
+                for (int i = 0; i < armorDataPointers.Count; i++)
                 {
-                    brInput.BaseStream.Seek(DataExtractionService.DataPointersArmor[i].Key, SeekOrigin.Begin);
+                    brInput.BaseStream.Seek(armorDataPointers[i].Start, SeekOrigin.Begin);
                     sOffset = brInput.ReadInt32();
-                    brInput.BaseStream.Seek(DataExtractionService.DataPointersArmor[i].Value, SeekOrigin.Begin);
+                    brInput.BaseStream.Seek(armorDataPointers[i].End, SeekOrigin.Begin);
                     eOffset = brInput.ReadInt32();
 
                     count = (eOffset - sOffset) / BinaryReaderService.ARMOR_ENTRY_SIZE;

@@ -1,5 +1,6 @@
 using System.Text;
 
+using FrontierDataTool;
 using FrontierDataTool.Services;
 
 using ReFrontier.Tests.Mocks;
@@ -155,13 +156,13 @@ namespace ReFrontier.Tests.DataToolTests
 
         #endregion
 
-        #region DataPointersArmor Tests
+        #region MhfDataOffsets Tests
 
         [Fact]
-        public void DataPointersArmor_HasFiveEntries()
+        public void ArmorDataPointers_HasFiveEntries()
         {
             // Assert
-            Assert.Equal(5, DataExtractionService.DataPointersArmor.Count);
+            Assert.Equal(5, MhfDataOffsets.MhfDat.Armor.DataPointers.Count);
         }
 
         #endregion

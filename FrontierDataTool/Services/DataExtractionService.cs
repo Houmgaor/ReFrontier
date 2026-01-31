@@ -23,35 +23,6 @@ namespace FrontierDataTool.Services
         private readonly ILogger _logger;
         private readonly BinaryReaderService _binaryReader;
 
-        // Offset pointers for mhfdat.bin
-        private static readonly int _soStringHead = 0x64, _soStringBody = 0x68, _soStringArm = 0x6C, _soStringWaist = 0x70, _soStringLeg = 0x74;
-        private static readonly int _eoStringHead = 0x60, _eoStringBody = 0x64, _eoStringArm = 0x68, _eoStringWaist = 0x6C, _eoStringLeg = 0x70;
-        private static readonly int _soStringRanged = 0x84, _soStringMelee = 0x88;
-        private static readonly int _soStringItem = 0x100, _soStringItemDesc = 0x12C;
-        private static readonly int _eoStringItem = 0xFC, _eoStringItemDesc = 0x100;
-        private static readonly int _soHead = 0x50, _soBody = 0x54, _soArm = 0x58, _soWaist = 0x5C, _soLeg = 0x60;
-        private static readonly int _eoHead = 0xE8, _eoBody = 0x50, _eoArm = 0x54, _eoWaist = 0x58, _eoLeg = 0x5C;
-        private static readonly int _soRanged = 0x80, _soMelee = 0x7C;
-        private static readonly int _eoRanged = 0x7C, _eoMelee = 0x90;
-
-        // Offset pointers for mhfpac.bin
-        private static readonly int _soStringSkillPt = 0xA20, _soStringSkillActivate = 0xA1C, _soStringZSkill = 0xFBC, _soStringSkillDesc = 0xb8;
-        private static readonly int _eoStringSkillPt = 0xA1C, _eoStringSkillActivate = 0xBC0, _eoStringZSkill = 0xFB0, _eoStringSkillDesc = 0xc0;
-
-        /// <summary>
-        /// Pointers for armor data sections.
-        /// </summary>
-        public static readonly List<KeyValuePair<int, int>> DataPointersArmor =
-        [
-            new KeyValuePair<int, int>(_soHead, _eoHead),
-            new KeyValuePair<int, int>(_soBody, _eoBody),
-            new KeyValuePair<int, int>(_soArm, _eoArm),
-            new KeyValuePair<int, int>(_soWaist, _eoWaist),
-            new KeyValuePair<int, int>(_soLeg, _eoLeg)
-        ];
-
-        private static readonly string[] ArmorClassIds = ["頭", "胴", "腕", "腰", "脚"];
-
         /// <summary>
         /// Create a new DataExtractionService with default dependencies.
         /// </summary>
@@ -69,6 +40,48 @@ namespace FrontierDataTool.Services
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _binaryReader = new BinaryReaderService();
         }
+
+        #region Helper Methods
+
+        /// <summary>
+        /// Read strings from a range defined by offset pointers.
+        /// Seeks to startPointer, reads the actual start offset, seeks to endPointer,
+        /// reads the actual end offset, then extracts all strings between them.
+        /// </summary>
+        /// <param name="br">Binary reader positioned in the file.</param>
+        /// <param name="startPointer">Pointer to the start offset value.</param>
+        /// <param name="endPointer">Pointer to the end offset value.</param>
+        /// <returns>List of extracted strings.</returns>
+        private List<string> ReadStringRange(BinaryReader br, int startPointer, int endPointer)
+        {
+            br.BaseStream.Seek(startPointer, SeekOrigin.Begin);
+            int startOffset = br.ReadInt32();
+            br.BaseStream.Seek(endPointer, SeekOrigin.Begin);
+            int endOffset = br.ReadInt32();
+
+            br.BaseStream.Seek(startOffset, SeekOrigin.Begin);
+            var strings = new List<string>();
+            while (br.BaseStream.Position < endOffset)
+            {
+                string name = _binaryReader.StringFromPointer(br);
+                strings.Add(name);
+            }
+            return strings;
+        }
+
+        /// <summary>
+        /// Write a list of strings to a UTF-8 text file, one per line.
+        /// </summary>
+        /// <param name="fileName">Output file name.</param>
+        /// <param name="strings">Strings to write.</param>
+        private void WriteStringsToTextFile(string fileName, IEnumerable<string> strings)
+        {
+            using var file = _fileSystem.CreateStreamWriter(fileName, false, Encoding.UTF8);
+            foreach (string entry in strings)
+                file.WriteLine("{0}", entry);
+        }
+
+        #endregion
 
         /// <summary>
         /// Dump all data from the game files.
@@ -112,28 +125,17 @@ namespace FrontierDataTool.Services
             using var msInput = new MemoryStream(_fileSystem.ReadAllBytes(mhfpac));
             using var brInput = new BinaryReader(msInput);
 
-            brInput.BaseStream.Seek(_soStringSkillPt, SeekOrigin.Begin);
-            int sOffset = brInput.ReadInt32();
-            brInput.BaseStream.Seek(_eoStringSkillPt, SeekOrigin.Begin);
-            int eOffset = brInput.ReadInt32();
+            var skillNames = ReadStringRange(brInput,
+                MhfDataOffsets.MhfPac.Skills.TreeNameStart,
+                MhfDataOffsets.MhfPac.Skills.TreeNameEnd);
 
-            brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
             var skillId = new List<KeyValuePair<int, string>>();
-            int id = 0;
-            while (brInput.BaseStream.Position < eOffset)
+            for (int i = 0; i < skillNames.Count; i++)
             {
-                string name = _binaryReader.StringFromPointer(brInput);
-                skillId.Add(new KeyValuePair<int, string>(id, name));
-                id++;
+                skillId.Add(new KeyValuePair<int, string>(i, skillNames[i]));
             }
 
-            string textName = $"mhsx_SkillSys_{suffix}.txt";
-            using (var file = _fileSystem.CreateStreamWriter(textName, false, Encoding.UTF8))
-            {
-                foreach (var entry in skillId)
-                    file.WriteLine("{0}", entry.Value);
-            }
-
+            WriteStringsToTextFile($"mhsx_SkillSys_{suffix}.txt", skillNames);
             return skillId;
         }
 
@@ -147,69 +149,24 @@ namespace FrontierDataTool.Services
 
             // Active skills
             _logger.WriteLine("Dumping active skill names.");
-            brInput.BaseStream.Seek(_soStringSkillActivate, SeekOrigin.Begin);
-            int sOffset = brInput.ReadInt32();
-            brInput.BaseStream.Seek(_eoStringSkillActivate, SeekOrigin.Begin);
-            int eOffset = brInput.ReadInt32();
-
-            brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
-            var activeSkill = new List<string>();
-            while (brInput.BaseStream.Position < eOffset)
-            {
-                string name = _binaryReader.StringFromPointer(brInput);
-                activeSkill.Add(name);
-            }
-
-            string textName = $"mhsx_SkillActivate_{suffix}.txt";
-            using (var file = _fileSystem.CreateStreamWriter(textName, false, Encoding.UTF8))
-            {
-                foreach (string entry in activeSkill)
-                    file.WriteLine("{0}", entry);
-            }
+            var activeSkills = ReadStringRange(brInput,
+                MhfDataOffsets.MhfPac.Skills.ActiveNameStart,
+                MhfDataOffsets.MhfPac.Skills.ActiveNameEnd);
+            WriteStringsToTextFile($"mhsx_SkillActivate_{suffix}.txt", activeSkills);
 
             // Skill descriptions
             _logger.WriteLine("Dumping active skill descriptions.");
-            brInput.BaseStream.Seek(_soStringSkillDesc, SeekOrigin.Begin);
-            sOffset = brInput.ReadInt32();
-            brInput.BaseStream.Seek(_eoStringSkillDesc, SeekOrigin.Begin);
-            eOffset = brInput.ReadInt32();
-
-            brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
-            var skillDesc = new List<string>();
-            while (brInput.BaseStream.Position < eOffset)
-            {
-                string name = _binaryReader.StringFromPointer(brInput);
-                skillDesc.Add(name);
-            }
-
-            textName = $"mhsx_SkillDesc_{suffix}.txt";
-            using (var file = _fileSystem.CreateStreamWriter(textName, false, Encoding.UTF8))
-            {
-                foreach (string entry in skillDesc)
-                    file.WriteLine("{0}", entry);
-            }
+            var skillDescs = ReadStringRange(brInput,
+                MhfDataOffsets.MhfPac.Skills.DescriptionStart,
+                MhfDataOffsets.MhfPac.Skills.DescriptionEnd);
+            WriteStringsToTextFile($"mhsx_SkillDesc_{suffix}.txt", skillDescs);
 
             // Z skills
             _logger.WriteLine("Dumping Z skill names.");
-            brInput.BaseStream.Seek(_soStringZSkill, SeekOrigin.Begin);
-            sOffset = brInput.ReadInt32();
-            brInput.BaseStream.Seek(_eoStringZSkill, SeekOrigin.Begin);
-            eOffset = brInput.ReadInt32();
-
-            brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
-            var zSkill = new List<string>();
-            while (brInput.BaseStream.Position < eOffset)
-            {
-                string name = _binaryReader.StringFromPointer(brInput);
-                zSkill.Add(name);
-            }
-
-            textName = $"mhsx_SkillZ_{suffix}.txt";
-            using (var file = _fileSystem.CreateStreamWriter(textName, false, Encoding.UTF8))
-            {
-                foreach (string entry in zSkill)
-                    file.WriteLine("{0}", entry);
-            }
+            var zSkills = ReadStringRange(brInput,
+                MhfDataOffsets.MhfPac.Skills.ZSkillNameStart,
+                MhfDataOffsets.MhfPac.Skills.ZSkillNameEnd);
+            WriteStringsToTextFile($"mhsx_SkillZ_{suffix}.txt", zSkills);
         }
 
         /// <summary>
@@ -217,51 +174,20 @@ namespace FrontierDataTool.Services
         /// </summary>
         public void DumpItemData(string mhfdat, string suffix)
         {
-            _logger.WriteLine("Dumping item names.");
-
             using var msInput = new MemoryStream(_fileSystem.ReadAllBytes(mhfdat));
             using var brInput = new BinaryReader(msInput);
 
-            brInput.BaseStream.Seek(_soStringItem, SeekOrigin.Begin);
-            int sOffset = brInput.ReadInt32();
-            brInput.BaseStream.Seek(_eoStringItem, SeekOrigin.Begin);
-            int eOffset = brInput.ReadInt32();
-
-            brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
-            var items = new List<string>();
-            while (brInput.BaseStream.Position < eOffset)
-            {
-                string name = _binaryReader.StringFromPointer(brInput);
-                items.Add(name);
-            }
-
-            string textName = $"mhsx_Items_{suffix}.txt";
-            using (var file = _fileSystem.CreateStreamWriter(textName, false, Encoding.UTF8))
-            {
-                foreach (string entry in items)
-                    file.WriteLine("{0}", entry);
-            }
+            _logger.WriteLine("Dumping item names.");
+            var items = ReadStringRange(brInput,
+                MhfDataOffsets.MhfDat.Items.StringStart,
+                MhfDataOffsets.MhfDat.Items.StringEnd);
+            WriteStringsToTextFile($"mhsx_Items_{suffix}.txt", items);
 
             _logger.WriteLine("Dumping item descriptions.");
-            brInput.BaseStream.Seek(_soStringItemDesc, SeekOrigin.Begin);
-            sOffset = brInput.ReadInt32();
-            brInput.BaseStream.Seek(_eoStringItemDesc, SeekOrigin.Begin);
-            eOffset = brInput.ReadInt32();
-
-            brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
-            var itemsDesc = new List<string>();
-            while (brInput.BaseStream.Position < eOffset)
-            {
-                string name = _binaryReader.StringFromPointer(brInput);
-                itemsDesc.Add(name);
-            }
-
-            textName = $"Items_Desc_{suffix}.txt";
-            using (var file = _fileSystem.CreateStreamWriter(textName, false, Encoding.UTF8))
-            {
-                foreach (string entry in itemsDesc)
-                    file.WriteLine("{0}", entry);
-            }
+            var itemDescs = ReadStringRange(brInput,
+                MhfDataOffsets.MhfDat.Items.DescriptionStart,
+                MhfDataOffsets.MhfDat.Items.DescriptionEnd);
+            WriteStringsToTextFile($"Items_Desc_{suffix}.txt", itemDescs);
         }
 
         /// <summary>
@@ -269,61 +195,53 @@ namespace FrontierDataTool.Services
         /// </summary>
         public void DumpEquipmentData(string mhfdat, string suffix, List<KeyValuePair<int, string>> skillId)
         {
-            var stringPointersArmor = new List<KeyValuePair<int, int>>
-            {
-                new(_soStringHead, _eoStringHead),
-                new(_soStringBody, _eoStringBody),
-                new(_soStringArm, _eoStringArm),
-                new(_soStringWaist, _eoStringWaist),
-                new(_soStringLeg, _eoStringLeg)
-            };
-
-            int totalCount = 0;
-            int sOffset, eOffset;
+            var dataPointers = MhfDataOffsets.MhfDat.Armor.DataPointers;
+            var stringPointers = MhfDataOffsets.MhfDat.Armor.StringPointers;
+            var slotNames = MhfDataOffsets.MhfDat.Armor.SlotNames;
 
             using var msInput = new MemoryStream(_fileSystem.ReadAllBytes(mhfdat));
             using var brInput = new BinaryReader(msInput);
 
-            for (int i = 0; i < 5; i++)
+            // Count total entries
+            int totalCount = 0;
+            for (int i = 0; i < dataPointers.Count; i++)
             {
-                brInput.BaseStream.Seek(DataPointersArmor[i].Key, SeekOrigin.Begin);
-                sOffset = brInput.ReadInt32();
-                brInput.BaseStream.Seek(DataPointersArmor[i].Value, SeekOrigin.Begin);
-                eOffset = brInput.ReadInt32();
-
-                int entryCount = (eOffset - sOffset) / BinaryReaderService.ARMOR_ENTRY_SIZE;
-                totalCount += entryCount;
+                brInput.BaseStream.Seek(dataPointers[i].Start, SeekOrigin.Begin);
+                int sOffset = brInput.ReadInt32();
+                brInput.BaseStream.Seek(dataPointers[i].End, SeekOrigin.Begin);
+                int eOffset = brInput.ReadInt32();
+                totalCount += (eOffset - sOffset) / BinaryReaderService.ARMOR_ENTRY_SIZE;
             }
             _logger.WriteLine($"Total armor count: {totalCount}");
 
             var armorEntries = new ArmorDataEntry[totalCount];
             int currentCount = 0;
 
-            for (int i = 0; i < 5; i++)
+            // Read entries for each armor slot
+            for (int i = 0; i < dataPointers.Count; i++)
             {
-                brInput.BaseStream.Seek(DataPointersArmor[i].Key, SeekOrigin.Begin);
-                sOffset = brInput.ReadInt32();
-                brInput.BaseStream.Seek(DataPointersArmor[i].Value, SeekOrigin.Begin);
-                eOffset = brInput.ReadInt32();
+                brInput.BaseStream.Seek(dataPointers[i].Start, SeekOrigin.Begin);
+                int sOffset = brInput.ReadInt32();
+                brInput.BaseStream.Seek(dataPointers[i].End, SeekOrigin.Begin);
+                int eOffset = brInput.ReadInt32();
 
                 int entryCount = (eOffset - sOffset) / BinaryReaderService.ARMOR_ENTRY_SIZE;
                 brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
-                _logger.WriteLine($"{ArmorClassIds[i]} count: {entryCount}");
+                _logger.WriteLine($"{slotNames[i]} count: {entryCount}");
 
                 for (int j = 0; j < entryCount; j++)
                 {
-                    armorEntries[j + currentCount] = _binaryReader.ReadArmorEntry(brInput, skillId, ArmorClassIds[i]);
+                    armorEntries[j + currentCount] = _binaryReader.ReadArmorEntry(brInput, skillId, slotNames[i]);
                 }
 
-                // Get strings
-                brInput.BaseStream.Seek(stringPointersArmor[i].Key, SeekOrigin.Begin);
+                // Get strings for this slot
+                brInput.BaseStream.Seek(stringPointers[i].Start, SeekOrigin.Begin);
                 sOffset = brInput.ReadInt32();
-
                 brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
+
                 for (int j = 0; j < entryCount - 1; j++)
                 {
-                    string name = _binaryReader.StringFromPointer(brInput);
-                    armorEntries[j + currentCount].Name = name;
+                    armorEntries[j + currentCount].Name = _binaryReader.StringFromPointer(brInput);
                 }
                 currentCount += entryCount;
             }
@@ -335,11 +253,11 @@ namespace FrontierDataTool.Services
                 writer.WriteRecords(armorEntries);
             }
 
-            // Write armor txt
-            string textName = $"mhsx_Armor_{suffix}.txt";
-            using var file = _fileSystem.CreateStreamWriter(textName, false, Encoding.UTF8);
+            // Write armor names txt
+            var armorNames = new List<string>();
             foreach (var entry in armorEntries)
-                file.WriteLine("{0}", entry.Name);
+                armorNames.Add(entry.Name ?? "");
+            WriteStringsToTextFile($"mhsx_Armor_{suffix}.txt", armorNames);
         }
 
         /// <summary>
@@ -351,9 +269,9 @@ namespace FrontierDataTool.Services
             using var brInput = new BinaryReader(msInput);
 
             // Melee weapons
-            brInput.BaseStream.Seek(_soMelee, SeekOrigin.Begin);
+            brInput.BaseStream.Seek(MhfDataOffsets.MhfDat.Weapons.MeleeStart, SeekOrigin.Begin);
             int sOffset = brInput.ReadInt32();
-            brInput.BaseStream.Seek(_eoMelee, SeekOrigin.Begin);
+            brInput.BaseStream.Seek(MhfDataOffsets.MhfDat.Weapons.MeleeEnd, SeekOrigin.Begin);
             int eOffset = brInput.ReadInt32();
 
             int entryCountMelee = (eOffset - sOffset) / BinaryReaderService.MELEE_WEAPON_ENTRY_SIZE;
@@ -366,18 +284,16 @@ namespace FrontierDataTool.Services
                 meleeEntries[i] = _binaryReader.ReadMeleeWeaponEntry(brInput);
             }
 
-            // Get strings
-            brInput.BaseStream.Seek(_soStringMelee, SeekOrigin.Begin);
+            // Get melee weapon strings
+            brInput.BaseStream.Seek(MhfDataOffsets.MhfDat.Weapons.MeleeStringStart, SeekOrigin.Begin);
             sOffset = brInput.ReadInt32();
-
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
             for (int j = 0; j < entryCountMelee - 1; j++)
             {
-                string name = _binaryReader.StringFromPointer(brInput);
-                meleeEntries[j].Name = name;
+                meleeEntries[j].Name = _binaryReader.StringFromPointer(brInput);
             }
 
-            // Write CSV
+            // Write melee CSV
             using (var textWriter = _fileSystem.CreateStreamWriter("Melee.csv", false, TextFileConfiguration.ShiftJisEncoding))
             {
                 var writer = new CsvWriter(textWriter, TextFileConfiguration.CreateJapaneseCsvConfig());
@@ -385,9 +301,9 @@ namespace FrontierDataTool.Services
             }
 
             // Ranged weapons
-            brInput.BaseStream.Seek(_soRanged, SeekOrigin.Begin);
+            brInput.BaseStream.Seek(MhfDataOffsets.MhfDat.Weapons.RangedStart, SeekOrigin.Begin);
             sOffset = brInput.ReadInt32();
-            brInput.BaseStream.Seek(_eoRanged, SeekOrigin.Begin);
+            brInput.BaseStream.Seek(MhfDataOffsets.MhfDat.Weapons.RangedEnd, SeekOrigin.Begin);
             eOffset = brInput.ReadInt32();
 
             int entryCountRanged = (eOffset - sOffset) / BinaryReaderService.RANGED_WEAPON_ENTRY_SIZE;
@@ -400,18 +316,16 @@ namespace FrontierDataTool.Services
                 rangedEntries[i] = _binaryReader.ReadRangedWeaponEntry(brInput);
             }
 
-            // Get strings
-            brInput.BaseStream.Seek(_soStringRanged, SeekOrigin.Begin);
+            // Get ranged weapon strings
+            brInput.BaseStream.Seek(MhfDataOffsets.MhfDat.Weapons.RangedStringStart, SeekOrigin.Begin);
             sOffset = brInput.ReadInt32();
-
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
             for (int j = 0; j < entryCountRanged - 1; j++)
             {
-                string name = _binaryReader.StringFromPointer(brInput);
-                rangedEntries[j].Name = name;
+                rangedEntries[j].Name = _binaryReader.StringFromPointer(brInput);
             }
 
-            // Write CSV
+            // Write ranged CSV
             using (var textWriter = _fileSystem.CreateStreamWriter("Ranged.csv", false, TextFileConfiguration.ShiftJisEncoding))
             {
                 var writer = new CsvWriter(textWriter, TextFileConfiguration.CreateJapaneseCsvConfig());
@@ -424,42 +338,23 @@ namespace FrontierDataTool.Services
         /// </summary>
         public void DumpQuestData(string mhfinf)
         {
-            var offsetInfQuestData = new List<KeyValuePair<int, int>>
-            {
-                new(0x6bd60, 95),
-                new(0x74100, 62),
-                new(0x797e0, 99),
-                new(0x821a0, 98),
-                new(0x8aa00, 99),
-                new(0x933c0, 99),
-                new(0x9bd80, 99),
-                new(0xa4740, 99),
-                new(0xad100, 99),
-                new(0xb5b40, 36),
-                new(0xb8e60, 96),
-                new(0xc1400, 91),
-                new(0x161220, 20),
-            };
+            var questSections = MhfDataOffsets.MhfInf.QuestSections;
 
             using var msInput = new MemoryStream(_fileSystem.ReadAllBytes(mhfinf));
             using var brInput = new BinaryReader(msInput);
 
-            int totalCount = 0;
-            foreach (var offset in offsetInfQuestData)
-                totalCount += offset.Value;
-
-            var quests = new QuestData[totalCount];
+            var quests = new QuestData[MhfDataOffsets.MhfInf.TotalQuestCount];
             int currentCount = 0;
 
-            foreach (var offset in offsetInfQuestData)
+            foreach (var section in questSections)
             {
-                brInput.BaseStream.Seek(offset.Key, SeekOrigin.Begin);
-                for (int i = 0; i < offset.Value; i++)
+                brInput.BaseStream.Seek(section.Offset, SeekOrigin.Begin);
+                for (int i = 0; i < section.Count; i++)
                 {
                     quests[currentCount + i] = _binaryReader.ReadQuestEntry(brInput);
                     _logger.WriteLine(brInput.BaseStream.Position.ToString("X8"));
                 }
-                currentCount += offset.Value;
+                currentCount += section.Count;
             }
 
             // Write CSV
