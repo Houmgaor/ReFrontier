@@ -6,6 +6,8 @@ using ReFrontier.CLI;
 using ReFrontier.Jpk;
 using ReFrontier.Services;
 
+using Spectre.Console;
+
 namespace ReFrontier.Orchestration
 {
     /// <summary>
@@ -100,6 +102,8 @@ namespace ReFrontier.Orchestration
             processingArgs.quiet = args.Quiet;
 
             // Start input processing
+            ProcessingStatistics? stats = null;
+
             if (_fileSystem.DirectoryExists(args.FilePath))
             {
                 // Input is directory
@@ -113,7 +117,9 @@ namespace ReFrontier.Orchestration
                     _logger.WriteLine("Error: Cannot encrypt a directory.");
                     return 1;
                 }
-                _program.StartProcessingDirectory(args.FilePath, processingArgs);
+
+                // Use progress bar for directory processing
+                stats = ProcessDirectoryWithProgress(args.FilePath, processingArgs);
             }
             else
             {
@@ -126,8 +132,83 @@ namespace ReFrontier.Orchestration
                 _program.StartProcessingFile(args.FilePath, processingArgs);
             }
 
-            _logger.WriteLine("Done.");
+            // Print summary
+            PrintSummary(stats);
             return 0;
+        }
+
+        /// <summary>
+        /// Process a directory with progress bar display.
+        /// </summary>
+        private ProcessingStatistics ProcessDirectoryWithProgress(string directoryPath, InputArguments processingArgs)
+        {
+            ProcessingStatistics? stats = null;
+
+            // Check if we can use interactive progress (not redirected output)
+            if (!Console.IsOutputRedirected && !processingArgs.quiet)
+            {
+                AnsiConsole.Progress()
+                    .AutoClear(true)
+                    .HideCompleted(false)
+                    .Columns(
+                        new TaskDescriptionColumn(),
+                        new ProgressBarColumn(),
+                        new PercentageColumn(),
+                        new SpinnerColumn()
+                    )
+                    .Start(ctx =>
+                    {
+                        var task = ctx.AddTask("[green]Processing files[/]", maxValue: 100);
+                        task.IsIndeterminate = true;
+
+                        stats = _program.StartProcessingDirectory(directoryPath, processingArgs, (current, total) =>
+                        {
+                            if (total > 0)
+                            {
+                                task.IsIndeterminate = false;
+                                task.MaxValue = total;
+                                task.Value = current;
+                            }
+                        });
+
+                        task.Value = task.MaxValue;
+                    });
+            }
+            else
+            {
+                // Non-interactive mode: just process without progress bar
+                stats = _program.StartProcessingDirectory(directoryPath, processingArgs);
+            }
+
+            return stats ?? new ProcessingStatistics();
+        }
+
+        /// <summary>
+        /// Print processing summary.
+        /// </summary>
+        private void PrintSummary(ProcessingStatistics? stats)
+        {
+            if (stats == null || stats.TotalFiles == 0)
+            {
+                _logger.WriteLine("Done.");
+                return;
+            }
+
+            var parts = new System.Collections.Generic.List<string>();
+
+            if (stats.ProcessedFiles > 0)
+                parts.Add($"{stats.ProcessedFiles} processed");
+            if (stats.SkippedFiles > 0)
+                parts.Add($"{stats.SkippedFiles} skipped");
+            if (stats.ErrorFiles > 0)
+                parts.Add($"{stats.ErrorFiles} errors");
+            if (stats.GeneratedFiles > 0)
+                parts.Add($"{stats.GeneratedFiles} generated");
+
+            if (parts.Count > 0)
+                _logger.WriteLine($"Done: {string.Join(", ", parts)}.");
+            else
+                _logger.WriteLine("Done.");
         }
     }
 }

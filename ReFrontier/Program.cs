@@ -219,19 +219,25 @@ namespace ReFrontier
         /// </summary>
         /// <param name="directoryPath">Directory path.</param>
         /// <param name="inputArguments">Configuration arguments from CLI.</param>
-        public void StartProcessingDirectory(string directoryPath, InputArguments inputArguments)
+        /// <param name="progressCallback">Optional callback for progress updates (current, total).</param>
+        /// <returns>Processing statistics.</returns>
+        public ProcessingStatistics StartProcessingDirectory(
+            string directoryPath,
+            InputArguments inputArguments,
+            Action<int, int>? progressCallback = null)
         {
             if (inputArguments.repack)
-                _packingService.ProcessPackInput(directoryPath);
-            else
             {
-                // Process each element in directory, excluding output files from previous runs
-                string[] allFiles = _fileSystem.GetFiles(
-                    directoryPath, "*.*", SearchOption.AllDirectories
-                );
-                string[] inputFiles = FilterInputFiles(allFiles);
-                ProcessMultipleLevels(inputFiles, inputArguments);
+                _packingService.ProcessPackInput(directoryPath);
+                return new ProcessingStatistics();
             }
+
+            // Process each element in directory, excluding output files from previous runs
+            string[] allFiles = _fileSystem.GetFiles(
+                directoryPath, "*.*", SearchOption.AllDirectories
+            );
+            string[] inputFiles = FilterInputFiles(allFiles);
+            return ProcessMultipleLevels(inputFiles, inputArguments, progressCallback);
         }
 
         /// <summary>
@@ -370,8 +376,16 @@ namespace ReFrontier
         /// </summary>
         /// <param name="filePathes">Files to process.</param>
         /// <param name="inputArguments">Configuration arguments from CLI.</param>
-        public void ProcessMultipleLevels(string[] filePathes, InputArguments inputArguments)
+        /// <param name="progressCallback">Optional callback for progress updates (current, total).</param>
+        /// <returns>Processing statistics.</returns>
+        public ProcessingStatistics ProcessMultipleLevels(
+            string[] filePathes,
+            InputArguments inputArguments,
+            Action<int, int>? progressCallback = null)
         {
+            var stats = new ProcessingStatistics();
+            stats.SetTotalFiles(filePathes.Length);
+
             // Use specified parallelism, or default to Environment.ProcessorCount if not set
             int effectiveParallelism = inputArguments.parallelism > 0
                 ? inputArguments.parallelism
@@ -409,20 +423,35 @@ namespace ReFrontier
                     {
                         ProcessFileResult result = ProcessFile(inputFile, localArgs);
 
+                        // Update statistics based on result
+                        if (result.WasProcessed)
+                            stats.IncrementProcessed();
+                        else
+                            stats.IncrementSkipped();
+
+                        // Report progress
+                        progressCallback?.Invoke(stats.HandledFiles, stats.TotalFiles);
+
                         // Check if a new directory was created
                         if (inputArguments.recursive && result.OutputPath != null && _fileSystem.DirectoryExists(result.OutputPath))
                         {
-                            AddNewFiles(result.OutputPath, filesToProcess);
+                            int newFileCount = AddNewFiles(result.OutputPath, filesToProcess);
+                            stats.AddGeneratedFiles(newFileCount);
                         }
                     }
                     catch (ReFrontierException ex)
                     {
+                        stats.IncrementError();
+                        progressCallback?.Invoke(stats.HandledFiles, stats.TotalFiles);
+
                         // Log the error and continue processing other files
                         if (!inputArguments.quiet)
                             _logger.WriteLine($"Skipping {inputFile}: {ex.Message}");
                     }
                 });
             }
+
+            return stats;
         }
 
         /// <summary>
@@ -432,7 +461,8 @@ namespace ReFrontier
         /// </summary>
         /// <param name="directoryPath">Directory to search into.</param>
         /// <param name="filesQueue">Thread-safe queue where to add files to.</param>
-        public void AddNewFiles(string directoryPath, ConcurrentQueue<string> filesQueue)
+        /// <returns>Number of files added to the queue.</returns>
+        public int AddNewFiles(string directoryPath, ConcurrentQueue<string> filesQueue)
         {
             // Limit file search to these patterns
             string[] patterns = ["*.bin", "*.jkr", "*.ftxt", "*.snd"];
@@ -440,10 +470,13 @@ namespace ReFrontier
             var fileOperations = new FileOperations(_fileSystem, _logger);
             var nextFiles = fileOperations.GetFilesInstance(directoryPath, patterns, SearchOption.TopDirectoryOnly);
 
+            int count = 0;
             foreach (var nextFile in nextFiles)
             {
                 filesQueue.Enqueue(nextFile);
+                count++;
             }
+            return count;
         }
     }
 }
