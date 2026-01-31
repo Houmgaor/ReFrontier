@@ -13,6 +13,8 @@ using LibReFrontier.Exceptions;
 using ReFrontier.CLI;
 using ReFrontier.Jpk;
 using ReFrontier.Orchestration;
+using ReFrontier.Routing;
+using ReFrontier.Routing.Handlers;
 using ReFrontier.Services;
 
 namespace ReFrontier
@@ -104,6 +106,7 @@ namespace ReFrontier
         private readonly PackingService _packingService;
         private readonly UnpackingService _unpackingService;
         private readonly FileProcessingConfig _config;
+        private readonly FileRouter _fileRouter;
 
         /// <summary>
         /// Create a new Program instance with default dependencies.
@@ -128,6 +131,19 @@ namespace ReFrontier
             _fileProcessingService = new FileProcessingService(fileSystem, logger, config);
             _packingService = new PackingService(fileSystem, logger, codecFactory, config);
             _unpackingService = new UnpackingService(fileSystem, logger, codecFactory, config);
+
+            // Initialize file router with handlers
+            _fileRouter = new FileRouter(logger);
+            RegisterHandlers();
+        }
+
+        /// <summary>
+        /// Register all file type handlers with the router.
+        /// </summary>
+        private void RegisterHandlers()
+        {
+            // Register MOMO handler as proof-of-concept
+            _fileRouter.RegisterHandler(new MomoArchiveHandler(_logger, _unpackingService));
         }
 
         /// <summary>
@@ -271,16 +287,24 @@ namespace ReFrontier
             }
             uint fileMagic = brInput.ReadUInt32();
 
+            // Try router first
+            brInput.BaseStream.Seek(0, SeekOrigin.Begin);
+            var routerResult = _fileRouter.Route(filePath, fileMagic, brInput, inputArguments);
+            if (routerResult.WasProcessed)
+            {
+                outputPath = routerResult.OutputPath!;
+            }
             // Since stage containers have no file magic, check for them first
-            if (inputArguments.stageContainer)
+            else if (inputArguments.stageContainer)
             {
                 brInput.BaseStream.Seek(0, SeekOrigin.Begin);
                 outputPath = _unpackingService.UnpackStageContainer(filePath, brInput, inputArguments.createLog, inputArguments.cleanUp);
             }
+            // MOMO handled by router now - this branch should not be reached
             else if (fileMagic == FileMagic.MOMO)
             {
                 // MOMO Header: snp, snd
-                _logger.WriteLine("MOMO Header detected.");
+                _logger.WriteLine("MOMO Header detected (fallback).");
                 outputPath = _unpackingService.UnpackSimpleArchive(
                     filePath, brInput, 8, inputArguments.createLog, inputArguments.cleanUp, inputArguments.autoStage
                 );
