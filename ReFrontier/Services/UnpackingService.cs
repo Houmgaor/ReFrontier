@@ -44,6 +44,109 @@ namespace ReFrontier.Services
         }
 
         /// <summary>
+        /// Initialize a log file with container type and filename.
+        /// </summary>
+        /// <param name="input">Input file path.</param>
+        /// <param name="containerType">Type of container (e.g., "MHA", "StageContainer").</param>
+        /// <param name="createLog">Whether to actually write log content.</param>
+        /// <param name="logPath">Output parameter for the log file path.</param>
+        /// <returns>StreamWriter for the log file.</returns>
+        private StreamWriter InitializeLogFile(string input, string containerType, bool createLog, out string logPath)
+        {
+            logPath = $"{input}{_config.LogSuffix}";
+            var logOutput = _fileSystem.CreateStreamWriter(logPath);
+
+            if (createLog)
+            {
+                logOutput.WriteLine(containerType);
+                logOutput.WriteLine(Path.GetFileName(input));
+            }
+
+            return logOutput;
+        }
+
+        /// <summary>
+        /// Initialize a log file with container type, filename, and count.
+        /// </summary>
+        /// <param name="input">Input file path.</param>
+        /// <param name="containerType">Type of container (e.g., "SimpleArchive").</param>
+        /// <param name="count">Entry count to write to log.</param>
+        /// <param name="createLog">Whether to actually write log content.</param>
+        /// <param name="logPath">Output parameter for the log file path.</param>
+        /// <returns>StreamWriter for the log file.</returns>
+        private StreamWriter InitializeLogFile(string input, string containerType, int count, bool createLog, out string logPath)
+        {
+            logPath = $"{input}{_config.LogSuffix}";
+            var logOutput = _fileSystem.CreateStreamWriter(logPath);
+
+            if (createLog)
+            {
+                logOutput.WriteLine(containerType);
+                logOutput.WriteLine(Path.GetFileName(input));
+                logOutput.WriteLine(count);
+            }
+
+            return logOutput;
+        }
+
+        /// <summary>
+        /// Clean up resources after unpacking.
+        /// </summary>
+        /// <param name="logOutput">Log stream writer to close.</param>
+        /// <param name="logPath">Path to the log file.</param>
+        /// <param name="inputPath">Path to the input file (nullable).</param>
+        /// <param name="createLog">Whether the log should be kept.</param>
+        /// <param name="cleanUp">Whether to delete the input file.</param>
+        private void CleanupAfterUnpack(StreamWriter logOutput, string logPath, string? inputPath, bool createLog, bool cleanUp)
+        {
+            logOutput.Close();
+
+            if (!createLog)
+                _fileSystem.DeleteFile(logPath);
+
+            if (cleanUp && inputPath != null)
+                _fileSystem.DeleteFile(inputPath);
+        }
+
+        /// <summary>
+        /// Extract a file entry from an archive.
+        /// </summary>
+        /// <param name="brInput">Binary reader for input.</param>
+        /// <param name="offset">File offset in archive.</param>
+        /// <param name="size">File size.</param>
+        /// <param name="outputDir">Output directory.</param>
+        /// <param name="fileNameBase">Base name for output file.</param>
+        /// <param name="logOutput">Optional log writer.</param>
+        /// <param name="logMetadata">Optional additional metadata for log.</param>
+        /// <returns>Tuple of (extension, headerInt).</returns>
+        private (string extension, uint headerInt) ExtractFileEntry(
+            BinaryReader brInput,
+            int offset,
+            int size,
+            string outputDir,
+            string fileNameBase,
+            StreamWriter? logOutput = null,
+            string? logMetadata = null
+        )
+        {
+            brInput.BaseStream.Seek(offset, SeekOrigin.Begin);
+            byte[] entryData = brInput.ReadBytes(size);
+
+            string extension = ByteOperations.DetectExtension(entryData, out uint headerInt);
+
+            _logger.WriteLine($"Offset: 0x{offset:X8}, Size: 0x{size:X8} ({extension})");
+
+            if (logOutput != null)
+            {
+                logOutput.WriteLine($"{fileNameBase}.{extension},{offset},{size}{logMetadata ?? ""},{headerInt}");
+            }
+
+            _fileSystem.WriteAllBytes($"{outputDir}/{fileNameBase}.{extension}", entryData);
+
+            return (extension, headerInt);
+        }
+
+        /// <summary>
         /// Unpack a simple archive file container.
         /// </summary>
         /// <param name="input">Input file name to read from.</param>
@@ -117,14 +220,7 @@ namespace ReFrontier.Services
 
             // Write to log file if desired
             _fileSystem.CreateDirectory(outputDir);
-            string logPath = $"{input}{_config.LogSuffix}";
-            using var logOutput = _fileSystem.CreateStreamWriter(logPath);
-            if (createLog)
-            {
-                logOutput.WriteLine("SimpleArchive");
-                logOutput.WriteLine(input.Remove(0, input.LastIndexOf('/') + 1));
-                logOutput.WriteLine(count);
-            }
+            using var logOutput = InitializeLogFile(input, "SimpleArchive", (int)count, createLog, out string logPath);
 
             for (int i = 0; i < count; i++)
             {
@@ -144,30 +240,21 @@ namespace ReFrontier.Services
                     continue;
                 }
 
-                // Read file to array
-                brInput.BaseStream.Seek(entryOffset, SeekOrigin.Begin);
-                byte[] entryData = brInput.ReadBytes(entrySize);
-
-                // Check file header and get extension
-                string extension = ByteOperations.DetectExtension(entryData, out uint headerInt);
-
-                // Print info
-                _logger.WriteLine($"Offset: 0x{entryOffset:X8}, Size: 0x{entrySize:X8} ({extension})");
-                if (createLog)
-                    logOutput.WriteLine($"{i + 1:D4}_{entryOffset:X8}.{extension},{entryOffset},{entrySize},{headerInt}");
-
-                // Extract file
-                _fileSystem.WriteAllBytes($"{outputDir}/{i + 1:D4}_{entryOffset:X8}.{extension}", entryData);
+                // Extract file entry
+                ExtractFileEntry(
+                    brInput,
+                    entryOffset,
+                    entrySize,
+                    outputDir,
+                    $"{i + 1:D4}_{entryOffset:X8}",
+                    createLog ? logOutput : null
+                );
 
                 // Move to next entry block
                 brInput.BaseStream.Seek(magicSize + (i + 1) * FileFormatConstants.SimpleArchiveEntrySize, SeekOrigin.Begin);
             }
             // Clean up
-            logOutput.Close();
-            if (!createLog)
-                _fileSystem.DeleteFile(logPath);
-            if (cleanUp)
-                _fileSystem.DeleteFile(input);
+            CleanupAfterUnpack(logOutput, logPath, input, createLog, cleanUp);
             return outputDir;
         }
 
@@ -183,13 +270,7 @@ namespace ReFrontier.Services
             string outputDir = $"{input}{_config.UnpackedSuffix}";
             _fileSystem.CreateDirectory(outputDir);
 
-            string logPath = $"{input}{_config.LogSuffix}";
-            using var logOutput = _fileSystem.CreateStreamWriter(logPath);
-            if (createLog)
-            {
-                logOutput.WriteLine("MHA");
-                logOutput.WriteLine(input.Remove(0, input.LastIndexOf('/') + 1));
-            }
+            using var logOutput = InitializeLogFile(input, "MHA", createLog, out string logPath);
 
             // Read header
             int pointerEntryMetaBlock = brInput.ReadInt32();
@@ -232,9 +313,7 @@ namespace ReFrontier.Services
                 );
             }
 
-            logOutput.Close();
-            if (!createLog)
-                _fileSystem.DeleteFile(logPath);
+            CleanupAfterUnpack(logOutput, logPath, null, createLog, false);
             return outputDir;
         }
 
@@ -322,13 +401,7 @@ namespace ReFrontier.Services
             string outputDir = $"{input}{_config.UnpackedSuffix}";
             _fileSystem.CreateDirectory(outputDir);
 
-            string logPath = $"{input}{_config.LogSuffix}";
-            using var logOutput = _fileSystem.CreateStreamWriter(logPath);
-            if (createLog)
-            {
-                logOutput.WriteLine("StageContainer");
-                logOutput.WriteLine(input.Remove(0, input.LastIndexOf('/') + 1));
-            }
+            using var logOutput = InitializeLogFile(input, "StageContainer", createLog, out string logPath);
 
             // First three segments
             for (int i = 0; i < 3; i++)
@@ -346,23 +419,15 @@ namespace ReFrontier.Services
                     continue;
                 }
 
-                brInput.BaseStream.Seek(offset, SeekOrigin.Begin);
-                byte[] data = brInput.ReadBytes(size);
-
-                // Get extension
-                string extension = ByteOperations.DetectExtension(data, out uint headerInt);
-
-                // Print info
-                _logger.WriteLine(
-                    $"Offset: 0x{offset:X8}, Size: 0x{size:X8} ({extension})"
+                // Extract file entry
+                ExtractFileEntry(
+                    brInput,
+                    offset,
+                    size,
+                    outputDir,
+                    $"{i + 1:D4}_{offset:X8}",
+                    createLog ? logOutput : null
                 );
-                if (createLog)
-                    logOutput.WriteLine(
-                        $"{i + 1:D4}_{offset:X8}.{extension},{offset},{size},{headerInt}"
-                    );
-
-                // Extract file
-                _fileSystem.WriteAllBytes($"{outputDir}/{i + 1:D4}_{offset:X8}.{extension}", data);
 
                 // Move to next entry block
                 brInput.BaseStream.Seek((i + 1) * 0x08, SeekOrigin.Begin);
@@ -389,13 +454,13 @@ namespace ReFrontier.Services
                     continue;
                 }
 
+                // Extract file entry
                 brInput.BaseStream.Seek(offset, SeekOrigin.Begin);
                 byte[] data = brInput.ReadBytes(size);
 
-                // Get extension
                 string extension = ByteOperations.DetectExtension(data, out uint headerInt);
 
-                // Print info
+                // Print info with unk value
                 _logger.WriteLine($"Offset: 0x{offset:X8}, Size: 0x{size:X8}, Unk: 0x{unk:X8} ({extension})");
                 if (createLog)
                     logOutput.WriteLine($"{i + 1:D4}_{offset:X8}.{extension},{offset},{size},{unk},{headerInt}");
@@ -408,11 +473,7 @@ namespace ReFrontier.Services
             }
 
             // Clean up
-            logOutput.Close();
-            if (!createLog)
-                _fileSystem.DeleteFile(logPath);
-            if (cleanUp)
-                _fileSystem.DeleteFile(input);
+            CleanupAfterUnpack(logOutput, logPath, input, createLog, cleanUp);
             return outputDir;
         }
 

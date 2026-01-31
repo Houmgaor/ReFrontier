@@ -40,6 +40,23 @@ namespace ReFrontier.Services
         }
 
         /// <summary>
+        /// Strip the encryption header from a buffer and return both parts.
+        /// </summary>
+        /// <param name="buffer">Full buffer including header.</param>
+        /// <returns>Tuple of (header, data without header).</returns>
+        private static (byte[] header, byte[] data) StripEncryptionHeader(byte[] buffer)
+        {
+            byte[] header = new byte[FileFormatConstants.EncryptionHeaderLength];
+            Array.Copy(buffer, 0, header, 0, FileFormatConstants.EncryptionHeaderLength);
+
+            byte[] data = new byte[buffer.Length - FileFormatConstants.EncryptionHeaderLength];
+            Array.Copy(buffer, FileFormatConstants.EncryptionHeaderLength, data, 0,
+                       buffer.Length - FileFormatConstants.EncryptionHeaderLength);
+
+            return (header, data);
+        }
+
+        /// <summary>
         /// Encrypt a single file to a new file.
         ///
         /// If inputFile is "mhfdat.bin.decd",
@@ -111,10 +128,7 @@ namespace ReFrontier.Services
                 throw ex.WithFilePath(inputFile);
             }
 
-            byte[] ecdHeader = new byte[FileFormatConstants.EncryptionHeaderLength];
-            Array.Copy(buffer, 0, ecdHeader, 0, FileFormatConstants.EncryptionHeaderLength);
-            byte[] bufferStripped = new byte[buffer.Length - FileFormatConstants.EncryptionHeaderLength];
-            Array.Copy(buffer, FileFormatConstants.EncryptionHeaderLength, bufferStripped, 0, buffer.Length - FileFormatConstants.EncryptionHeaderLength);
+            var (ecdHeader, bufferStripped) = StripEncryptionHeader(buffer);
 
             string outputFile = inputFile + _config.DecryptedSuffix;
             _fileSystem.WriteAllBytes(outputFile, bufferStripped);
@@ -159,8 +173,7 @@ namespace ReFrontier.Services
             {
                 throw ex.WithFilePath(inputFile);
             }
-            byte[] bufferStripped = new byte[buffer.Length - FileFormatConstants.EncryptionHeaderLength];
-            Array.Copy(buffer, FileFormatConstants.EncryptionHeaderLength, bufferStripped, 0, buffer.Length - FileFormatConstants.EncryptionHeaderLength);
+            var (_, bufferStripped) = StripEncryptionHeader(buffer);
             string outputFile = inputFile + _config.DecryptedExfSuffix;
             _fileSystem.WriteAllBytes(outputFile, bufferStripped);
             if (cleanUp)

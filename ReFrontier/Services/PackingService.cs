@@ -46,33 +46,61 @@ namespace ReFrontier.Services
         }
 
         /// <summary>
-        /// Parse a string as an integer with validation.
+        /// Parse a string as a numeric type with validation.
         /// </summary>
+        /// <typeparam name="T">The numeric type to parse (int, short, etc.).</typeparam>
         /// <param name="value">String value to parse.</param>
         /// <param name="fieldName">Name of the field being parsed (for error messages).</param>
         /// <param name="context">Additional context for the error message.</param>
-        /// <returns>The parsed integer value.</returns>
-        /// <exception cref="PackingException">Thrown when the value cannot be parsed as an integer.</exception>
-        private static int ParseIntOrThrow(string value, string fieldName, string context)
+        /// <returns>The parsed value.</returns>
+        /// <exception cref="PackingException">Thrown when the value cannot be parsed.</exception>
+        private static T ParseOrThrow<T>(string value, string fieldName, string context)
+            where T : struct, IParsable<T>
         {
-            if (!int.TryParse(value, out int result))
-                throw new PackingException($"Invalid {fieldName}: '{value}' is not a valid integer. {context}");
+            if (!T.TryParse(value, null, out T result))
+            {
+                string typeName = typeof(T).Name.ToLower();
+                throw new PackingException($"Invalid {fieldName}: '{value}' is not a valid {typeName}. {context}");
+            }
             return result;
         }
 
         /// <summary>
-        /// Parse a string as a short with validation.
+        /// Write a file entry with offset and size to the archive.
         /// </summary>
-        /// <param name="value">String value to parse.</param>
-        /// <param name="fieldName">Name of the field being parsed (for error messages).</param>
-        /// <param name="context">Additional context for the error message.</param>
-        /// <returns>The parsed short value.</returns>
-        /// <exception cref="PackingException">Thrown when the value cannot be parsed as a short.</exception>
-        private static short ParseShortOrThrow(string value, string fieldName, string context)
+        /// <param name="bwOutput">Binary writer for output.</param>
+        /// <param name="headerPosition">Position in header to write metadata.</param>
+        /// <param name="dataOffset">Offset where file data will be written.</param>
+        /// <param name="fileData">The file data to write.</param>
+        /// <returns>New offset after writing file data.</returns>
+        private int WriteFileEntry(BinaryWriter bwOutput, long headerPosition, int dataOffset, byte[] fileData)
         {
-            if (!short.TryParse(value, out short result))
-                throw new PackingException($"Invalid {fieldName}: '{value}' is not a valid short. {context}");
-            return result;
+            bwOutput.BaseStream.Seek(headerPosition, SeekOrigin.Begin);
+            bwOutput.Write(dataOffset);
+            bwOutput.Write(fileData.Length);
+            bwOutput.BaseStream.Seek(dataOffset, SeekOrigin.Begin);
+            bwOutput.Write(fileData);
+            return dataOffset + fileData.Length;
+        }
+
+        /// <summary>
+        /// Write a file entry with offset, size, and unk value to the archive.
+        /// </summary>
+        /// <param name="bwOutput">Binary writer for output.</param>
+        /// <param name="headerPosition">Position in header to write metadata.</param>
+        /// <param name="dataOffset">Offset where file data will be written.</param>
+        /// <param name="fileData">The file data to write.</param>
+        /// <param name="unkValue">Unknown value to write after size.</param>
+        /// <returns>New offset after writing file data.</returns>
+        private int WriteFileEntryWithUnk(BinaryWriter bwOutput, long headerPosition, int dataOffset, byte[] fileData, int unkValue)
+        {
+            bwOutput.BaseStream.Seek(headerPosition, SeekOrigin.Begin);
+            bwOutput.Write(dataOffset);
+            bwOutput.Write(fileData.Length);
+            bwOutput.Write(unkValue);
+            bwOutput.BaseStream.Seek(dataOffset, SeekOrigin.Begin);
+            bwOutput.Write(fileData);
+            return dataOffset + fileData.Length;
         }
 
         /// <summary>
@@ -125,7 +153,7 @@ namespace ReFrontier.Services
         private void PackSimpleArchive(string[] logContent, string input)
         {
             string fileName = logContent[1];
-            int count = ParseIntOrThrow(logContent[2], "entry count", "Check the log file format.");
+            int count = ParseOrThrow<int>(logContent[2], "entry count", "Check the log file format.");
             _logger.WriteLine($"Simple archive with {count} entries.");
 
             // Entries
@@ -152,12 +180,7 @@ namespace ReFrontier.Services
                     {
                         fileData = _fileSystem.ReadAllBytes($"{input}/{listFileNames[i]}");
                     }
-                    bwOutput.BaseStream.Seek(0x04 + i * 0x08, SeekOrigin.Begin);
-                    bwOutput.Write(offset);
-                    bwOutput.Write(fileData.Length);
-                    bwOutput.BaseStream.Seek(offset, SeekOrigin.Begin);
-                    bwOutput.Write(fileData);
-                    offset += fileData.Length;
+                    offset = WriteFileEntry(bwOutput, 0x04 + i * 0x08, offset, fileData);
                 }
             }
             _fileOperations.GetUpdateEntryInstance(fileName);
@@ -173,9 +196,9 @@ namespace ReFrontier.Services
         private void PackMHA(string[] logContent, string input)
         {
             string fileName = logContent[1];
-            int count = ParseIntOrThrow(logContent[2], "entry count", "Check the MHA log file format.");
-            short unk1 = ParseShortOrThrow(logContent[3], "unk1", "Check the MHA log file format.");
-            short unk2 = ParseShortOrThrow(logContent[4], "unk2", "Check the MHA log file format.");
+            int count = ParseOrThrow<int>(logContent[2], "entry count", "Check the MHA log file format.");
+            short unk1 = ParseOrThrow<short>(logContent[3], "unk1", "Check the MHA log file format.");
+            short unk2 = ParseOrThrow<short>(logContent[4], "unk2", "Check the MHA log file format.");
             _logger.WriteLine($"MHA with {count} entries (unk1: {unk1}, unk2: {unk2}).");
 
             // Entries
@@ -186,7 +209,7 @@ namespace ReFrontier.Services
             {
                 string[] columns = logContent[i + 5].Split(',');  // 5 = Account for meta data entries before
                 listFileNames.Add(columns[0]);
-                listFileIds.Add(ParseIntOrThrow(columns[1], "file ID", $"Entry {i + 1} in MHA log file."));
+                listFileIds.Add(ParseOrThrow<int>(columns[1], "file ID", $"Entry {i + 1} in MHA log file."));
             }
 
             // Set up memory streams for segments
@@ -261,8 +284,8 @@ namespace ReFrontier.Services
 
             // For rest of files
             string[] restMetadata = logContent[5].Split(',');
-            int restCount = ParseIntOrThrow(restMetadata[0], "rest count", "Check the StageContainer log file format.");
-            int restUnkHeader = ParseIntOrThrow(restMetadata[1], "rest header", "Check the StageContainer log file format.");
+            int restCount = ParseOrThrow<int>(restMetadata[0], "rest count", "Check the StageContainer log file format.");
+            int restUnkHeader = ParseOrThrow<int>(restMetadata[1], "rest header", "Check the StageContainer log file format.");
 
             for (int i = 6; i < 6 + restCount; i++)
             {
@@ -295,11 +318,7 @@ namespace ReFrontier.Services
                 {
                     _logger.WriteLine($"{input}/{listFileNames[i]}");
                     fileData = _fileSystem.ReadAllBytes($"{input}/{listFileNames[i]}");
-                    bwOutput.Write(offset);
-                    bwOutput.Write(fileData.Length);
-                    bwOutput.BaseStream.Seek(offset, SeekOrigin.Begin);
-                    bwOutput.Write(fileData);
-                    offset += fileData.Length;
+                    offset = WriteFileEntry(bwOutput, bwOutput.BaseStream.Position, offset, fileData);
                 }
                 else
                 {
@@ -322,13 +341,8 @@ namespace ReFrontier.Services
                 {
                     _logger.WriteLine($"{input}/{listFileNames[i]}");
                     fileData = _fileSystem.ReadAllBytes($"{input}/{listFileNames[i]}");
-                    bwOutput.Write(offset);
-                    bwOutput.Write(fileData.Length);
-                    int unkValue = ParseIntOrThrow(logContent[6 + i - 3].Split(',')[3], "unk value", $"Entry {i + 1} in StageContainer log file.");
-                    bwOutput.Write(unkValue);
-                    bwOutput.BaseStream.Seek(offset, SeekOrigin.Begin);
-                    bwOutput.Write(fileData);
-                    offset += fileData.Length;
+                    int unkValue = ParseOrThrow<int>(logContent[6 + i - 3].Split(',')[3], "unk value", $"Entry {i + 1} in StageContainer log file.");
+                    offset = WriteFileEntryWithUnk(bwOutput, bwOutput.BaseStream.Position, offset, fileData, unkValue);
                 }
                 else
                 {
