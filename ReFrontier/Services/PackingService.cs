@@ -46,6 +46,36 @@ namespace ReFrontier.Services
         }
 
         /// <summary>
+        /// Parse a string as an integer with validation.
+        /// </summary>
+        /// <param name="value">String value to parse.</param>
+        /// <param name="fieldName">Name of the field being parsed (for error messages).</param>
+        /// <param name="context">Additional context for the error message.</param>
+        /// <returns>The parsed integer value.</returns>
+        /// <exception cref="PackingException">Thrown when the value cannot be parsed as an integer.</exception>
+        private static int ParseIntOrThrow(string value, string fieldName, string context)
+        {
+            if (!int.TryParse(value, out int result))
+                throw new PackingException($"Invalid {fieldName}: '{value}' is not a valid integer. {context}");
+            return result;
+        }
+
+        /// <summary>
+        /// Parse a string as a short with validation.
+        /// </summary>
+        /// <param name="value">String value to parse.</param>
+        /// <param name="fieldName">Name of the field being parsed (for error messages).</param>
+        /// <param name="context">Additional context for the error message.</param>
+        /// <returns>The parsed short value.</returns>
+        /// <exception cref="PackingException">Thrown when the value cannot be parsed as a short.</exception>
+        private static short ParseShortOrThrow(string value, string fieldName, string context)
+        {
+            if (!short.TryParse(value, out short result))
+                throw new PackingException($"Invalid {fieldName}: '{value}' is not a valid short. {context}");
+            return result;
+        }
+
+        /// <summary>
         /// Standard packing of an input directory.
         ///
         /// It needs a log file to work.
@@ -95,7 +125,7 @@ namespace ReFrontier.Services
         private void PackSimpleArchive(string[] logContent, string input)
         {
             string fileName = logContent[1];
-            int count = int.Parse(logContent[2]);
+            int count = ParseIntOrThrow(logContent[2], "entry count", "Check the log file format.");
             _logger.WriteLine($"Simple archive with {count} entries.");
 
             // Entries
@@ -143,9 +173,9 @@ namespace ReFrontier.Services
         private void PackMHA(string[] logContent, string input)
         {
             string fileName = logContent[1];
-            int count = int.Parse(logContent[2]);
-            short unk1 = short.Parse(logContent[3]);
-            short unk2 = short.Parse(logContent[4]);
+            int count = ParseIntOrThrow(logContent[2], "entry count", "Check the MHA log file format.");
+            short unk1 = ParseShortOrThrow(logContent[3], "unk1", "Check the MHA log file format.");
+            short unk2 = ParseShortOrThrow(logContent[4], "unk2", "Check the MHA log file format.");
             _logger.WriteLine($"MHA with {count} entries (unk1: {unk1}, unk2: {unk2}).");
 
             // Entries
@@ -156,7 +186,7 @@ namespace ReFrontier.Services
             {
                 string[] columns = logContent[i + 5].Split(',');  // 5 = Account for meta data entries before
                 listFileNames.Add(columns[0]);
-                listFileIds.Add(int.Parse(columns[1]));
+                listFileIds.Add(ParseIntOrThrow(columns[1], "file ID", $"Entry {i + 1} in MHA log file."));
             }
 
             // Set up memory streams for segments
@@ -230,8 +260,9 @@ namespace ReFrontier.Services
             }
 
             // For rest of files
-            int restCount = int.Parse(logContent[5].Split(',')[0]);
-            int restUnkHeader = int.Parse(logContent[5].Split(',')[1]);
+            string[] restMetadata = logContent[5].Split(',');
+            int restCount = ParseIntOrThrow(restMetadata[0], "rest count", "Check the StageContainer log file format.");
+            int restUnkHeader = ParseIntOrThrow(restMetadata[1], "rest header", "Check the StageContainer log file format.");
 
             for (int i = 6; i < 6 + restCount; i++)
             {
@@ -293,7 +324,8 @@ namespace ReFrontier.Services
                     fileData = _fileSystem.ReadAllBytes($"{input}/{listFileNames[i]}");
                     bwOutput.Write(offset);
                     bwOutput.Write(fileData.Length);
-                    bwOutput.Write(int.Parse(logContent[6 + i - 3].Split(',')[3]));
+                    int unkValue = ParseIntOrThrow(logContent[6 + i - 3].Split(',')[3], "unk value", $"Entry {i + 1} in StageContainer log file.");
+                    bwOutput.Write(unkValue);
                     bwOutput.BaseStream.Seek(offset, SeekOrigin.Begin);
                     bwOutput.Write(fileData);
                     offset += fileData.Length;

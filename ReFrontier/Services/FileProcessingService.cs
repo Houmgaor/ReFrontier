@@ -108,12 +108,11 @@ namespace ReFrontier.Services
             {
                 throw ex.WithFilePath(inputFile);
             }
-            const int headerLength = 0x10;
 
-            byte[] ecdHeader = new byte[headerLength];
-            Array.Copy(buffer, 0, ecdHeader, 0, headerLength);
-            byte[] bufferStripped = new byte[buffer.Length - headerLength];
-            Array.Copy(buffer, headerLength, bufferStripped, 0, buffer.Length - headerLength);
+            byte[] ecdHeader = new byte[FileFormatConstants.EncryptionHeaderLength];
+            Array.Copy(buffer, 0, ecdHeader, 0, FileFormatConstants.EncryptionHeaderLength);
+            byte[] bufferStripped = new byte[buffer.Length - FileFormatConstants.EncryptionHeaderLength];
+            Array.Copy(buffer, FileFormatConstants.EncryptionHeaderLength, bufferStripped, 0, buffer.Length - FileFormatConstants.EncryptionHeaderLength);
 
             string outputFile = inputFile + _config.DecryptedSuffix;
             _fileSystem.WriteAllBytes(outputFile, bufferStripped);
@@ -157,9 +156,8 @@ namespace ReFrontier.Services
             {
                 throw ex.WithFilePath(inputFile);
             }
-            const int headerLength = 0x10;
-            byte[] bufferStripped = new byte[buffer.Length - headerLength];
-            Array.Copy(buffer, headerLength, bufferStripped, 0, buffer.Length - headerLength);
+            byte[] bufferStripped = new byte[buffer.Length - FileFormatConstants.EncryptionHeaderLength];
+            Array.Copy(buffer, FileFormatConstants.EncryptionHeaderLength, bufferStripped, 0, buffer.Length - FileFormatConstants.EncryptionHeaderLength);
             string outputFile = inputFile + _config.DecryptedExfSuffix;
             _fileSystem.WriteAllBytes(outputFile, bufferStripped);
             if (cleanUp)

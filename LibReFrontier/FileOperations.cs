@@ -69,29 +69,6 @@ namespace LibReFrontier
         }
 
         /// <summary>
-        /// Find files corresponding to multiple filters.
-        ///
-        /// Source: https://stackoverflow.com/a/3754470/5343630
-        /// </summary>
-        /// <param name="path">Directory to search into.</param>
-        /// <param name="searchPatterns">Patterns to search for.</param>
-        /// <param name="searchOption">Options</param>
-        /// <returns>All files found.</returns>
-        [Obsolete("Use GetFilesInstance() for testability. This static method will be removed in a future version.")]
-        public static string[] GetFiles(
-            string path,
-            string[] searchPatterns,
-            SearchOption searchOption = SearchOption.TopDirectoryOnly
-        )
-        {
-            return searchPatterns.AsParallel()
-                    .SelectMany(searchPattern =>
-                    Directory.EnumerateFiles(path, searchPattern, searchOption)
-                    )
-                    .ToArray();
-        }
-
-        /// <summary>
         /// Find files corresponding to multiple filters using injected file system.
         /// </summary>
         /// <param name="path">Directory to search into.</param>
@@ -113,20 +90,6 @@ namespace LibReFrontier
 
         /// <summary>
         /// Get the update entry format for MHFUP_00.DAT.
-        /// Static version for backward compatibility.
-        /// </summary>
-        /// <param name="fileName">File that was updated</param>
-        /// <returns>Modified data in custom format for MHFUP_00.DAT</returns>
-        [Obsolete("Use GetUpdateEntryInstance() for testability. This static method will be removed in a future version.")]
-        public static string GetUpdateEntry(string fileName)
-        {
-            var instance = new FileOperations();
-            return instance.GetUpdateEntryInstance(fileName);
-        }
-
-        /// <summary>
-        /// Get the update entry format for MHFUP_00.DAT.
-        /// Instance method for testability.
         /// </summary>
         /// <param name="fileName">File that was updated</param>
         /// <returns>Modified data in custom format for MHFUP_00.DAT</returns>
