@@ -81,8 +81,8 @@ namespace ReFrontier.Services
         /// It needs a log file to work.
         /// </summary>
         /// <param name="inputDir">Input directory path.</param>
-        /// <exception cref="FileNotFoundException">The log file does not exist.</exception>
-        /// <exception cref="InvalidOperationException">The packing format does not exist.</exception>
+        /// <exception cref="FileNotFoundException">Thrown if the log file does not exist.</exception>
+        /// <exception cref="PackingException">Thrown if the container type is unknown or packing fails.</exception>
         public void ProcessPackInput(string inputDir)
         {
             string logFile = Path.Join(
@@ -345,6 +345,7 @@ namespace ReFrontier.Services
         /// <param name="compression">Compression to use.</param>
         /// <param name="inPath">Input file path.</param>
         /// <param name="otPath">Output file path.</param>
+        /// <exception cref="ReFrontierException">Thrown if compression fails or codec is unavailable.</exception>
         public void JPKEncode(Compression compression, string inPath, string otPath)
         {
             _fileSystem.CreateDirectory(_config.OutputDirectory);

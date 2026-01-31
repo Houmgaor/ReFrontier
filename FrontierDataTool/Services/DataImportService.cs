@@ -1,12 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
 
 using CsvHelper;
-using CsvHelper.Configuration;
 
 using FrontierDataTool.Structs;
 
@@ -158,13 +155,9 @@ namespace FrontierDataTool.Services
         {
             using var textReader = new StreamReader(
                 _fileSystem.OpenRead(csvPath),
-                Encoding.GetEncoding("shift-jis")
+                TextFileConfiguration.ShiftJisEncoding
             );
-            var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
-            {
-                Delimiter = "\t",
-            };
-            using var csvReader = new CsvReader(textReader, configuration);
+            using var csvReader = new CsvReader(textReader, TextFileConfiguration.CreateJapaneseCsvConfig());
             return csvReader.GetRecords<ArmorDataEntry>().ToList();
         }
 
@@ -240,13 +233,9 @@ namespace FrontierDataTool.Services
         {
             using var textReader = new StreamReader(
                 _fileSystem.OpenRead(csvPath),
-                Encoding.GetEncoding("shift-jis")
+                TextFileConfiguration.ShiftJisEncoding
             );
-            var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
-            {
-                Delimiter = "\t",
-            };
-            using var csvReader = new CsvReader(textReader, configuration);
+            using var csvReader = new CsvReader(textReader, TextFileConfiguration.CreateJapaneseCsvConfig());
             return csvReader.GetRecords<MeleeWeaponEntry>().ToList();
         }
 
@@ -322,13 +311,9 @@ namespace FrontierDataTool.Services
         {
             using var textReader = new StreamReader(
                 _fileSystem.OpenRead(csvPath),
-                Encoding.GetEncoding("shift-jis")
+                TextFileConfiguration.ShiftJisEncoding
             );
-            var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
-            {
-                Delimiter = "\t",
-            };
-            using var csvReader = new CsvReader(textReader, configuration);
+            using var csvReader = new CsvReader(textReader, TextFileConfiguration.CreateJapaneseCsvConfig());
             return csvReader.GetRecords<RangedWeaponEntry>().ToList();
         }
 
@@ -415,13 +400,9 @@ namespace FrontierDataTool.Services
         {
             using var textReader = new StreamReader(
                 _fileSystem.OpenRead(csvPath),
-                Encoding.GetEncoding("shift-jis")
+                TextFileConfiguration.ShiftJisEncoding
             );
-            var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
-            {
-                Delimiter = "\t",
-            };
-            using var csvReader = new CsvReader(textReader, configuration);
+            using var csvReader = new CsvReader(textReader, TextFileConfiguration.CreateJapaneseCsvConfig());
             return csvReader.GetRecords<QuestData>().ToList();
         }
 

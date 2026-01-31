@@ -1,14 +1,13 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Text;
 
 using CsvHelper;
-using CsvHelper.Configuration;
 
 using FrontierDataTool.Structs;
 
+using LibReFrontier;
 using LibReFrontier.Abstractions;
 
 using ReFrontier;
@@ -330,13 +329,9 @@ namespace FrontierDataTool.Services
             }
 
             // Write armor CSV
-            using (var textWriter = _fileSystem.CreateStreamWriter("Armor.csv", false, Encoding.GetEncoding("shift-jis")))
+            using (var textWriter = _fileSystem.CreateStreamWriter("Armor.csv", false, TextFileConfiguration.ShiftJisEncoding))
             {
-                var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
-                {
-                    Delimiter = "\t",
-                };
-                var writer = new CsvWriter(textWriter, configuration);
+                var writer = new CsvWriter(textWriter, TextFileConfiguration.CreateJapaneseCsvConfig());
                 writer.WriteRecords(armorEntries);
             }
 
@@ -383,13 +378,9 @@ namespace FrontierDataTool.Services
             }
 
             // Write CSV
-            using (var textWriter = _fileSystem.CreateStreamWriter("Melee.csv", false, Encoding.GetEncoding("shift-jis")))
+            using (var textWriter = _fileSystem.CreateStreamWriter("Melee.csv", false, TextFileConfiguration.ShiftJisEncoding))
             {
-                var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
-                {
-                    Delimiter = "\t",
-                };
-                var writer = new CsvWriter(textWriter, configuration);
+                var writer = new CsvWriter(textWriter, TextFileConfiguration.CreateJapaneseCsvConfig());
                 writer.WriteRecords(meleeEntries);
             }
 
@@ -421,13 +412,9 @@ namespace FrontierDataTool.Services
             }
 
             // Write CSV
-            using (var textWriter = _fileSystem.CreateStreamWriter("Ranged.csv", false, Encoding.GetEncoding("shift-jis")))
+            using (var textWriter = _fileSystem.CreateStreamWriter("Ranged.csv", false, TextFileConfiguration.ShiftJisEncoding))
             {
-                var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
-                {
-                    Delimiter = "\t",
-                };
-                var writer = new CsvWriter(textWriter, configuration);
+                var writer = new CsvWriter(textWriter, TextFileConfiguration.CreateJapaneseCsvConfig());
                 writer.WriteRecords(rangedEntries);
             }
         }
@@ -476,12 +463,8 @@ namespace FrontierDataTool.Services
             }
 
             // Write CSV
-            using var textWriter = _fileSystem.CreateStreamWriter("InfQuests.csv", false, Encoding.GetEncoding("shift-jis"));
-            var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
-            {
-                Delimiter = "\t",
-            };
-            var writer = new CsvWriter(textWriter, configuration);
+            using var textWriter = _fileSystem.CreateStreamWriter("InfQuests.csv", false, TextFileConfiguration.ShiftJisEncoding);
+            var writer = new CsvWriter(textWriter, TextFileConfiguration.CreateJapaneseCsvConfig());
             writer.WriteRecords(quests);
         }
     }

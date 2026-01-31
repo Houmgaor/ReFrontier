@@ -53,6 +53,7 @@ namespace ReFrontier.Services
         /// <param name="cleanUp">Remove the initial input file.</param>
         /// <param name="autoStage">Unpack stage container if true.</param>
         /// <returns>Output folder path.</returns>
+        /// <exception cref="PackingException">Thrown if the file is too small or not a valid container.</exception>
         public string UnpackSimpleArchive(
             string input, BinaryReader brInput, int magicSize, bool createLog,
             bool cleanUp, bool autoStage
@@ -242,6 +243,8 @@ namespace ReFrontier.Services
         /// </summary>
         /// <param name="input">Input file path.</param>
         /// <returns>Output file path.</returns>
+        /// <exception cref="PackingException">Thrown if the JKR header is invalid or compression type is unsupported.</exception>
+        /// <exception cref="ReFrontierException">Thrown if decompression fails.</exception>
         public string UnpackJPK(string input)
         {
             byte[] buffer = _fileSystem.ReadAllBytes(input);

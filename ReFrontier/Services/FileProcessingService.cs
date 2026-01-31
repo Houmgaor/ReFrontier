@@ -51,6 +51,7 @@ namespace ReFrontier.Services
         /// <param name="cleanUp">Remove both inputFile and metaFile.</param>
         /// <returns>Encrypted file path.</returns>
         /// <exception cref="FileNotFoundException">Thrown if the meta file does not exist.</exception>
+        /// <exception cref="ReFrontierException">Thrown if encryption fails.</exception>
         public string EncryptEcdFile(string inputFile, string metaFile, bool cleanUp)
         {
             byte[] buffer = _fileSystem.ReadAllBytes(inputFile);
@@ -97,6 +98,7 @@ namespace ReFrontier.Services
         /// <param name="cleanUp">true if the original file should be deleted.</param>
         /// <param name="rewriteOldFile">Should we overwrite inputFile.</param>
         /// <returns>Path to the decrypted file, in the form inputFile.decd</returns>
+        /// <exception cref="ReFrontierException">Thrown if decryption fails (e.g., invalid CRC32).</exception>
         public string DecryptEcdFile(string inputFile, bool createLog, bool cleanUp, bool rewriteOldFile)
         {
             byte[] buffer = _fileSystem.ReadAllBytes(inputFile);
@@ -145,6 +147,7 @@ namespace ReFrontier.Services
         /// <param name="inputFile">Input file path.</param>
         /// <param name="cleanUp">Should the original file be removed.</param>
         /// <returns>Output file at {inputFile}.dexf</returns>
+        /// <exception cref="ReFrontierException">Thrown if decryption fails.</exception>
         public string DecryptExfFile(string inputFile, bool cleanUp)
         {
             byte[] buffer = _fileSystem.ReadAllBytes(inputFile);

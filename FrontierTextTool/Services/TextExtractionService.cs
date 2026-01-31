@@ -1,11 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
-using System.Text;
 
 using CsvHelper;
-using CsvHelper.Configuration;
 
 using LibReFrontier;
 using LibReFrontier.Abstractions;
@@ -110,7 +107,7 @@ namespace FrontierTextTool.Services
                     brInput.BaseStream.Seek(strPos, SeekOrigin.Begin);
                 }
 
-                string str = FileOperations.ReadNullterminatedString(brInput, Encoding.GetEncoding("shift-jis"))
+                string str = FileOperations.ReadNullterminatedString(brInput, TextFileConfiguration.ShiftJisEncoding)
                     .Replace("\t", "<TAB>")
                     .Replace("\r\n", "<CLINE>")
                     .Replace("\n", "<NLINE>");
@@ -118,7 +115,7 @@ namespace FrontierTextTool.Services
                 stringsDatabase.Add(new StringDatabase
                 {
                     Offset = (uint)offset,
-                    Hash = Crypto.GetCrc32(Encoding.GetEncoding("shift-jis").GetBytes(str)),
+                    Hash = Crypto.GetCrc32(TextFileConfiguration.ShiftJisEncoding.GetBytes(str)),
                     JString = str
                 });
 
@@ -147,12 +144,8 @@ namespace FrontierTextTool.Services
             if (_fileSystem.FileExists(csvPath))
                 _fileSystem.DeleteFile(csvPath);
 
-            using var txtOutput = _fileSystem.CreateStreamWriter(csvPath, false, Encoding.GetEncoding("shift-jis"));
-            var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
-            {
-                Delimiter = "\t",
-            };
-            using var csvOutput = new CsvWriter(txtOutput, configuration);
+            using var txtOutput = _fileSystem.CreateStreamWriter(csvPath, false, TextFileConfiguration.ShiftJisEncoding);
+            using var csvOutput = new CsvWriter(txtOutput, TextFileConfiguration.CreateJapaneseCsvConfig());
 
             csvOutput.WriteHeader<StringDatabase>();
             csvOutput.NextRecord();

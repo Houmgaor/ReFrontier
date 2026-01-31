@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 
 namespace ReFrontier.Jpk
@@ -32,8 +33,9 @@ namespace ReFrontier.Jpk
     /// the bit stream (at m_hfDataOffset). ReadByte alternates between seeking to
     /// read tree nodes and seeking to read data bits.</para>
     /// </summary>
-    internal class JPKDecodeHFI : JPKDecodeLz
+    internal class JPKDecodeHFI : JPKDecodeLz, IDisposable
     {
+        private bool _disposed = false;
         /// <summary>
         /// Current byte from the Huffman-encoded data stream.
         /// </summary>
@@ -60,14 +62,20 @@ namespace ReFrontier.Jpk
         private int m_hfTableLen = 0;
 
         /// <summary>
+        /// Cached BinaryReader to avoid repeated allocations in hot loop.
+        /// </summary>
+        private BinaryReader? m_cachedReader = null;
+
+        /// <summary>
         /// Initialize the Huffman table parameters from the stream.
         /// Must be called before ReadByte() is used.
         /// </summary>
         /// <param name="inStream">Stream to read table info from.</param>
         protected void InitializeTable(Stream inStream)
         {
-            BinaryReader br = new(inStream);
-            m_hfTableLen = br.ReadInt16();
+            // Create cached reader with leaveOpen=true to not close the stream
+            m_cachedReader = new BinaryReader(inStream, System.Text.Encoding.UTF8, leaveOpen: true);
+            m_hfTableLen = m_cachedReader.ReadInt16();
             m_hfTableOffset = (int)inStream.Position;
             m_hfDataOffset = m_hfTableOffset + m_hfTableLen * 4 - 0x3fc;
         }
@@ -91,7 +99,9 @@ namespace ReFrontier.Jpk
         public override byte ReadByte(Stream s)
         {
             int data = m_hfTableLen;
-            BinaryReader br = new(s);
+
+            // Use cached reader to avoid allocations in hot loop
+            var br = m_cachedReader ?? throw new InvalidOperationException("InitializeTable must be called before ReadByte");
 
             while (data >= 0x100)
             {
@@ -107,6 +117,32 @@ namespace ReFrontier.Jpk
                 data = br.ReadInt16();
             }
             return (byte)data;
+        }
+
+        /// <summary>
+        /// Dispose of managed resources.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Dispose pattern implementation.
+        /// </summary>
+        /// <param name="disposing">True if called from Dispose(), false if from finalizer.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    m_cachedReader?.Dispose();
+                    m_cachedReader = null;
+                }
+                _disposed = true;
+            }
         }
     }
 }
