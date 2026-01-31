@@ -1,6 +1,5 @@
 using System;
 using System.CommandLine;
-using System.CommandLine.Invocation;
 using System.IO;
 using System.Text;
 
@@ -40,77 +39,79 @@ namespace FrontierDataTool
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             var program = new Program();
 
-            // Root command
-            var rootCommand = new RootCommand("FrontierDataTool - Extract and edit Monster Hunter Frontier game data");
-
             // Action options
-            var dumpOption = new Option<bool>(
-                name: "--dump",
-                description: "Extract weapon/armor/skill/quest data (requires --suffix, --mhfpac, --mhfdat, --mhfinf)"
-            );
-            rootCommand.AddOption(dumpOption);
+            Option<bool> dumpOption = new("--dump")
+            {
+                Description = "Extract weapon/armor/skill/quest data (requires --suffix, --mhfpac, --mhfdat, --mhfinf)"
+            };
 
-            var modshopOption = new Option<bool>(
-                name: "--modshop",
-                description: "Modify shop prices (requires --mhfdat)"
-            );
-            rootCommand.AddOption(modshopOption);
+            Option<bool> modshopOption = new("--modshop")
+            {
+                Description = "Modify shop prices (requires --mhfdat)"
+            };
 
-            var importOption = new Option<bool>(
-                name: "--import",
-                description: "Import modified CSV back into game files. Auto-detects CSV type from filename: Armor.csv (requires --mhfdat, --mhfpac), Melee.csv (requires --mhfdat), Ranged.csv (requires --mhfdat), InfQuests.csv (requires --mhfinf)"
-            );
-            rootCommand.AddOption(importOption);
+            Option<bool> importOption = new("--import")
+            {
+                Description = "Import modified CSV back into game files. Auto-detects CSV type from filename: Armor.csv (requires --mhfdat, --mhfpac), Melee.csv (requires --mhfdat), Ranged.csv (requires --mhfdat), InfQuests.csv (requires --mhfinf)"
+            };
 
             // Parameter options
-            var suffixOption = new Option<string>(
-                name: "--suffix",
-                description: "Output suffix for files"
-            );
-            rootCommand.AddOption(suffixOption);
+            Option<string?> suffixOption = new("--suffix")
+            {
+                Description = "Output suffix for files"
+            };
 
-            var mhfpacOption = new Option<string>(
-                name: "--mhfpac",
-                description: "Path to mhfpac.bin"
-            );
-            rootCommand.AddOption(mhfpacOption);
+            Option<string?> mhfpacOption = new("--mhfpac")
+            {
+                Description = "Path to mhfpac.bin"
+            };
 
-            var mhfdatOption = new Option<string>(
-                name: "--mhfdat",
-                description: "Path to mhfdat.bin"
-            );
-            rootCommand.AddOption(mhfdatOption);
+            Option<string?> mhfdatOption = new("--mhfdat")
+            {
+                Description = "Path to mhfdat.bin"
+            };
 
-            var mhfinfOption = new Option<string>(
-                name: "--mhfinf",
-                description: "Path to mhfinf.bin"
-            );
-            rootCommand.AddOption(mhfinfOption);
+            Option<string?> mhfinfOption = new("--mhfinf")
+            {
+                Description = "Path to mhfinf.bin"
+            };
 
-            var csvOption = new Option<string>(
-                name: "--csv",
-                description: "Path to the CSV file to import (e.g., Armor.csv)"
-            );
-            rootCommand.AddOption(csvOption);
+            Option<string?> csvOption = new("--csv")
+            {
+                Description = "Path to the CSV file to import (e.g., Armor.csv)"
+            };
 
-            var closeOption = new Option<bool>(
-                name: "--close",
-                description: "Close terminal after command"
-            );
-            rootCommand.AddOption(closeOption);
+            Option<bool> closeOption = new("--close")
+            {
+                Description = "Close terminal after command"
+            };
+
+            // Root command
+            RootCommand rootCommand = new("FrontierDataTool - Extract and edit Monster Hunter Frontier game data")
+            {
+                dumpOption,
+                modshopOption,
+                importOption,
+                suffixOption,
+                mhfpacOption,
+                mhfdatOption,
+                mhfinfOption,
+                csvOption,
+                closeOption
+            };
 
             // Set handler
-            rootCommand.SetHandler((InvocationContext context) =>
+            rootCommand.SetAction(parseResult =>
             {
-                var dump = context.ParseResult.GetValueForOption(dumpOption);
-                var modshop = context.ParseResult.GetValueForOption(modshopOption);
-                var import = context.ParseResult.GetValueForOption(importOption);
-                var suffix = context.ParseResult.GetValueForOption(suffixOption);
-                var mhfpac = context.ParseResult.GetValueForOption(mhfpacOption);
-                var mhfdat = context.ParseResult.GetValueForOption(mhfdatOption);
-                var mhfinf = context.ParseResult.GetValueForOption(mhfinfOption);
-                var csv = context.ParseResult.GetValueForOption(csvOption);
-                var close = context.ParseResult.GetValueForOption(closeOption);
+                var dump = parseResult.GetValue(dumpOption);
+                var modshop = parseResult.GetValue(modshopOption);
+                var import = parseResult.GetValue(importOption);
+                var suffix = parseResult.GetValue(suffixOption);
+                var mhfpac = parseResult.GetValue(mhfpacOption);
+                var mhfdat = parseResult.GetValue(mhfdatOption);
+                var mhfinf = parseResult.GetValue(mhfinfOption);
+                var csv = parseResult.GetValue(csvOption);
+                var close = parseResult.GetValue(closeOption);
 
                 // Count how many actions are specified
                 int actionCount = (dump ? 1 : 0) + (modshop ? 1 : 0) + (import ? 1 : 0);
@@ -118,17 +119,15 @@ namespace FrontierDataTool
                 if (actionCount == 0)
                 {
                     Console.Error.WriteLine("Error: No action specified. Use --dump, --modshop, or --import.");
-                    context.ExitCode = 1;
                     FinishCommand(close);
-                    return;
+                    return 1;
                 }
 
                 if (actionCount > 1)
                 {
                     Console.Error.WriteLine("Error: Only one action can be specified at a time.");
-                    context.ExitCode = 1;
                     FinishCommand(close);
-                    return;
+                    return 1;
                 }
 
                 try
@@ -139,53 +138,46 @@ namespace FrontierDataTool
                         if (string.IsNullOrEmpty(suffix))
                         {
                             Console.Error.WriteLine("Error: --dump requires --suffix.");
-                            context.ExitCode = 1;
                             FinishCommand(close);
-                            return;
+                            return 1;
                         }
                         if (string.IsNullOrEmpty(mhfpac))
                         {
                             Console.Error.WriteLine("Error: --dump requires --mhfpac.");
-                            context.ExitCode = 1;
                             FinishCommand(close);
-                            return;
+                            return 1;
                         }
                         if (string.IsNullOrEmpty(mhfdat))
                         {
                             Console.Error.WriteLine("Error: --dump requires --mhfdat.");
-                            context.ExitCode = 1;
                             FinishCommand(close);
-                            return;
+                            return 1;
                         }
                         if (string.IsNullOrEmpty(mhfinf))
                         {
                             Console.Error.WriteLine("Error: --dump requires --mhfinf.");
-                            context.ExitCode = 1;
                             FinishCommand(close);
-                            return;
+                            return 1;
                         }
 
                         // Validate files exist
                         if (!File.Exists(mhfpac))
                         {
                             Console.Error.WriteLine($"Error: File '{mhfpac}' does not exist.");
-                            context.ExitCode = 1;
                             FinishCommand(close);
-                            return;
+                            return 1;
                         }
                         if (!File.Exists(mhfdat))
                         {
                             Console.Error.WriteLine($"Error: File '{mhfdat}' does not exist.");
-                            context.ExitCode = 1;
                             FinishCommand(close);
-                            return;
+                            return 1;
                         }
                         if (!File.Exists(mhfinf))
                         {
                             Console.Error.WriteLine($"Error: File '{mhfinf}' does not exist.");
-                            context.ExitCode = 1;
                             FinishCommand(close);
-                            return;
+                            return 1;
                         }
 
                         program._extractionService.DumpData(suffix, mhfpac, mhfdat, mhfinf);
@@ -195,17 +187,15 @@ namespace FrontierDataTool
                         if (string.IsNullOrEmpty(mhfdat))
                         {
                             Console.Error.WriteLine("Error: --modshop requires --mhfdat.");
-                            context.ExitCode = 1;
                             FinishCommand(close);
-                            return;
+                            return 1;
                         }
 
                         if (!File.Exists(mhfdat))
                         {
                             Console.Error.WriteLine($"Error: File '{mhfdat}' does not exist.");
-                            context.ExitCode = 1;
                             FinishCommand(close);
-                            return;
+                            return 1;
                         }
 
                         program._importService.ModShop(mhfdat);
@@ -215,17 +205,15 @@ namespace FrontierDataTool
                         if (string.IsNullOrEmpty(csv))
                         {
                             Console.Error.WriteLine("Error: --import requires --csv.");
-                            context.ExitCode = 1;
                             FinishCommand(close);
-                            return;
+                            return 1;
                         }
 
                         if (!File.Exists(csv))
                         {
                             Console.Error.WriteLine($"Error: File '{csv}' does not exist.");
-                            context.ExitCode = 1;
                             FinishCommand(close);
-                            return;
+                            return 1;
                         }
 
                         // Auto-detect CSV type from filename
@@ -237,30 +225,26 @@ namespace FrontierDataTool
                             if (string.IsNullOrEmpty(mhfdat))
                             {
                                 Console.Error.WriteLine("Error: Armor.csv import requires --mhfdat.");
-                                context.ExitCode = 1;
                                 FinishCommand(close);
-                                return;
+                                return 1;
                             }
                             if (string.IsNullOrEmpty(mhfpac))
                             {
                                 Console.Error.WriteLine("Error: Armor.csv import requires --mhfpac.");
-                                context.ExitCode = 1;
                                 FinishCommand(close);
-                                return;
+                                return 1;
                             }
                             if (!File.Exists(mhfdat))
                             {
                                 Console.Error.WriteLine($"Error: File '{mhfdat}' does not exist.");
-                                context.ExitCode = 1;
                                 FinishCommand(close);
-                                return;
+                                return 1;
                             }
                             if (!File.Exists(mhfpac))
                             {
                                 Console.Error.WriteLine($"Error: File '{mhfpac}' does not exist.");
-                                context.ExitCode = 1;
                                 FinishCommand(close);
-                                return;
+                                return 1;
                             }
 
                             program._importService.ImportArmorData(mhfdat, csv, mhfpac);
@@ -271,16 +255,14 @@ namespace FrontierDataTool
                             if (string.IsNullOrEmpty(mhfdat))
                             {
                                 Console.Error.WriteLine("Error: Melee.csv import requires --mhfdat.");
-                                context.ExitCode = 1;
                                 FinishCommand(close);
-                                return;
+                                return 1;
                             }
                             if (!File.Exists(mhfdat))
                             {
                                 Console.Error.WriteLine($"Error: File '{mhfdat}' does not exist.");
-                                context.ExitCode = 1;
                                 FinishCommand(close);
-                                return;
+                                return 1;
                             }
 
                             program._importService.ImportMeleeData(mhfdat, csv);
@@ -291,16 +273,14 @@ namespace FrontierDataTool
                             if (string.IsNullOrEmpty(mhfdat))
                             {
                                 Console.Error.WriteLine("Error: Ranged.csv import requires --mhfdat.");
-                                context.ExitCode = 1;
                                 FinishCommand(close);
-                                return;
+                                return 1;
                             }
                             if (!File.Exists(mhfdat))
                             {
                                 Console.Error.WriteLine($"Error: File '{mhfdat}' does not exist.");
-                                context.ExitCode = 1;
                                 FinishCommand(close);
-                                return;
+                                return 1;
                             }
 
                             program._importService.ImportRangedData(mhfdat, csv);
@@ -311,16 +291,14 @@ namespace FrontierDataTool
                             if (string.IsNullOrEmpty(mhfinf))
                             {
                                 Console.Error.WriteLine("Error: InfQuests.csv import requires --mhfinf.");
-                                context.ExitCode = 1;
                                 FinishCommand(close);
-                                return;
+                                return 1;
                             }
                             if (!File.Exists(mhfinf))
                             {
                                 Console.Error.WriteLine($"Error: File '{mhfinf}' does not exist.");
-                                context.ExitCode = 1;
                                 FinishCommand(close);
-                                return;
+                                return 1;
                             }
 
                             program._importService.ImportQuestData(mhfinf, csv);
@@ -328,22 +306,23 @@ namespace FrontierDataTool
                         else
                         {
                             Console.Error.WriteLine($"Error: Unknown CSV type '{csvFilename}'. Expected Armor.csv, Melee.csv, Ranged.csv, or InfQuests.csv.");
-                            context.ExitCode = 1;
                             FinishCommand(close);
-                            return;
+                            return 1;
                         }
                     }
                 }
                 catch (Exception ex)
                 {
                     Console.Error.WriteLine($"Error: {ex.Message}");
-                    context.ExitCode = 1;
+                    FinishCommand(close);
+                    return 1;
                 }
 
                 FinishCommand(close);
+                return 0;
             });
 
-            return rootCommand.Invoke(args);
+            return rootCommand.Parse(args).Invoke();
         }
 
         /// <summary>

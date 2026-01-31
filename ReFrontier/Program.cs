@@ -2,7 +2,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.CommandLine;
-using System.CommandLine.Invocation;
 using System.IO;
 using System.Reflection;
 using System.Threading;
@@ -142,178 +141,170 @@ namespace ReFrontier
             var productName = assembly.GetCustomAttribute<AssemblyProductAttribute>()?.Product ?? "ReFrontier";
             var description = assembly.GetCustomAttribute<AssemblyDescriptionAttribute>()?.Description ?? "";
 
-            // Create root command
-            var rootCommand = new RootCommand($"{productName} - {description}, by MHVuze, additions by Houmgaor");
-
             // Arguments
-            var fileArgument = new Argument<string>(
-                name: "file",
-                description: "Input file or directory to process"
-            );
-            rootCommand.AddArgument(fileArgument);
+            Argument<string> fileArgument = new("file")
+            {
+                Description = "Input file or directory to process"
+            };
 
             // Unpacking options
-            var logOption = new Option<bool>(
-                name: "--log",
-                description: "Write log file (required for re-encryption)"
-            );
-            rootCommand.AddOption(logOption);
+            Option<bool> logOption = new("--log")
+            {
+                Description = "Write log file (required for re-encryption)"
+            };
 
-            var stageContainerOption = new Option<bool>(
-                name: "--stageContainer",
-                description: "Unpack file as stage-specific container"
-            );
-            rootCommand.AddOption(stageContainerOption);
+            Option<bool> stageContainerOption = new("--stageContainer")
+            {
+                Description = "Unpack file as stage-specific container"
+            };
 
-            var autoStageOption = new Option<bool>(
-                name: "--autoStage",
-                description: "Automatically attempt to unpack containers that might be stage-specific"
-            );
-            rootCommand.AddOption(autoStageOption);
+            Option<bool> autoStageOption = new("--autoStage")
+            {
+                Description = "Automatically attempt to unpack containers that might be stage-specific"
+            };
 
-            var nonRecursiveOption = new Option<bool>(
-                name: "--nonRecursive",
-                description: "Do not unpack recursively"
-            );
-            rootCommand.AddOption(nonRecursiveOption);
+            Option<bool> nonRecursiveOption = new("--nonRecursive")
+            {
+                Description = "Do not unpack recursively"
+            };
 
-            var decryptOnlyOption = new Option<bool>(
-                name: "--decryptOnly",
-                description: "Decrypt ECD files without unpacking"
-            );
-            rootCommand.AddOption(decryptOnlyOption);
+            Option<bool> decryptOnlyOption = new("--decryptOnly")
+            {
+                Description = "Decrypt ECD files without unpacking"
+            };
 
-            var noDecryptionOption = new Option<bool>(
-                name: "--noDecryption",
-                description: "Don't decrypt ECD files, no unpacking"
-            );
-            rootCommand.AddOption(noDecryptionOption);
+            Option<bool> noDecryptionOption = new("--noDecryption")
+            {
+                Description = "Don't decrypt ECD files, no unpacking"
+            };
 
-            var ignoreJPKOption = new Option<bool>(
-                name: "--ignoreJPK",
-                description: "Do not decompress JPK files"
-            );
-            rootCommand.AddOption(ignoreJPKOption);
+            Option<bool> ignoreJPKOption = new("--ignoreJPK")
+            {
+                Description = "Do not decompress JPK files"
+            };
 
-            var noFileRewriteOption = new Option<bool>(
-                name: "--noFileRewrite",
-                description: "Avoid rewriting original files"
-            );
-            rootCommand.AddOption(noFileRewriteOption);
+            Option<bool> noFileRewriteOption = new("--noFileRewrite")
+            {
+                Description = "Avoid rewriting original files"
+            };
 
-            var cleanUpOption = new Option<bool>(
-                name: "--cleanUp",
-                description: "Delete simple archives after unpacking"
-            );
-            rootCommand.AddOption(cleanUpOption);
+            Option<bool> cleanUpOption = new("--cleanUp")
+            {
+                Description = "Delete simple archives after unpacking"
+            };
 
             // Packing options
-            var packOption = new Option<bool>(
-                name: "--pack",
-                description: "Repack directory (requires log file)"
-            );
-            rootCommand.AddOption(packOption);
+            Option<bool> packOption = new("--pack")
+            {
+                Description = "Repack directory (requires log file)"
+            };
 
-            var compressTypeOption = new Option<string>(
-                name: "--compress",
-                description: "Compression type: rw, hfirw, lz, hfi (or numeric: 0, 2, 3, 4)"
-            );
-            rootCommand.AddOption(compressTypeOption);
+            Option<string?> compressTypeOption = new("--compress")
+            {
+                Description = "Compression type: rw, hfirw, lz, hfi (or numeric: 0, 2, 3, 4)"
+            };
 
-            var compressLevelOption = new Option<int>(
-                name: "--level",
-                description: "Compression level (e.g., 50, 100)",
-                getDefaultValue: () => 0
-            );
-            rootCommand.AddOption(compressLevelOption);
+            Option<int> compressLevelOption = new("--level")
+            {
+                Description = "Compression level (e.g., 50, 100)",
+                DefaultValueFactory = _ => 0
+            };
 
-            var encryptOption = new Option<bool>(
-                name: "--encrypt",
-                description: "Encrypt input file with ECD algorithm"
-            );
-            rootCommand.AddOption(encryptOption);
+            Option<bool> encryptOption = new("--encrypt")
+            {
+                Description = "Encrypt input file with ECD algorithm"
+            };
 
             // General options
-            var closeOption = new Option<bool>(
-                name: "--close",
-                description: "Close window after finishing process"
-            );
-            rootCommand.AddOption(closeOption);
+            Option<bool> closeOption = new("--close")
+            {
+                Description = "Close window after finishing process"
+            };
+
+            // Create root command with all options
+            RootCommand rootCommand = new($"{productName} - {description}, by MHVuze, additions by Houmgaor")
+            {
+                fileArgument,
+                logOption,
+                stageContainerOption,
+                autoStageOption,
+                nonRecursiveOption,
+                decryptOnlyOption,
+                noDecryptionOption,
+                ignoreJPKOption,
+                noFileRewriteOption,
+                cleanUpOption,
+                packOption,
+                compressTypeOption,
+                compressLevelOption,
+                encryptOption,
+                closeOption
+            };
 
             // Set handler
-            rootCommand.SetHandler((InvocationContext context) =>
+            rootCommand.SetAction(parseResult =>
             {
-                var file = context.ParseResult.GetValueForArgument(fileArgument);
-                var log = context.ParseResult.GetValueForOption(logOption);
-                var stageContainer = context.ParseResult.GetValueForOption(stageContainerOption);
-                var autoStage = context.ParseResult.GetValueForOption(autoStageOption);
-                var nonRecursive = context.ParseResult.GetValueForOption(nonRecursiveOption);
-                var decryptOnly = context.ParseResult.GetValueForOption(decryptOnlyOption);
-                var noDecryption = context.ParseResult.GetValueForOption(noDecryptionOption);
-                var ignoreJPK = context.ParseResult.GetValueForOption(ignoreJPKOption);
-                var noFileRewrite = context.ParseResult.GetValueForOption(noFileRewriteOption);
-                var cleanUp = context.ParseResult.GetValueForOption(cleanUpOption);
-                var pack = context.ParseResult.GetValueForOption(packOption);
-                var compressType = context.ParseResult.GetValueForOption(compressTypeOption);
-                var compressLevel = context.ParseResult.GetValueForOption(compressLevelOption);
-                var encrypt = context.ParseResult.GetValueForOption(encryptOption);
-                var close = context.ParseResult.GetValueForOption(closeOption);
+                var file = parseResult.GetValue(fileArgument)!;
+                var log = parseResult.GetValue(logOption);
+                var stageContainer = parseResult.GetValue(stageContainerOption);
+                var autoStage = parseResult.GetValue(autoStageOption);
+                var nonRecursive = parseResult.GetValue(nonRecursiveOption);
+                var decryptOnly = parseResult.GetValue(decryptOnlyOption);
+                var noDecryption = parseResult.GetValue(noDecryptionOption);
+                var ignoreJPK = parseResult.GetValue(ignoreJPKOption);
+                var noFileRewrite = parseResult.GetValue(noFileRewriteOption);
+                var cleanUp = parseResult.GetValue(cleanUpOption);
+                var pack = parseResult.GetValue(packOption);
+                var compressType = parseResult.GetValue(compressTypeOption);
+                var compressLevel = parseResult.GetValue(compressLevelOption);
+                var encrypt = parseResult.GetValue(encryptOption);
+                var close = parseResult.GetValue(closeOption);
 
-                Console.WriteLine($"{productName} v{fileVersionAttribute} - {description}, by MHVuze, additions by Houmgaor");
-                Console.WriteLine("==============================");
-
-                // Validate file exists
-                if (!File.Exists(file) && !Directory.Exists(file))
-                {
-                    Console.Error.WriteLine($"Error: '{file}' does not exist.");
-                    context.ExitCode = 1;
-                    return;
-                }
-
-                // Parse compression if specified
-                Compression compression = new();
-                if (!string.IsNullOrEmpty(compressType))
-                {
-                    if (compressLevel <= 0)
-                    {
-                        Console.Error.WriteLine("Error: --level is required when using --compress. Example: --compress lz --level 100");
-                        context.ExitCode = 1;
-                        return;
-                    }
-                    try
-                    {
-                        compression = ArgumentsParser.ParseCompression(compressType, compressLevel);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.Error.WriteLine($"Error: {ex.Message}");
-                        context.ExitCode = 1;
-                        return;
-                    }
-                }
-
-                // Build input arguments
-                InputArguments inputArguments = new()
-                {
-                    createLog = log,
-                    recursive = !nonRecursive,
-                    repack = pack,
-                    decryptOnly = decryptOnly,
-                    noDecryption = noDecryption,
-                    encrypt = encrypt,
-                    cleanUp = cleanUp,
-                    ignoreJPK = ignoreJPK,
-                    stageContainer = stageContainer,
-                    autoStage = autoStage,
-                    rewriteOldFile = !noFileRewrite,
-                    compression = compression
-                };
-
-                // Create program instance and start processing
-                var program = new Program();
-
+                int exitCode = 0;
                 try
                 {
+                    Console.WriteLine($"{productName} v{fileVersionAttribute} - {description}, by MHVuze, additions by Houmgaor");
+                    Console.WriteLine("==============================");
+
+                    // Validate file exists
+                    if (!File.Exists(file) && !Directory.Exists(file))
+                    {
+                        Console.Error.WriteLine($"Error: '{file}' does not exist.");
+                        return 1;
+                    }
+
+                    // Parse compression if specified
+                    Compression compression = new();
+                    if (!string.IsNullOrEmpty(compressType))
+                    {
+                        if (compressLevel <= 0)
+                        {
+                            Console.Error.WriteLine("Error: --level is required when using --compress. Example: --compress lz --level 100");
+                            return 1;
+                        }
+                        compression = ArgumentsParser.ParseCompression(compressType, compressLevel);
+                    }
+
+                    // Build input arguments
+                    InputArguments inputArguments = new()
+                    {
+                        createLog = log,
+                        recursive = !nonRecursive,
+                        repack = pack,
+                        decryptOnly = decryptOnly,
+                        noDecryption = noDecryption,
+                        encrypt = encrypt,
+                        cleanUp = cleanUp,
+                        ignoreJPK = ignoreJPK,
+                        stageContainer = stageContainer,
+                        autoStage = autoStage,
+                        rewriteOldFile = !noFileRewrite,
+                        compression = compression
+                    };
+
+                    // Create program instance and start processing
+                    var program = new Program();
+
                     // Start input processing
                     if (File.GetAttributes(file).HasFlag(FileAttributes.Directory))
                     {
@@ -336,16 +327,17 @@ namespace ReFrontier
                 catch (Exception ex)
                 {
                     Console.Error.WriteLine($"Error: {ex.Message}");
-                    context.ExitCode = 1;
+                    exitCode = 1;
                 }
                 finally
                 {
                     if (!close)
                         Console.Read();
                 }
+                return exitCode;
             });
 
-            return rootCommand.Invoke(args);
+            return rootCommand.Parse(args).Invoke();
         }
 
         /// <summary>

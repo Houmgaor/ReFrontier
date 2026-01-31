@@ -1,6 +1,5 @@
 using System;
 using System.CommandLine;
-using System.CommandLine.Invocation;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -52,116 +51,118 @@ namespace FrontierTextTool
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             var program = new Program();
 
-            // Root command
-            var rootCommand = new RootCommand($"FrontierTextTool v{fileVersionAttribute} - Extract and edit text data");
-
             // Primary file argument
-            var fileArgument = new Argument<string>(
-                name: "file",
-                description: "Input file to process"
-            );
-            rootCommand.AddArgument(fileArgument);
+            Argument<string> fileArgument = new("file")
+            {
+                Description = "Input file to process"
+            };
 
             // Action options (mutually exclusive actions)
-            var fulldumpOption = new Option<bool>(
-                name: "--fulldump",
-                description: "Dump all data from file"
-            );
-            rootCommand.AddOption(fulldumpOption);
+            Option<bool> fulldumpOption = new("--fulldump")
+            {
+                Description = "Dump all data from file"
+            };
 
-            var dumpOption = new Option<bool>(
-                name: "--dump",
-                description: "Dump data range from file (requires --startIndex and --endIndex)"
-            );
-            rootCommand.AddOption(dumpOption);
+            Option<bool> dumpOption = new("--dump")
+            {
+                Description = "Dump data range from file (requires --startIndex and --endIndex)"
+            };
 
-            var insertOption = new Option<bool>(
-                name: "--insert",
-                description: "Add data from CSV to file (requires --csv)"
-            );
-            rootCommand.AddOption(insertOption);
+            Option<bool> insertOption = new("--insert")
+            {
+                Description = "Add data from CSV to file (requires --csv)"
+            };
 
-            var mergeOption = new Option<bool>(
-                name: "--merge",
-                description: "Merge two CSV files (requires --csv for new CSV)"
-            );
-            rootCommand.AddOption(mergeOption);
+            Option<bool> mergeOption = new("--merge")
+            {
+                Description = "Merge two CSV files (requires --csv for new CSV)"
+            };
 
-            var cleanTradosOption = new Option<bool>(
-                name: "--cleanTrados",
-                description: "Clean up ill-encoded characters in file"
-            );
-            rootCommand.AddOption(cleanTradosOption);
+            Option<bool> cleanTradosOption = new("--cleanTrados")
+            {
+                Description = "Clean up ill-encoded characters in file"
+            };
 
-            var insertCatOption = new Option<bool>(
-                name: "--insertCAT",
-                description: "Insert CAT file to CSV file (requires --csv)"
-            );
-            rootCommand.AddOption(insertCatOption);
+            Option<bool> insertCatOption = new("--insertCAT")
+            {
+                Description = "Insert CAT file to CSV file (requires --csv)"
+            };
 
             // Parameter options
-            var startIndexOption = new Option<int>(
-                name: "--startIndex",
-                description: "Start offset for dump",
-                getDefaultValue: () => 0
-            );
-            rootCommand.AddOption(startIndexOption);
+            Option<int> startIndexOption = new("--startIndex")
+            {
+                Description = "Start offset for dump",
+                DefaultValueFactory = _ => 0
+            };
 
-            var endIndexOption = new Option<int>(
-                name: "--endIndex",
-                description: "End offset for dump",
-                getDefaultValue: () => 0
-            );
-            rootCommand.AddOption(endIndexOption);
+            Option<int> endIndexOption = new("--endIndex")
+            {
+                Description = "End offset for dump",
+                DefaultValueFactory = _ => 0
+            };
 
-            var csvOption = new Option<string>(
-                name: "--csv",
-                description: "Secondary CSV file for insert, merge, or insertCAT operations"
-            );
-            rootCommand.AddOption(csvOption);
+            Option<string?> csvOption = new("--csv")
+            {
+                Description = "Secondary CSV file for insert, merge, or insertCAT operations"
+            };
 
             // Global options
-            var verboseOption = new Option<bool>(
-                name: "--verbose",
-                description: "More verbosity"
-            );
-            rootCommand.AddOption(verboseOption);
+            Option<bool> verboseOption = new("--verbose")
+            {
+                Description = "More verbosity"
+            };
 
-            var trueOffsetsOption = new Option<bool>(
-                name: "--trueOffsets",
-                description: "Correct the value of string offsets"
-            );
-            rootCommand.AddOption(trueOffsetsOption);
+            Option<bool> trueOffsetsOption = new("--trueOffsets")
+            {
+                Description = "Correct the value of string offsets"
+            };
 
-            var nullStringsOption = new Option<bool>(
-                name: "--nullStrings",
-                description: "Check if strings are valid before outputting them"
-            );
-            rootCommand.AddOption(nullStringsOption);
+            Option<bool> nullStringsOption = new("--nullStrings")
+            {
+                Description = "Check if strings are valid before outputting them"
+            };
 
-            var closeOption = new Option<bool>(
-                name: "--close",
-                description: "Close terminal after command"
-            );
-            rootCommand.AddOption(closeOption);
+            Option<bool> closeOption = new("--close")
+            {
+                Description = "Close terminal after command"
+            };
+
+            // Root command
+            RootCommand rootCommand = new($"FrontierTextTool v{fileVersionAttribute} - Extract and edit text data")
+            {
+                fileArgument,
+                fulldumpOption,
+                dumpOption,
+                insertOption,
+                mergeOption,
+                cleanTradosOption,
+                insertCatOption,
+                startIndexOption,
+                endIndexOption,
+                csvOption,
+                verboseOption,
+                trueOffsetsOption,
+                nullStringsOption,
+                closeOption
+            };
 
             // Set handler
-            rootCommand.SetHandler((InvocationContext context) =>
+            rootCommand.SetAction(parseResult =>
             {
-                var file = context.ParseResult.GetValueForArgument(fileArgument);
-                var fulldump = context.ParseResult.GetValueForOption(fulldumpOption);
-                var dump = context.ParseResult.GetValueForOption(dumpOption);
-                var insert = context.ParseResult.GetValueForOption(insertOption);
-                var merge = context.ParseResult.GetValueForOption(mergeOption);
-                var cleanTrados = context.ParseResult.GetValueForOption(cleanTradosOption);
-                var insertCat = context.ParseResult.GetValueForOption(insertCatOption);
-                var startIndex = context.ParseResult.GetValueForOption(startIndexOption);
-                var endIndex = context.ParseResult.GetValueForOption(endIndexOption);
-                var csv = context.ParseResult.GetValueForOption(csvOption);
-                var verbose = context.ParseResult.GetValueForOption(verboseOption);
-                var trueOffsets = context.ParseResult.GetValueForOption(trueOffsetsOption);
-                var nullStrings = context.ParseResult.GetValueForOption(nullStringsOption);
-                var close = context.ParseResult.GetValueForOption(closeOption);
+                var file = parseResult.GetValue(fileArgument)!;
+                var fulldump = parseResult.GetValue(fulldumpOption);
+                var dump = parseResult.GetValue(dumpOption);
+                var insert = parseResult.GetValue(insertOption);
+                var merge = parseResult.GetValue(mergeOption);
+                var cleanTrados = parseResult.GetValue(cleanTradosOption);
+                var insertCat = parseResult.GetValue(insertCatOption);
+                var startIndex = parseResult.GetValue(startIndexOption);
+                var endIndex = parseResult.GetValue(endIndexOption);
+                var csv = parseResult.GetValue(csvOption);
+                var verbose = parseResult.GetValue(verboseOption);
+                var trueOffsets = parseResult.GetValue(trueOffsetsOption);
+                var nullStrings = parseResult.GetValue(nullStringsOption);
+                var close = parseResult.GetValue(closeOption);
 
                 // Count how many actions are specified
                 int actionCount = (fulldump ? 1 : 0) + (dump ? 1 : 0) + (insert ? 1 : 0) +
@@ -170,26 +171,23 @@ namespace FrontierTextTool
                 if (actionCount == 0)
                 {
                     Console.Error.WriteLine("Error: No action specified. Use --fulldump, --dump, --insert, --merge, --cleanTrados, or --insertCAT.");
-                    context.ExitCode = 1;
                     FinishCommand(close);
-                    return;
+                    return 1;
                 }
 
                 if (actionCount > 1)
                 {
                     Console.Error.WriteLine("Error: Only one action can be specified at a time.");
-                    context.ExitCode = 1;
                     FinishCommand(close);
-                    return;
+                    return 1;
                 }
 
                 // Validate file exists
                 if (!File.Exists(file))
                 {
                     Console.Error.WriteLine($"Error: File '{file}' does not exist.");
-                    context.ExitCode = 1;
                     FinishCommand(close);
-                    return;
+                    return 1;
                 }
 
                 try
@@ -207,9 +205,8 @@ namespace FrontierTextTool
                         if (string.IsNullOrEmpty(csv))
                         {
                             Console.Error.WriteLine("Error: --insert requires --csv <csvFile>.");
-                            context.ExitCode = 1;
                             FinishCommand(close);
-                            return;
+                            return 1;
                         }
                         program._insertionService.InsertStrings(file, csv, verbose, trueOffsets);
                     }
@@ -218,9 +215,8 @@ namespace FrontierTextTool
                         if (string.IsNullOrEmpty(csv))
                         {
                             Console.Error.WriteLine("Error: --merge requires --csv <newCsvFile>.");
-                            context.ExitCode = 1;
                             FinishCommand(close);
-                            return;
+                            return 1;
                         }
                         program._mergeService.Merge(file, csv);
                     }
@@ -233,9 +229,8 @@ namespace FrontierTextTool
                         if (string.IsNullOrEmpty(csv))
                         {
                             Console.Error.WriteLine("Error: --insertCAT requires --csv <csvFile>.");
-                            context.ExitCode = 1;
                             FinishCommand(close);
-                            return;
+                            return 1;
                         }
                         program._mergeService.InsertCatFile(file, csv);
                     }
@@ -243,13 +238,15 @@ namespace FrontierTextTool
                 catch (Exception ex)
                 {
                     Console.Error.WriteLine($"Error: {ex.Message}");
-                    context.ExitCode = 1;
+                    FinishCommand(close);
+                    return 1;
                 }
 
                 FinishCommand(close);
+                return 0;
             });
 
-            return rootCommand.Invoke(args);
+            return rootCommand.Parse(args).Invoke();
         }
 
         /// <summary>

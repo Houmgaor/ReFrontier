@@ -145,7 +145,7 @@ Related tools and projects:
 | [Monster-Hunter-Frontier-Patterns](https://github.com/var-username/Monster-Hunter-Frontier-Patterns) | Binary file format templates |
 | [FrontierTextHandler](https://github.com/Houmgaor/FrontierTextHandler) | Python tool for text editing |
 | [MHFrontier-Blender-Addon](https://github.com/Houmgaor/MHFrontier-Blender-Addon) | Import 3D models |
-| [Erupe](https://github.com/ZeruLight/Erupe) | MHFrontier private server |
+| [Erupe](https://github.com/Houmgaor/Erupe) | MHFrontier private server |
 
 ## License
 

@@ -5,7 +5,7 @@ All notable changes to ReFrontier will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.0] - 2026-01-31
 
 ### Added
 
@@ -31,6 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved exception types throughout the codebase
 - Added proper `using` statements for streams and readers to prevent resource leaks
 - Upgraded CsvHelper in FrontierTextTool to match FrontierDataTool version
+
+### Notes
+
+- See [MIGRATION_2.0.md](MIGRATION_2.0.md) for detailed upgrade instructions
 
 ## [1.2.0] - 2024-11-27
 
@@ -145,7 +149,7 @@ This is the first release of the Houmgaor fork, modernizing the original mhvuze/
 - FrontierTextTool for text extraction
 - FrontierDataTool for data structure extraction
 
-[Unreleased]: https://github.com/Houmgaor/ReFrontier/compare/v1.2.0...HEAD
+[2.0.0]: https://github.com/Houmgaor/ReFrontier/compare/v1.2.0...v2.0.0
 [1.2.0]: https://github.com/Houmgaor/ReFrontier/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/Houmgaor/ReFrontier/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/Houmgaor/ReFrontier/compare/v1.0.0...v1.0.1
