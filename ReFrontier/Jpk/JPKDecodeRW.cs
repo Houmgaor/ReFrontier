@@ -5,7 +5,18 @@ using LibReFrontier.Exceptions;
 namespace ReFrontier.Jpk
 {
     /// <summary>
-    /// Raw JPK "decoding", do not decode anything.
+    /// Raw Writing (RW) decoder - reads data without decompression.
+    ///
+    /// <para><b>Algorithm:</b></para>
+    /// <para>No transformation is applied. Input bytes are copied directly to the output
+    /// buffer in sequence. This handles both CompressionType.RW and CompressionType.None.</para>
+    ///
+    /// <para><b>Error Handling:</b></para>
+    /// <para>Throws <see cref="CompressionException"/> if the stream ends before
+    /// <c>outSize</c> bytes are read (unexpected truncation).</para>
+    ///
+    /// <para><b>Performance:</b></para>
+    /// <para>O(n) time, O(1) space. Fastest decoder available.</para>
     /// </summary>
     internal class JPKDecodeRW : IJPKDecode
     {
