@@ -41,13 +41,15 @@ namespace ReFrontier.Routing.Handlers
         /// <inheritdoc/>
         public ProcessFileResult Handle(string filePath, BinaryReader reader, InputArguments args)
         {
-            _logger.WriteLine("JKR Header detected.");
+            if (!args.quiet)
+                _logger.WriteLine("JKR Header detected.");
             string outputPath = filePath;
 
             if (!args.ignoreJPK)
             {
                 outputPath = _unpackingService.UnpackJPK(filePath);
-                _logger.WriteLine($"File decompressed to {outputPath}.");
+                if (!args.quiet)
+                    _logger.WriteLine($"File decompressed to {outputPath}.");
 
                 // Replace input file, deprecated behavior, will be removed in 2.0.0
                 if (

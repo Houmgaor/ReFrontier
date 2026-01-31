@@ -38,7 +38,8 @@ namespace ReFrontier.Routing.Handlers
         /// <inheritdoc/>
         public ProcessFileResult Handle(string filePath, BinaryReader reader, InputArguments args)
         {
-            _logger.WriteLine("MHF Text file detected.");
+            if (!args.quiet)
+                _logger.WriteLine("MHF Text file detected.");
             var outputPath = _unpackingService.PrintFTXT(filePath, reader);
             return ProcessFileResult.Success(outputPath);
         }

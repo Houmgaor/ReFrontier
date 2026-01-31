@@ -24,5 +24,10 @@ namespace ReFrontier.CLI
         /// Number of parallel threads to use (0 = auto-detect).
         /// </summary>
         public int Parallelism { get; init; }
+
+        /// <summary>
+        /// Whether to suppress progress output during processing.
+        /// </summary>
+        public bool Quiet { get; init; }
     }
 }

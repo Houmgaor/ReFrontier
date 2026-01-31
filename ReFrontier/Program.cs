@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Threading;
@@ -40,6 +39,7 @@ namespace ReFrontier
         public bool rewriteOldFile;
         public Compression compression;
         public int parallelism;
+        public bool quiet;
 
         public override bool Equals(object? obj)
         {
@@ -60,7 +60,8 @@ namespace ReFrontier
                 && autoStage == other.autoStage
                 && rewriteOldFile == other.rewriteOldFile
                 && compression.Equals(other.compression)
-                && parallelism == other.parallelism;
+                && parallelism == other.parallelism
+                && quiet == other.quiet;
         }
 
         public override int GetHashCode()
@@ -79,6 +80,7 @@ namespace ReFrontier
             hash.Add(rewriteOldFile);
             hash.Add(compression);
             hash.Add(parallelism);
+            hash.Add(quiet);
             return hash.ToHashCode();
         }
 
@@ -281,15 +283,20 @@ namespace ReFrontier
         /// <returns>Result indicating success with output path, or skipped with reason.</returns>
         public ProcessFileResult ProcessFile(string filePath, InputArguments inputArguments)
         {
-            _logger.PrintWithSeparator($"Processing {filePath}", false);
+            if (!inputArguments.quiet)
+                _logger.PrintWithSeparator($"Processing {filePath}", false);
 
-            // Read file to memory
-            using MemoryStream msInput = new(_fileSystem.ReadAllBytes(filePath));
+            // Stream file from disk instead of loading entire file into memory
+            using var fileStream = _fileSystem.OpenRead(filePath);
+            using var msInput = new MemoryStream();
+            fileStream.CopyTo(msInput);
+            msInput.Position = 0;
             using BinaryReader brInput = new(msInput);
             string outputPath;
             if (msInput.Length == 0)
             {
-                _logger.WriteLine("File is empty. Skipping.");
+                if (!inputArguments.quiet)
+                    _logger.WriteLine("File is empty. Skipping.");
                 return ProcessFileResult.Skipped("File is empty");
             }
             uint fileMagic = brInput.ReadUInt32();
@@ -305,7 +312,8 @@ namespace ReFrontier
 
             outputPath = routerResult.OutputPath!;
 
-            _logger.WriteSeparator();
+            if (!inputArguments.quiet)
+                _logger.WriteSeparator();
             // Decompress file if it was an ECD (encrypted)
             if (fileMagic == FileMagic.ECD && !inputArguments.decryptOnly)
             {
@@ -343,18 +351,17 @@ namespace ReFrontier
             // Consume (process) input files
             while (!filesToProcess.IsEmpty)
             {
-                // Ugly way to have a functional forEach on expanding Queue
-                // The TPL library may be better suited
-                List<string> fileWorkers = [];
+                // Get current batch of files to process
+                var currentBatch = new System.Collections.Generic.List<string>();
                 while (filesToProcess.TryDequeue(out string? tempInputFile))
                 {
                     if (tempInputFile != null)
-                        fileWorkers.Add(tempInputFile);
+                        currentBatch.Add(tempInputFile);
                 }
 
                 // Use Interlocked to safely disable stage processing after first file
                 int stageContainerFlag = inputArguments.stageContainer ? 1 : 0;
-                Parallel.ForEach(fileWorkers, parallelOptions, inputFile =>
+                Parallel.ForEach(currentBatch, parallelOptions, inputFile =>
                 {
                     // Check if this is the first file to process with stage container
                     bool useStageContainer = Interlocked.Exchange(ref stageContainerFlag, 0) == 1;
@@ -374,7 +381,8 @@ namespace ReFrontier
                     catch (ReFrontierException ex)
                     {
                         // Log the error and continue processing other files
-                        _logger.WriteLine($"Skipping {inputFile}: {ex.Message}");
+                        if (!inputArguments.quiet)
+                            _logger.WriteLine($"Skipping {inputFile}: {ex.Message}");
                     }
                 });
             }

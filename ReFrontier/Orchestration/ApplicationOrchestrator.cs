@@ -94,9 +94,10 @@ namespace ReFrontier.Orchestration
             if (effectiveParallelism > 64)
                 effectiveParallelism = 64;
 
-            // Update processing args with resolved parallelism
+            // Update processing args with resolved parallelism and quiet flag
             var processingArgs = args.ProcessingArgs;
             processingArgs.parallelism = effectiveParallelism;
+            processingArgs.quiet = args.Quiet;
 
             // Start input processing
             if (_fileSystem.DirectoryExists(args.FilePath))

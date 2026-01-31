@@ -38,7 +38,8 @@ namespace ReFrontier.Routing.Handlers
         /// <inheritdoc/>
         public ProcessFileResult Handle(string filePath, BinaryReader reader, InputArguments args)
         {
-            _logger.WriteLine("MHA Header detected.");
+            if (!args.quiet)
+                _logger.WriteLine("MHA Header detected.");
             var outputPath = _unpackingService.UnpackMHA(filePath, reader, args.createLog);
             return ProcessFileResult.Success(outputPath);
         }

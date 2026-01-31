@@ -39,7 +39,8 @@ namespace ReFrontier.Routing.Handlers
         /// <inheritdoc/>
         public ProcessFileResult Handle(string filePath, BinaryReader reader, InputArguments args)
         {
-            _logger.WriteLine("ECD Header detected.");
+            if (!args.quiet)
+                _logger.WriteLine("ECD Header detected.");
 
             var outputPath = _fileProcessingService.DecryptEcdFile(
                 filePath,

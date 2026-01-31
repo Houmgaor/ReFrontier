@@ -25,6 +25,7 @@ namespace ReFrontier.CLI
         private readonly Option<bool> _encryptOption;
         private readonly Option<bool> _closeOption;
         private readonly Option<int> _parallelismOption;
+        private readonly Option<bool> _quietOption;
 
         /// <summary>
         /// Creates a new CliSchema instance and initializes all CLI options.
@@ -116,6 +117,11 @@ namespace ReFrontier.CLI
                 Description = "Number of parallel threads (0 = auto-detect, default: 0)",
                 DefaultValueFactory = _ => 0
             };
+
+            _quietOption = new Option<bool>("--quiet")
+            {
+                Description = "Suppress progress output during processing"
+            };
         }
 
         /// <summary>
@@ -144,7 +150,8 @@ namespace ReFrontier.CLI
                 _compressLevelOption,
                 _encryptOption,
                 _closeOption,
-                _parallelismOption
+                _parallelismOption,
+                _quietOption
             };
 
             return rootCommand;
@@ -173,6 +180,7 @@ namespace ReFrontier.CLI
             var encrypt = parseResult.GetValue(_encryptOption);
             var close = parseResult.GetValue(_closeOption);
             var parallelism = parseResult.GetValue(_parallelismOption);
+            var quiet = parseResult.GetValue(_quietOption);
 
             // Parse compression if specified
             Compression compression = new();
@@ -209,7 +217,8 @@ namespace ReFrontier.CLI
                 FilePath = file,
                 ProcessingArgs = processingArgs,
                 CloseAfterCompletion = close,
-                Parallelism = parallelism
+                Parallelism = parallelism,
+                Quiet = quiet
             };
         }
     }
