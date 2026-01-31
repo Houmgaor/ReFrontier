@@ -7,7 +7,9 @@ Extract, edit, and reinsert game text using CSV format.
 ## Features
 
 - Automatically handles encrypted (ECD/EXF) and compressed (JPK) files
-- Exports to tab-separated CSV in Shift-JIS encoding
+- Exports to tab-separated CSV in UTF-8 with BOM (easy editing in Excel/text editors)
+- Auto-detects CSV encoding when reading (supports both UTF-8 and Shift-JIS)
+- Validates Shift-JIS compatibility when inserting text into game files
 - Preserves metadata for re-encryption
 
 ## Quick Start
@@ -88,4 +90,17 @@ Fix encoding issues from CAT tools:
 | `--merge` | Merge two CSV files |
 | `--cleanTrados` | Fix CAT tool encoding |
 | `--insertCAT` | Insert CAT file into CSV |
+| `--shift-jis` | Output CSV in Shift-JIS encoding (default: UTF-8 with BOM) |
 | `--help` | Show help |
+
+## CSV Encoding
+
+By default, CSV files are written in **UTF-8 with BOM** for easier editing in Excel and text editors.
+
+When reading CSV files (for `--insert`, `--merge`, `--insertCAT`), the encoding is **auto-detected**:
+- Files starting with UTF-8 BOM (`EF BB BF`) are read as UTF-8
+- Other files are read as Shift-JIS (legacy format)
+
+Use `--shift-jis` to output CSV files in Shift-JIS encoding for compatibility with older workflows.
+
+> **Note**: When inserting text into game files, strings must be compatible with Shift-JIS encoding. The tool will warn about any characters that cannot be encoded.

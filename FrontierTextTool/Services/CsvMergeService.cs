@@ -10,6 +10,8 @@ using CsvHelper.Configuration;
 
 using LibReFrontier.Abstractions;
 
+using LibReFrontier;
+
 namespace FrontierTextTool.Services
 {
     /// <summary>
@@ -19,12 +21,13 @@ namespace FrontierTextTool.Services
     {
         private readonly IFileSystem _fileSystem;
         private readonly ILogger _logger;
+        private readonly CsvEncodingOptions _encodingOptions;
 
         /// <summary>
         /// Create a new CsvMergeService with default dependencies.
         /// </summary>
         public CsvMergeService()
-            : this(new RealFileSystem(), new ConsoleLogger())
+            : this(new RealFileSystem(), new ConsoleLogger(), CsvEncodingOptions.Default)
         {
         }
 
@@ -32,13 +35,23 @@ namespace FrontierTextTool.Services
         /// Create a new CsvMergeService with injectable dependencies.
         /// </summary>
         public CsvMergeService(IFileSystem fileSystem, ILogger logger)
+            : this(fileSystem, logger, CsvEncodingOptions.Default)
+        {
+        }
+
+        /// <summary>
+        /// Create a new CsvMergeService with injectable dependencies and encoding options.
+        /// </summary>
+        public CsvMergeService(IFileSystem fileSystem, ILogger logger, CsvEncodingOptions encodingOptions)
         {
             _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _encodingOptions = encodingOptions ?? CsvEncodingOptions.Default;
         }
 
         /// <summary>
         /// Merge old and updated CSVs by matching CRC32 hashes.
+        /// Auto-detects encoding for reading, uses configurable encoding for writing.
         /// </summary>
         /// <param name="oldCsv">CSV to merge to (contains translations).</param>
         /// <param name="newCsv">New CSV with updated data structure.</param>
@@ -50,12 +63,13 @@ namespace FrontierTextTool.Services
                 Mode = CsvMode.Escape
             };
 
-            // Read old CSV
+            // Read old CSV with auto-detected encoding
             var stringDbOld = new List<StringDatabase>();
             using (var stream = _fileSystem.OpenRead(oldCsv))
-            using (var reader = new StreamReader(stream, Encoding.GetEncoding("shift-jis")))
-            using (var csv = new CsvReader(reader, csvConf))
             {
+                var encoding = TextFileConfiguration.DetectCsvEncoding(stream);
+                using var reader = new StreamReader(stream, encoding);
+                using var csv = new CsvReader(reader, csvConf);
                 csv.Read();
                 csv.ReadHeader();
                 while (csv.Read())
@@ -69,12 +83,13 @@ namespace FrontierTextTool.Services
                 }
             }
 
-            // Read new CSV
+            // Read new CSV with auto-detected encoding
             var stringDbNew = new List<StringDatabase>();
             using (var stream = _fileSystem.OpenRead(newCsv))
-            using (var reader = new StreamReader(stream, Encoding.GetEncoding("shift-jis")))
-            using (var csv = new CsvReader(reader, csvConf))
             {
+                var encoding = TextFileConfiguration.DetectCsvEncoding(stream);
+                using var reader = new StreamReader(stream, encoding);
+                using var csv = new CsvReader(reader, csvConf);
                 csv.Read();
                 csv.ReadHeader();
                 while (csv.Read())
@@ -103,14 +118,14 @@ namespace FrontierTextTool.Services
             }
             _logger.WriteLine("");
 
-            // Write merged output
+            // Write merged output with configurable encoding
             _fileSystem.CreateDirectory("csv");
             string fileName = "csv/" + Path.GetFileName(oldCsv);
 
             if (_fileSystem.FileExists(fileName))
                 _fileSystem.DeleteFile(fileName);
 
-            using (var txtOutput = _fileSystem.CreateStreamWriter(fileName, false, Encoding.GetEncoding("shift-jis")))
+            using (var txtOutput = _fileSystem.CreateStreamWriter(fileName, false, _encodingOptions.GetOutputEncoding()))
             using (var csvOutput = new CsvWriter(txtOutput, csvConf))
             {
                 csvOutput.WriteHeader<StringDatabase>();
@@ -122,6 +137,7 @@ namespace FrontierTextTool.Services
 
         /// <summary>
         /// Insert CAT translation file into a CSV file.
+        /// Auto-detects encoding for reading, uses configurable encoding for writing.
         /// </summary>
         /// <param name="catFile">CAT file with translations (line-by-line).</param>
         /// <param name="csvFile">Target CSV file.</param>
@@ -133,7 +149,7 @@ namespace FrontierTextTool.Services
             CleanTrados(catFile);
             string[] catStrings = _fileSystem.ReadAllLines(catFile);
 
-            // Read existing CSV
+            // Read existing CSV with auto-detected encoding
             var stringDb = new List<StringDatabase>();
             var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
             {
@@ -142,9 +158,10 @@ namespace FrontierTextTool.Services
             };
 
             using (var stream = _fileSystem.OpenRead(csvFile))
-            using (var reader = new StreamReader(stream, Encoding.GetEncoding("shift-jis")))
-            using (var csv = new CsvReader(reader, configuration))
             {
+                var encoding = TextFileConfiguration.DetectCsvEncoding(stream);
+                using var reader = new StreamReader(stream, encoding);
+                using var csv = new CsvReader(reader, configuration);
                 csv.Read();
                 csv.ReadHeader();
                 while (csv.Read())
@@ -171,14 +188,14 @@ namespace FrontierTextTool.Services
             }
             _logger.WriteLine("");
 
-            // Write output
+            // Write output with configurable encoding
             _fileSystem.CreateDirectory("csv");
             string fileName = "csv/" + Path.GetFileName(csvFile);
 
             if (_fileSystem.FileExists(fileName))
                 _fileSystem.DeleteFile(fileName);
 
-            using var txtOutput = _fileSystem.CreateStreamWriter(fileName, false, Encoding.GetEncoding("shift-jis"));
+            using var txtOutput = _fileSystem.CreateStreamWriter(fileName, false, _encodingOptions.GetOutputEncoding());
             txtOutput.WriteLine("Offset\tHash\tJString\tEString");
             foreach (var obj in stringDb)
                 txtOutput.WriteLine($"{obj.Offset}\t{obj.Hash}\t{obj.JString}\t{obj.EString}");

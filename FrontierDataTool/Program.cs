@@ -5,11 +5,13 @@ using System.Text;
 
 using FrontierDataTool.Services;
 
+using LibReFrontier;
+
 namespace FrontierDataTool
 {
     public class Program
     {
-        private readonly DataExtractionService _extractionService;
+        private DataExtractionService _extractionService;
         private readonly DataImportService _importService;
 
         /// <summary>
@@ -27,6 +29,18 @@ namespace FrontierDataTool
         {
             _extractionService = extractionService ?? throw new ArgumentNullException(nameof(extractionService));
             _importService = importService ?? throw new ArgumentNullException(nameof(importService));
+        }
+
+        /// <summary>
+        /// Update extraction service with encoding options.
+        /// </summary>
+        private void UpdateExtractionServiceWithEncoding(CsvEncodingOptions encodingOptions)
+        {
+            _extractionService = new DataExtractionService(
+                new LibReFrontier.Abstractions.RealFileSystem(),
+                new LibReFrontier.Abstractions.ConsoleLogger(),
+                encodingOptions);
+            // ImportService only reads CSVs, auto-detects encoding, doesn't need options
         }
 
         /// <summary>
@@ -86,6 +100,11 @@ namespace FrontierDataTool
                 Description = "Close terminal after command"
             };
 
+            Option<bool> shiftJisOption = new("--shift-jis")
+            {
+                Description = "Output CSV files in Shift-JIS encoding (default: UTF-8 with BOM)"
+            };
+
             // Root command
             RootCommand rootCommand = new("FrontierDataTool - Extract and edit Monster Hunter Frontier game data")
             {
@@ -97,7 +116,8 @@ namespace FrontierDataTool
                 mhfdatOption,
                 mhfinfOption,
                 csvOption,
-                closeOption
+                closeOption,
+                shiftJisOption
             };
 
             // Set handler
@@ -112,6 +132,11 @@ namespace FrontierDataTool
                 var mhfinf = parseResult.GetValue(mhfinfOption);
                 var csv = parseResult.GetValue(csvOption);
                 var close = parseResult.GetValue(closeOption);
+                var shiftJis = parseResult.GetValue(shiftJisOption);
+
+                // Configure encoding options
+                var encodingOptions = shiftJis ? CsvEncodingOptions.ShiftJis : CsvEncodingOptions.Default;
+                program.UpdateExtractionServiceWithEncoding(encodingOptions);
 
                 // Count how many actions are specified
                 int actionCount = (dump ? 1 : 0) + (modshop ? 1 : 0) + (import ? 1 : 0);

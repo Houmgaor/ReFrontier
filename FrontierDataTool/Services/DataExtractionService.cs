@@ -22,12 +22,13 @@ namespace FrontierDataTool.Services
         private readonly IFileSystem _fileSystem;
         private readonly ILogger _logger;
         private readonly BinaryReaderService _binaryReader;
+        private readonly CsvEncodingOptions _encodingOptions;
 
         /// <summary>
         /// Create a new DataExtractionService with default dependencies.
         /// </summary>
         public DataExtractionService()
-            : this(new RealFileSystem(), new ConsoleLogger())
+            : this(new RealFileSystem(), new ConsoleLogger(), CsvEncodingOptions.Default)
         {
         }
 
@@ -35,10 +36,19 @@ namespace FrontierDataTool.Services
         /// Create a new DataExtractionService with injectable dependencies.
         /// </summary>
         public DataExtractionService(IFileSystem fileSystem, ILogger logger)
+            : this(fileSystem, logger, CsvEncodingOptions.Default)
+        {
+        }
+
+        /// <summary>
+        /// Create a new DataExtractionService with injectable dependencies and encoding options.
+        /// </summary>
+        public DataExtractionService(IFileSystem fileSystem, ILogger logger, CsvEncodingOptions encodingOptions)
         {
             _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _binaryReader = new BinaryReaderService();
+            _encodingOptions = encodingOptions ?? CsvEncodingOptions.Default;
         }
 
         #region Helper Methods
@@ -247,7 +257,7 @@ namespace FrontierDataTool.Services
             }
 
             // Write armor CSV
-            using (var textWriter = _fileSystem.CreateStreamWriter("Armor.csv", false, TextFileConfiguration.ShiftJisEncoding))
+            using (var textWriter = _fileSystem.CreateStreamWriter("Armor.csv", false, _encodingOptions.GetOutputEncoding()))
             {
                 var writer = new CsvWriter(textWriter, TextFileConfiguration.CreateJapaneseCsvConfig());
                 writer.WriteRecords(armorEntries);
@@ -294,7 +304,7 @@ namespace FrontierDataTool.Services
             }
 
             // Write melee CSV
-            using (var textWriter = _fileSystem.CreateStreamWriter("Melee.csv", false, TextFileConfiguration.ShiftJisEncoding))
+            using (var textWriter = _fileSystem.CreateStreamWriter("Melee.csv", false, _encodingOptions.GetOutputEncoding()))
             {
                 var writer = new CsvWriter(textWriter, TextFileConfiguration.CreateJapaneseCsvConfig());
                 writer.WriteRecords(meleeEntries);
@@ -326,7 +336,7 @@ namespace FrontierDataTool.Services
             }
 
             // Write ranged CSV
-            using (var textWriter = _fileSystem.CreateStreamWriter("Ranged.csv", false, TextFileConfiguration.ShiftJisEncoding))
+            using (var textWriter = _fileSystem.CreateStreamWriter("Ranged.csv", false, _encodingOptions.GetOutputEncoding()))
             {
                 var writer = new CsvWriter(textWriter, TextFileConfiguration.CreateJapaneseCsvConfig());
                 writer.WriteRecords(rangedEntries);
@@ -358,7 +368,7 @@ namespace FrontierDataTool.Services
             }
 
             // Write CSV
-            using var textWriter = _fileSystem.CreateStreamWriter("InfQuests.csv", false, TextFileConfiguration.ShiftJisEncoding);
+            using var textWriter = _fileSystem.CreateStreamWriter("InfQuests.csv", false, _encodingOptions.GetOutputEncoding());
             var writer = new CsvWriter(textWriter, TextFileConfiguration.CreateJapaneseCsvConfig());
             writer.WriteRecords(quests);
         }

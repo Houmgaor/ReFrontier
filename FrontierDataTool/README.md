@@ -5,7 +5,8 @@ Extract and modify game data structures (armor, weapons, quests, shop prices).
 ## Features
 
 - Automatically handles encrypted (ECD/EXF) and compressed (JPK) files
-- Exports to tab-separated CSV (Shift-JIS encoding)
+- Exports to tab-separated CSV in UTF-8 with BOM (easy editing in Excel/text editors)
+- Auto-detects CSV encoding when importing (supports both UTF-8 and Shift-JIS)
 - Supports importing modified data back into game files
 
 ## Commands
@@ -86,4 +87,15 @@ Adjust shop prices in `mhfdat.bin` (buy price / 50, sell price * 5):
 | `--mhfdat <file>` | Path to mhfdat.bin |
 | `--mhfpac <file>` | Path to mhfpac.bin |
 | `--mhfinf <file>` | Path to mhfinf.bin |
+| `--shift-jis` | Output CSV in Shift-JIS encoding (default: UTF-8 with BOM) |
 | `--help` | Show help |
+
+## CSV Encoding
+
+By default, CSV files are written in **UTF-8 with BOM** for easier editing in Excel and text editors.
+
+When reading CSV files (for `--import`), the encoding is **auto-detected**:
+- Files starting with UTF-8 BOM (`EF BB BF`) are read as UTF-8
+- Other files are read as Shift-JIS (legacy format)
+
+Use `--shift-jis` to output CSV files in Shift-JIS encoding for compatibility with older workflows.

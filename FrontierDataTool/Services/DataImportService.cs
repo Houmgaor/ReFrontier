@@ -123,13 +123,13 @@ namespace FrontierDataTool.Services
 
         /// <summary>
         /// Load armor entries from a CSV file.
+        /// Auto-detects encoding (UTF-8 with BOM or Shift-JIS).
         /// </summary>
         public List<ArmorDataEntry> LoadArmorCsv(string csvPath)
         {
-            using var textReader = new StreamReader(
-                _fileSystem.OpenRead(csvPath),
-                TextFileConfiguration.ShiftJisEncoding
-            );
+            using var stream = _fileSystem.OpenRead(csvPath);
+            var encoding = TextFileConfiguration.DetectCsvEncoding(stream);
+            using var textReader = new StreamReader(stream, encoding);
             using var csvReader = new CsvReader(textReader, TextFileConfiguration.CreateJapaneseCsvConfig());
             return csvReader.GetRecords<ArmorDataEntry>().ToList();
         }
@@ -201,13 +201,13 @@ namespace FrontierDataTool.Services
 
         /// <summary>
         /// Load melee weapon entries from a CSV file.
+        /// Auto-detects encoding (UTF-8 with BOM or Shift-JIS).
         /// </summary>
         public List<MeleeWeaponEntry> LoadMeleeCsv(string csvPath)
         {
-            using var textReader = new StreamReader(
-                _fileSystem.OpenRead(csvPath),
-                TextFileConfiguration.ShiftJisEncoding
-            );
+            using var stream = _fileSystem.OpenRead(csvPath);
+            var encoding = TextFileConfiguration.DetectCsvEncoding(stream);
+            using var textReader = new StreamReader(stream, encoding);
             using var csvReader = new CsvReader(textReader, TextFileConfiguration.CreateJapaneseCsvConfig());
             return csvReader.GetRecords<MeleeWeaponEntry>().ToList();
         }
@@ -279,13 +279,13 @@ namespace FrontierDataTool.Services
 
         /// <summary>
         /// Load ranged weapon entries from a CSV file.
+        /// Auto-detects encoding (UTF-8 with BOM or Shift-JIS).
         /// </summary>
         public List<RangedWeaponEntry> LoadRangedCsv(string csvPath)
         {
-            using var textReader = new StreamReader(
-                _fileSystem.OpenRead(csvPath),
-                TextFileConfiguration.ShiftJisEncoding
-            );
+            using var stream = _fileSystem.OpenRead(csvPath);
+            var encoding = TextFileConfiguration.DetectCsvEncoding(stream);
+            using var textReader = new StreamReader(stream, encoding);
             using var csvReader = new CsvReader(textReader, TextFileConfiguration.CreateJapaneseCsvConfig());
             return csvReader.GetRecords<RangedWeaponEntry>().ToList();
         }
@@ -367,13 +367,13 @@ namespace FrontierDataTool.Services
 
         /// <summary>
         /// Load quest entries from a CSV file.
+        /// Auto-detects encoding (UTF-8 with BOM or Shift-JIS).
         /// </summary>
         public List<QuestData> LoadQuestCsv(string csvPath)
         {
-            using var textReader = new StreamReader(
-                _fileSystem.OpenRead(csvPath),
-                TextFileConfiguration.ShiftJisEncoding
-            );
+            using var stream = _fileSystem.OpenRead(csvPath);
+            var encoding = TextFileConfiguration.DetectCsvEncoding(stream);
+            using var textReader = new StreamReader(stream, encoding);
             using var csvReader = new CsvReader(textReader, TextFileConfiguration.CreateJapaneseCsvConfig());
             return csvReader.GetRecords<QuestData>().ToList();
         }

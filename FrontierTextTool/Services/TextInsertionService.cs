@@ -42,6 +42,8 @@ namespace FrontierTextTool.Services
 
         /// <summary>
         /// Load a CSV file to a StringDatabase array.
+        /// Auto-detects encoding (UTF-8 with BOM or Shift-JIS).
+        /// Validates that strings can be encoded to Shift-JIS for game binary insertion.
         /// </summary>
         /// <param name="inputCsv">Input CSV file path.</param>
         /// <returns>Array of StringDatabase records.</returns>
@@ -55,22 +57,32 @@ namespace FrontierTextTool.Services
             };
 
             using var stream = _fileSystem.OpenRead(inputCsv);
-            using var reader = new StreamReader(stream, Encoding.GetEncoding("shift-jis"));
+            var encoding = TextFileConfiguration.DetectCsvEncoding(stream);
+            using var reader = new StreamReader(stream, encoding);
             using var csv = new CsvReader(reader, configuration);
 
             csv.Read();
             csv.ReadHeader();
             while (csv.Read())
             {
+                string eString = (csv.GetField("EString") ?? string.Empty)
+                    .Replace("\\r\\n", "\r\n")
+                    .Replace("\\n", "\n")
+                    .Replace("\\t", "\t")
+                    .Replace("\\\\", "\\");
+
+                // Validate Shift-JIS compatibility for non-empty strings
+                if (!string.IsNullOrEmpty(eString) && !TextFileConfiguration.ValidateShiftJisCompatibility(eString))
+                {
+                    var incompatible = TextFileConfiguration.GetIncompatibleCharacters(eString);
+                    _logger.Error($"Warning: String at offset {csv.GetField<uint>("Offset")} contains characters that cannot be encoded to Shift-JIS: {string.Join(", ", incompatible.Select(c => $"'{c}' (U+{(int)c:X4})"))}");
+                }
+
                 var record = new StringDatabase
                 {
                     Offset = csv.GetField<uint>("Offset"),
                     Hash = csv.GetField<uint>("Hash"),
-                    EString = (csv.GetField("EString") ?? string.Empty)
-                        .Replace("\\r\\n", "\r\n")
-                        .Replace("\\n", "\n")
-                        .Replace("\\t", "\t")
-                        .Replace("\\\\", "\\")
+                    EString = eString
                 };
                 stringDatabase.Add(record);
             }

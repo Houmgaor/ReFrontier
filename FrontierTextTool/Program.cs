@@ -6,6 +6,8 @@ using System.Text;
 
 using FrontierTextTool.Services;
 
+using LibReFrontier;
+
 namespace FrontierTextTool
 {
     /// <summary>
@@ -13,9 +15,9 @@ namespace FrontierTextTool
     /// </summary>
     public class Program
     {
-        private readonly TextExtractionService _extractionService;
-        private readonly TextInsertionService _insertionService;
-        private readonly CsvMergeService _mergeService;
+        private TextExtractionService _extractionService;
+        private TextInsertionService _insertionService;
+        private CsvMergeService _mergeService;
 
         /// <summary>
         /// Create a new Program instance with default services.
@@ -36,6 +38,22 @@ namespace FrontierTextTool
             _extractionService = extractionService ?? throw new ArgumentNullException(nameof(extractionService));
             _insertionService = insertionService ?? throw new ArgumentNullException(nameof(insertionService));
             _mergeService = mergeService ?? throw new ArgumentNullException(nameof(mergeService));
+        }
+
+        /// <summary>
+        /// Update services with encoding options.
+        /// </summary>
+        private void UpdateServicesWithEncoding(CsvEncodingOptions encodingOptions)
+        {
+            _extractionService = new TextExtractionService(
+                new LibReFrontier.Abstractions.RealFileSystem(),
+                new LibReFrontier.Abstractions.ConsoleLogger(),
+                encodingOptions);
+            _mergeService = new CsvMergeService(
+                new LibReFrontier.Abstractions.RealFileSystem(),
+                new LibReFrontier.Abstractions.ConsoleLogger(),
+                encodingOptions);
+            // InsertionService only reads CSVs, auto-detects encoding, doesn't need options
         }
 
         /// <summary>
@@ -127,6 +145,11 @@ namespace FrontierTextTool
                 Description = "Close terminal after command"
             };
 
+            Option<bool> shiftJisOption = new("--shift-jis")
+            {
+                Description = "Output CSV files in Shift-JIS encoding (default: UTF-8 with BOM)"
+            };
+
             // Root command
             RootCommand rootCommand = new($"FrontierTextTool v{fileVersionAttribute} - Extract and edit text data")
             {
@@ -143,7 +166,8 @@ namespace FrontierTextTool
                 verboseOption,
                 trueOffsetsOption,
                 nullStringsOption,
-                closeOption
+                closeOption,
+                shiftJisOption
             };
 
             // Set handler
@@ -163,6 +187,11 @@ namespace FrontierTextTool
                 var trueOffsets = parseResult.GetValue(trueOffsetsOption);
                 var nullStrings = parseResult.GetValue(nullStringsOption);
                 var close = parseResult.GetValue(closeOption);
+                var shiftJis = parseResult.GetValue(shiftJisOption);
+
+                // Configure encoding options
+                var encodingOptions = shiftJis ? CsvEncodingOptions.ShiftJis : CsvEncodingOptions.Default;
+                program.UpdateServicesWithEncoding(encodingOptions);
 
                 // Count how many actions are specified
                 int actionCount = (fulldump ? 1 : 0) + (dump ? 1 : 0) + (insert ? 1 : 0) +

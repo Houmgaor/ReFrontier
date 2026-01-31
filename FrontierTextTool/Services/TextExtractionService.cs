@@ -18,12 +18,13 @@ namespace FrontierTextTool.Services
     {
         private readonly IFileSystem _fileSystem;
         private readonly ILogger _logger;
+        private readonly CsvEncodingOptions _encodingOptions;
 
         /// <summary>
         /// Create a new TextExtractionService with default dependencies.
         /// </summary>
         public TextExtractionService()
-            : this(new RealFileSystem(), new ConsoleLogger())
+            : this(new RealFileSystem(), new ConsoleLogger(), CsvEncodingOptions.Default)
         {
         }
 
@@ -31,9 +32,18 @@ namespace FrontierTextTool.Services
         /// Create a new TextExtractionService with injectable dependencies.
         /// </summary>
         public TextExtractionService(IFileSystem fileSystem, ILogger logger)
+            : this(fileSystem, logger, CsvEncodingOptions.Default)
+        {
+        }
+
+        /// <summary>
+        /// Create a new TextExtractionService with injectable dependencies and encoding options.
+        /// </summary>
+        public TextExtractionService(IFileSystem fileSystem, ILogger logger, CsvEncodingOptions encodingOptions)
         {
             _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _encodingOptions = encodingOptions ?? CsvEncodingOptions.Default;
         }
 
         /// <summary>
@@ -145,7 +155,7 @@ namespace FrontierTextTool.Services
             if (_fileSystem.FileExists(csvPath))
                 _fileSystem.DeleteFile(csvPath);
 
-            using var txtOutput = _fileSystem.CreateStreamWriter(csvPath, false, TextFileConfiguration.ShiftJisEncoding);
+            using var txtOutput = _fileSystem.CreateStreamWriter(csvPath, false, _encodingOptions.GetOutputEncoding());
             using var csvOutput = new CsvWriter(txtOutput, TextFileConfiguration.CreateJapaneseCsvConfig());
 
             csvOutput.WriteHeader<StringDatabase>();
