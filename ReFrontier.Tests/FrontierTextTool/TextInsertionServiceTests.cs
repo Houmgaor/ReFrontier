@@ -54,7 +54,7 @@ namespace ReFrontier.Tests.TextToolTests
         public void LoadCsvToStringDatabase_ReplacesTabMarker()
         {
             // Arrange
-            string csv = "Offset\tHash\tJString\tEString\n0\t123\tTest\tHello<TAB>World\n";
+            string csv = "Offset\tHash\tJString\tEString\n0\t123\tTest\tHello\\tWorld\n";
             _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
 
             // Act
@@ -69,7 +69,7 @@ namespace ReFrontier.Tests.TextToolTests
         public void LoadCsvToStringDatabase_ReplacesNewlineMarker()
         {
             // Arrange
-            string csv = "Offset\tHash\tJString\tEString\n0\t123\tTest\tLine1<NLINE>Line2\n";
+            string csv = "Offset\tHash\tJString\tEString\n0\t123\tTest\tLine1\\nLine2\n";
             _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
 
             // Act
@@ -84,7 +84,7 @@ namespace ReFrontier.Tests.TextToolTests
         public void LoadCsvToStringDatabase_ReplacesCarriageReturnMarker()
         {
             // Arrange
-            string csv = "Offset\tHash\tJString\tEString\n0\t123\tTest\tLine1<CLINE>Line2\n";
+            string csv = "Offset\tHash\tJString\tEString\n0\t123\tTest\tLine1\\r\\nLine2\n";
             _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
 
             // Act

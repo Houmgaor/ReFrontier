@@ -319,13 +319,17 @@ namespace FrontierDataTool.Services
         /// Read a null-terminated Shift-JIS string by following a pointer.
         /// </summary>
         /// <param name="br">Binary reader.</param>
-        /// <returns>Decoded string with newlines replaced by &lt;NL&gt;.</returns>
+        /// <returns>Decoded string with special characters escaped.</returns>
         public string StringFromPointer(BinaryReader br)
         {
             int off = br.ReadInt32();
             long pos = br.BaseStream.Position;
             br.BaseStream.Seek(off, SeekOrigin.Begin);
-            string str = FileOperations.ReadNullterminatedString(br, Encoding.GetEncoding("shift-jis")).Replace("\n", "<NL>");
+            string str = FileOperations.ReadNullterminatedString(br, Encoding.GetEncoding("shift-jis"))
+                .Replace("\\", "\\\\")
+                .Replace("\t", "\\t")
+                .Replace("\r\n", "\\r\\n")
+                .Replace("\n", "\\n");
             br.BaseStream.Seek(pos, SeekOrigin.Begin);
             return str;
         }

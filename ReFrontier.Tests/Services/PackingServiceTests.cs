@@ -281,7 +281,7 @@ namespace ReFrontier.Tests.Services
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             byte[] meta = CreateFtxtMeta(1);
             _fileSystem.AddFile("/test/file.ftxt.meta", meta);
-            _fileSystem.AddFile("/test/file.ftxt.txt", "Hello<NEWLINE>World");
+            _fileSystem.AddFile("/test/file.ftxt.txt", "Hello\\nWorld");
 
             // Act
             _service.PackFTXT("/test/file.ftxt.txt", "/test/file.ftxt.meta", false);

@@ -456,8 +456,12 @@ namespace ReFrontier.Services
 
             foreach (string line in lines)
             {
-                // Replace <NEWLINE> markers back to actual newlines
-                string processed = line.Replace("<NEWLINE>", "\n");
+                // Unescape special characters back to actual values
+                string processed = line
+                    .Replace("\\r\\n", "\r\n")
+                    .Replace("\\n", "\n")
+                    .Replace("\\t", "\t")
+                    .Replace("\\\\", "\\");
                 byte[] encoded = shiftJis.GetBytes(processed);
                 encodedStrings.Add(encoded);
             }

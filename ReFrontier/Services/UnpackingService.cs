@@ -546,7 +546,13 @@ namespace ReFrontier.Services
             for (int i = 0; i < stringCount; i++)
             {
                 string str = FileOperations.ReadNullterminatedString(brInput, Encoding.GetEncoding("shift-jis"));
-                txtOutput.WriteLine(str.Replace("\n", "<NEWLINE>"));
+                // Escape special characters for text file storage
+                string escaped = str
+                    .Replace("\\", "\\\\")
+                    .Replace("\t", "\\t")
+                    .Replace("\r\n", "\\r\\n")
+                    .Replace("\n", "\\n");
+                txtOutput.WriteLine(escaped);
             }
 
             txtOutput.Close();

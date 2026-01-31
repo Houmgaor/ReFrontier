@@ -67,9 +67,10 @@ namespace FrontierTextTool.Services
                     Offset = csv.GetField<uint>("Offset"),
                     Hash = csv.GetField<uint>("Hash"),
                     EString = (csv.GetField("EString") ?? string.Empty)
-                        .Replace("<TAB>", "\t")
-                        .Replace("<CLINE>", "\r\n")
-                        .Replace("<NLINE>", "\n")
+                        .Replace("\\r\\n", "\r\n")
+                        .Replace("\\n", "\n")
+                        .Replace("\\t", "\t")
+                        .Replace("\\\\", "\\")
                 };
                 stringDatabase.Add(record);
             }

@@ -80,7 +80,7 @@ namespace ReFrontier.Tests.TextToolTests
 
             // Assert
             Assert.Single(result);
-            Assert.Equal("Hello<TAB>World", result[0].JString);
+            Assert.Equal("Hello\\tWorld", result[0].JString);
         }
 
         [Fact]
@@ -97,7 +97,7 @@ namespace ReFrontier.Tests.TextToolTests
 
             // Assert
             Assert.Single(result);
-            Assert.Equal("Line1<NLINE>Line2", result[0].JString);
+            Assert.Equal("Line1\\nLine2", result[0].JString);
         }
 
         [Fact]
@@ -114,7 +114,7 @@ namespace ReFrontier.Tests.TextToolTests
 
             // Assert
             Assert.Single(result);
-            Assert.Equal("Line1<CLINE>Line2", result[0].JString);
+            Assert.Equal("Line1\\r\\nLine2", result[0].JString);
         }
 
         [Fact]

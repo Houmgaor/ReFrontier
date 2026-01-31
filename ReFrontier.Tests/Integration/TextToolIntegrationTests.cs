@@ -180,19 +180,19 @@ namespace ReFrontier.Tests.Integration
             var extracted = extractionService.DumpAndHashInternal(
                 "test.bin", originalData, br, 0, 0, false, false);
 
-            // Assert - Check markers
-            Assert.Equal("Tab<TAB>Test", extracted[0].JString);
-            Assert.Equal("Line1<NLINE>Line2", extracted[1].JString);
+            // Assert - Check escape sequences
+            Assert.Equal("Tab\\tTest", extracted[0].JString);
+            Assert.Equal("Line1\\nLine2", extracted[1].JString);
 
-            // Create string database with translations that have markers
+            // Create string database with translations that have escape sequences
             var csv = "Offset\tHash\tJString\tEString\n" +
-                      "0\t123\tTab<TAB>Test\tNew<TAB>Value\n";
+                      "0\t123\tTab\\tTest\tNew\\tValue\n";
             _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
 
             // Load and verify marker replacement
             var loaded = insertionService.LoadCsvToStringDatabase("/test/strings.csv");
 
-            Assert.Equal("New\tValue", loaded[0].EString); // TAB marker replaced with actual tab
+            Assert.Equal("New\tValue", loaded[0].EString); // \t escape replaced with actual tab
         }
 
         [Fact]
@@ -210,8 +210,8 @@ namespace ReFrontier.Tests.Integration
             var extracted = extractionService.DumpAndHashInternal(
                 "test.bin", originalData, br, 0, 0, false, false);
 
-            // Assert - CLINE marker used for \r\n
-            Assert.Equal("Line1<CLINE>Line2", extracted[0].JString);
+            // Assert - \r\n escape used for carriage return + newline
+            Assert.Equal("Line1\\r\\nLine2", extracted[0].JString);
         }
 
         #endregion

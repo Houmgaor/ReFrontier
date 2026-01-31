@@ -471,7 +471,7 @@ namespace ReFrontier.Tests.DataToolTests
 
             string result = _service.StringFromPointer(br);
 
-            Assert.Equal("Line1<NL>Line2", result);
+            Assert.Equal("Line1\\nLine2", result);
         }
 
         #endregion

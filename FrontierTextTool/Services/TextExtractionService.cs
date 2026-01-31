@@ -108,9 +108,10 @@ namespace FrontierTextTool.Services
                 }
 
                 string str = FileOperations.ReadNullterminatedString(brInput, TextFileConfiguration.ShiftJisEncoding)
-                    .Replace("\t", "<TAB>")
-                    .Replace("\r\n", "<CLINE>")
-                    .Replace("\n", "<NLINE>");
+                    .Replace("\\", "\\\\")
+                    .Replace("\t", "\\t")
+                    .Replace("\r\n", "\\r\\n")
+                    .Replace("\n", "\\n");
 
                 stringsDatabase.Add(new StringDatabase
                 {
