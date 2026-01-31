@@ -39,7 +39,7 @@ namespace ReFrontier.Tests.Services
             _fileSystem.AddFile("/test/file.bin", fullFile);
 
             // Act
-            string result = _service.DecryptEcdFile("/test/file.bin", createLog: false, cleanUp: false, rewriteOldFile: false);
+            string result = _service.DecryptEcdFile("/test/file.bin", createLog: false, cleanUp: false);
 
             // Assert
             TestHelpers.AssertPathsEqual("/test/file.bin.decd", result);
@@ -60,7 +60,7 @@ namespace ReFrontier.Tests.Services
             _fileSystem.AddFile("/test/file.bin", fullFile);
 
             // Act
-            _service.DecryptEcdFile("/test/file.bin", createLog: true, cleanUp: false, rewriteOldFile: false);
+            _service.DecryptEcdFile("/test/file.bin", createLog: true, cleanUp: false);
 
             // Assert
             Assert.True(_fileSystem.FileExists("/test/file.bin.meta"));
@@ -75,7 +75,7 @@ namespace ReFrontier.Tests.Services
             _fileSystem.AddFile("/test/file.bin", fullFile);
 
             // Act
-            _service.DecryptEcdFile("/test/file.bin", createLog: false, cleanUp: true, rewriteOldFile: false);
+            _service.DecryptEcdFile("/test/file.bin", createLog: false, cleanUp: true);
 
             // Assert
             Assert.False(_fileSystem.FileExists("/test/file.bin"));

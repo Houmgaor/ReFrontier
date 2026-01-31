@@ -34,10 +34,6 @@ namespace ReFrontier
         public bool ignoreJPK;
         public bool stageContainer;
         public bool autoStage;
-        /// <summary>
-        /// Rewrite files after decrypting, for compatibility
-        /// </summary>
-        public bool rewriteOldFile;
         public Compression compression;
         public int parallelism;
         public bool quiet;
@@ -59,7 +55,6 @@ namespace ReFrontier
                 && ignoreJPK == other.ignoreJPK
                 && stageContainer == other.stageContainer
                 && autoStage == other.autoStage
-                && rewriteOldFile == other.rewriteOldFile
                 && compression.Equals(other.compression)
                 && parallelism == other.parallelism
                 && quiet == other.quiet;
@@ -78,7 +73,6 @@ namespace ReFrontier
             hash.Add(ignoreJPK);
             hash.Add(stageContainer);
             hash.Add(autoStage);
-            hash.Add(rewriteOldFile);
             hash.Add(compression);
             hash.Add(parallelism);
             hash.Add(quiet);
@@ -149,7 +143,7 @@ namespace ReFrontier
             _fileRouter.RegisterHandler(new NoDecryptionHandler(_logger));
             _fileRouter.RegisterHandler(new EcdEncryptionHandler(_logger, _fileProcessingService));
             _fileRouter.RegisterHandler(new ExfEncryptionHandler(_logger, _fileProcessingService));
-            _fileRouter.RegisterHandler(new JkrCompressionHandler(_fileSystem, _logger, _unpackingService));
+            _fileRouter.RegisterHandler(new JkrCompressionHandler(_logger, _unpackingService));
             _fileRouter.RegisterHandler(new MomoArchiveHandler(_logger, _unpackingService));
             _fileRouter.RegisterHandler(new MhaArchiveHandler(_logger, _unpackingService));
             _fileRouter.RegisterHandler(new FtxtTextHandler(_logger, _unpackingService));

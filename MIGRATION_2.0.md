@@ -7,6 +7,7 @@ This guide covers breaking changes when upgrading from ReFrontier 1.x to 2.0.
 1. **Architecture**: Static methods replaced with dependency injection
 2. **CLI**: Custom argument parser replaced with System.CommandLine
 3. **Auto-preprocessing**: FrontierTextTool and FrontierDataTool now auto-detect encrypted/compressed files
+4. **File output behavior**: Removed `--noFileRewrite` option - files are no longer overwritten in place
 
 ## Architecture Changes
 
@@ -121,9 +122,24 @@ New service classes provide better separation of concerns:
 | `UnpackingService` | JPK decoding and archive unpacking |
 | `FilePreprocessor` | Auto-detect and preprocess files |
 
+## File Output Behavior
+
+In 1.x, decryption and decompression would overwrite the original file by default. The `--noFileRewrite` option was added to disable this behavior.
+
+In 2.0, the original file is **never** overwritten. Output always goes to a new file:
+
+| Operation | Input | Output |
+|-----------|-------|--------|
+| ECD Decryption | `file.bin` | `file.bin.decd` |
+| EXF Decryption | `file.bin` | `file.bin.dexf` |
+| JPK Decompression | `file.jkr` | `file.jkr.bin` (or similar) |
+
+This is safer and more predictable. If you relied on the old overwrite behavior, update your scripts to use the new output paths.
+
 ## Migration Checklist
 
 - [ ] Update any code using static methods to use service instances
 - [ ] Review CLI scripts for argument compatibility
 - [ ] Remove manual decrypt/decompress steps for FrontierTextTool/FrontierDataTool
 - [ ] Update any custom integrations to use the new DI pattern
+- [ ] Update scripts that relied on `--noFileRewrite` or in-place file modification

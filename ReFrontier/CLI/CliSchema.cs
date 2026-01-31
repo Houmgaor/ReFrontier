@@ -17,7 +17,6 @@ namespace ReFrontier.CLI
         private readonly Option<bool> _decryptOnlyOption;
         private readonly Option<bool> _noDecryptionOption;
         private readonly Option<bool> _ignoreJPKOption;
-        private readonly Option<bool> _noFileRewriteOption;
         private readonly Option<bool> _cleanUpOption;
         private readonly Option<bool> _packOption;
         private readonly Option<string?> _compressTypeOption;
@@ -72,11 +71,6 @@ namespace ReFrontier.CLI
             _ignoreJPKOption = new Option<bool>("--ignoreJPK")
             {
                 Description = "Do not decompress JPK files"
-            };
-
-            _noFileRewriteOption = new Option<bool>("--noFileRewrite")
-            {
-                Description = "Avoid rewriting original files"
             };
 
             _cleanUpOption = new Option<bool>("--cleanUp")
@@ -143,7 +137,6 @@ namespace ReFrontier.CLI
                 _decryptOnlyOption,
                 _noDecryptionOption,
                 _ignoreJPKOption,
-                _noFileRewriteOption,
                 _cleanUpOption,
                 _packOption,
                 _compressTypeOption,
@@ -172,7 +165,6 @@ namespace ReFrontier.CLI
             var decryptOnly = parseResult.GetValue(_decryptOnlyOption);
             var noDecryption = parseResult.GetValue(_noDecryptionOption);
             var ignoreJPK = parseResult.GetValue(_ignoreJPKOption);
-            var noFileRewrite = parseResult.GetValue(_noFileRewriteOption);
             var cleanUp = parseResult.GetValue(_cleanUpOption);
             var pack = parseResult.GetValue(_packOption);
             var compressType = parseResult.GetValue(_compressTypeOption);
@@ -208,7 +200,6 @@ namespace ReFrontier.CLI
                 ignoreJPK = ignoreJPK,
                 stageContainer = stageContainer,
                 autoStage = autoStage,
-                rewriteOldFile = !noFileRewrite,
                 compression = compression
             };
 

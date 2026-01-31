@@ -204,8 +204,7 @@ namespace ReFrontier.Tests.Integration
             string decryptedPath = _fileProcessingService.DecryptEcdFile(
                 "/test/encrypted.bin",
                 createLog: true,
-                cleanUp: false,
-                rewriteOldFile: false
+                cleanUp: false
             );
 
             // Assert: Data matches original
@@ -242,8 +241,7 @@ namespace ReFrontier.Tests.Integration
             string decryptedPath = _fileProcessingService.DecryptEcdFile(
                 "/test/to_decrypt.bin",
                 createLog: false,
-                cleanUp: false,
-                rewriteOldFile: false
+                cleanUp: false
             );
 
             // Assert
@@ -273,8 +271,7 @@ namespace ReFrontier.Tests.Integration
             string decryptedPath = _fileProcessingService.DecryptEcdFile(
                 "/test/to_decrypt.bin",
                 createLog: false,
-                cleanUp: false,
-                rewriteOldFile: false
+                cleanUp: false
             );
 
             // Assert
@@ -325,8 +322,7 @@ namespace ReFrontier.Tests.Integration
             string finalPath = _fileProcessingService.DecryptEcdFile(
                 "/test/to_decrypt.bin",
                 createLog: false,
-                cleanUp: false,
-                rewriteOldFile: false
+                cleanUp: false
             );
 
             // Assert: Final data matches original
@@ -363,8 +359,7 @@ namespace ReFrontier.Tests.Integration
             string decryptedPath = _fileProcessingService.DecryptEcdFile(
                 "/test/to_decrypt.bin",
                 createLog: false,
-                cleanUp: false,
-                rewriteOldFile: false
+                cleanUp: false
             );
             byte[] decryptedData = _fileSystem.ReadAllBytes(decryptedPath);
 

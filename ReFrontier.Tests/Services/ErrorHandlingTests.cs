@@ -372,7 +372,7 @@ namespace ReFrontier.Tests.Services
 
             // Act & Assert
             var ex = Assert.Throws<DecryptionException>(() =>
-                service.DecryptEcdFile("/test/small.ecd", false, false, false)
+                service.DecryptEcdFile("/test/small.ecd", false, false)
             );
             Assert.Equal("/test/small.ecd", ex.FilePath);
             Assert.Contains("too small", ex.Message);

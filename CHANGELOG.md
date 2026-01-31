@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **BREAKING**: Replaced custom argument parser with System.CommandLine library
 - **BREAKING**: Removed static methods and Lazy singletons in favor of instance methods
+- **BREAKING**: Removed `--noFileRewrite` CLI option and `rewriteOldFile` parameter - decrypted/decompressed files are now always written to new files (e.g., `.decd` suffix) instead of overwriting originals
 - FrontierTextTool and FrontierDataTool no longer require manual decryption/decompression of input files
 - Refactored `InputArguments` to a struct for easier debugging
 - Made `Program` class and methods public for testing

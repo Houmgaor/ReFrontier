@@ -113,10 +113,9 @@ namespace ReFrontier.Services
         /// <param name="inputFile">Input file path.</param>
         /// <param name="createLog">True if we should create a log file with the header.</param>
         /// <param name="cleanUp">true if the original file should be deleted.</param>
-        /// <param name="rewriteOldFile">Should we overwrite inputFile.</param>
         /// <returns>Path to the decrypted file, in the form inputFile.decd</returns>
         /// <exception cref="ReFrontierException">Thrown if decryption fails (e.g., invalid CRC32).</exception>
-        public string DecryptEcdFile(string inputFile, bool createLog, bool cleanUp, bool rewriteOldFile)
+        public string DecryptEcdFile(string inputFile, bool createLog, bool cleanUp)
         {
             byte[] buffer = _fileSystem.ReadAllBytes(inputFile);
             try
@@ -140,16 +139,7 @@ namespace ReFrontier.Services
                 _logger.Write($", log file at {metaFile}");
             }
             _logger.Write(".\n");
-            if (rewriteOldFile)
-            {
-                _fileSystem.WriteAllBytes(inputFile, bufferStripped);
-                _logger.WriteLine(
-                    $"Rewriting original file {inputFile}. " +
-                    "This behavior is deprecated and will be removed in 2.0.0. " +
-                    "Use --noFileRewrite to remove this warning."
-                );
-            }
-            else if (cleanUp)
+            if (cleanUp)
                 _fileSystem.DeleteFile(inputFile);
 
             return outputFile;
