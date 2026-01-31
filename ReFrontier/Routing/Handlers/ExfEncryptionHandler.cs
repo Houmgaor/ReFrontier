@@ -40,7 +40,7 @@ namespace ReFrontier.Routing.Handlers
         {
             if (!args.quiet)
                 _logger.WriteLine("EXF Header detected.");
-            var outputPath = _fileProcessingService.DecryptExfFile(filePath, args.cleanUp);
+            var outputPath = _fileProcessingService.DecryptExfFile(filePath, args.cleanUp, args.quiet);
             return ProcessFileResult.Success(outputPath);
         }
     }

@@ -48,7 +48,8 @@ namespace ReFrontier.Routing.Handlers
                 4, // Skip 4-byte header
                 args.createLog,
                 args.cleanUp,
-                args.autoStage
+                args.autoStage,
+                args.quiet
             );
             return ProcessFileResult.Success(outputPath);
         }

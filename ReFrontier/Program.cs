@@ -260,7 +260,7 @@ namespace ReFrontier
                     Path.GetDirectoryName(filePath),
                     Path.GetFileNameWithoutExtension(decompressedFilePath) + _config.MetaSuffix
                 );
-                _fileProcessingService.EncryptEcdFile(decompressedFilePath, metaFilePath, inputArguments.cleanUp);
+                _fileProcessingService.EncryptEcdFile(decompressedFilePath, metaFilePath, inputArguments.cleanUp, inputArguments.quiet);
             }
 
             // Try to depack the file as multiple files

@@ -42,7 +42,8 @@ namespace ReFrontier.Routing.Handlers
                 filePath,
                 reader,
                 args.createLog,
-                args.cleanUp
+                args.cleanUp,
+                args.quiet
             );
             return ProcessFileResult.Success(outputPath);
         }

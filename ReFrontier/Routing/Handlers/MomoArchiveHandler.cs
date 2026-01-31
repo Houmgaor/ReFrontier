@@ -46,7 +46,8 @@ namespace ReFrontier.Routing.Handlers
                 8, // Skip 8-byte MOMO header
                 args.createLog,
                 args.cleanUp,
-                args.autoStage
+                args.autoStage,
+                args.quiet
             );
             return ProcessFileResult.Success(outputPath);
         }

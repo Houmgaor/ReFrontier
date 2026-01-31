@@ -45,7 +45,8 @@ namespace ReFrontier.Routing.Handlers
             var outputPath = _fileProcessingService.DecryptEcdFile(
                 filePath,
                 args.createLog,
-                args.cleanUp
+                args.cleanUp,
+                args.quiet
             );
 
             return ProcessFileResult.Success(outputPath);

@@ -66,10 +66,11 @@ namespace ReFrontier.Services
         /// <param name="inputFile">Input file to encrypt.</param>
         /// <param name="metaFile">Data to use for encryption.</param>
         /// <param name="cleanUp">Remove both inputFile and metaFile.</param>
+        /// <param name="quiet">Suppress progress output.</param>
         /// <returns>Encrypted file path.</returns>
         /// <exception cref="FileNotFoundException">Thrown if the meta file does not exist.</exception>
         /// <exception cref="ReFrontierException">Thrown if encryption fails.</exception>
-        public string EncryptEcdFile(string inputFile, string metaFile, bool cleanUp)
+        public string EncryptEcdFile(string inputFile, string metaFile, bool cleanUp, bool quiet = false)
         {
             byte[] buffer = _fileSystem.ReadAllBytes(inputFile);
             // From mhfdat.bin.decd to mhdat.bin
@@ -97,7 +98,8 @@ namespace ReFrontier.Services
                 throw ex.WithFilePath(inputFile);
             }
             _fileSystem.WriteAllBytes(encryptedFilePath, buffer);
-            _logger.PrintWithSeparator($"File encrypted to {encryptedFilePath}.", false);
+            if (!quiet)
+                _logger.PrintWithSeparator($"File encrypted to {encryptedFilePath}.", false);
             _fileOperations.GetUpdateEntryInstance(inputFile);
             if (cleanUp)
             {
@@ -113,9 +115,10 @@ namespace ReFrontier.Services
         /// <param name="inputFile">Input file path.</param>
         /// <param name="createLog">True if we should create a log file with the header.</param>
         /// <param name="cleanUp">true if the original file should be deleted.</param>
+        /// <param name="quiet">Suppress progress output.</param>
         /// <returns>Path to the decrypted file, in the form inputFile.decd</returns>
         /// <exception cref="ReFrontierException">Thrown if decryption fails (e.g., invalid CRC32).</exception>
-        public string DecryptEcdFile(string inputFile, bool createLog, bool cleanUp)
+        public string DecryptEcdFile(string inputFile, bool createLog, bool cleanUp, bool quiet = false)
         {
             byte[] buffer = _fileSystem.ReadAllBytes(inputFile);
             try
@@ -131,14 +134,23 @@ namespace ReFrontier.Services
 
             string outputFile = inputFile + _config.DecryptedSuffix;
             _fileSystem.WriteAllBytes(outputFile, bufferStripped);
-            _logger.Write($"File decrypted to {outputFile}");
-            if (createLog)
+            if (!quiet)
             {
+                _logger.Write($"File decrypted to {outputFile}");
+                if (createLog)
+                {
+                    string metaFile = $"{inputFile}{_config.MetaSuffix}";
+                    _fileSystem.WriteAllBytes(metaFile, ecdHeader);
+                    _logger.Write($", log file at {metaFile}");
+                }
+                _logger.Write(".\n");
+            }
+            else if (createLog)
+            {
+                // Still need to write the meta file even in quiet mode
                 string metaFile = $"{inputFile}{_config.MetaSuffix}";
                 _fileSystem.WriteAllBytes(metaFile, ecdHeader);
-                _logger.Write($", log file at {metaFile}");
             }
-            _logger.Write(".\n");
             if (cleanUp)
                 _fileSystem.DeleteFile(inputFile);
 
@@ -150,9 +162,10 @@ namespace ReFrontier.Services
         /// </summary>
         /// <param name="inputFile">Input file path.</param>
         /// <param name="cleanUp">Should the original file be removed.</param>
+        /// <param name="quiet">Suppress progress output.</param>
         /// <returns>Output file at {inputFile}.dexf</returns>
         /// <exception cref="ReFrontierException">Thrown if decryption fails.</exception>
-        public string DecryptExfFile(string inputFile, bool cleanUp)
+        public string DecryptExfFile(string inputFile, bool cleanUp, bool quiet = false)
         {
             byte[] buffer = _fileSystem.ReadAllBytes(inputFile);
             try
@@ -168,7 +181,8 @@ namespace ReFrontier.Services
             _fileSystem.WriteAllBytes(outputFile, bufferStripped);
             if (cleanUp)
                 _fileSystem.DeleteFile(inputFile);
-            _logger.WriteLine($"File decrypted to {outputFile}.");
+            if (!quiet)
+                _logger.WriteLine($"File decrypted to {outputFile}.");
             return outputFile;
         }
     }

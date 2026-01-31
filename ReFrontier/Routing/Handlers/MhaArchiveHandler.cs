@@ -40,7 +40,7 @@ namespace ReFrontier.Routing.Handlers
         {
             if (!args.quiet)
                 _logger.WriteLine("MHA Header detected.");
-            var outputPath = _unpackingService.UnpackMHA(filePath, reader, args.createLog);
+            var outputPath = _unpackingService.UnpackMHA(filePath, reader, args.createLog, args.quiet);
             return ProcessFileResult.Success(outputPath);
         }
     }
