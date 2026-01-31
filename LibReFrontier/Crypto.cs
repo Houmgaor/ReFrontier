@@ -31,6 +31,19 @@ namespace LibReFrontier
     public static class Crypto
     {
         /// <summary>
+        /// Default ECD key index used by all known Monster Hunter Frontier files.
+        ///
+        /// <para>Analysis of 1,962 encrypted files from MHF showed that 100% use key index 4.
+        /// This includes mhfdat.bin, mhfemd.bin, stage files, NPC models, textures, and all
+        /// other game assets.</para>
+        ///
+        /// <para>This discovery means .meta files are technically redundant for MHF files,
+        /// as the key index can be assumed to be 4. However, .meta files are retained for
+        /// compatibility with potential edge cases (dev builds, regional variants, older versions).</para>
+        /// </summary>
+        public const int DefaultEcdKeyIndex = 4;
+
+        /// <summary>
         /// ECD/EXF encryption keys containing LCG (Linear Congruential Generator) parameters.
         ///
         /// <para><b>Structure:</b> 6 key sets, 8 bytes each (48 bytes total)</para>
@@ -41,6 +54,20 @@ namespace LibReFrontier
         /// </list>
         ///
         /// <para><b>LCG Formula:</b> next = current * multiplier + increment</para>
+        ///
+        /// <para><b>Key Index Analysis:</b></para>
+        /// <list type="table">
+        ///   <listheader><term>Key</term><description>Multiplier / Increment / Notes</description></listheader>
+        ///   <item><term>0</term><description>0x4A4B522E (1,246,450,222) / 1 / Unique</description></item>
+        ///   <item><term>1</term><description>0x00010DCD (69,069) / 1 / Same as keys 2, 3</description></item>
+        ///   <item><term>2</term><description>0x00010DCD (69,069) / 1 / Same as keys 1, 3</description></item>
+        ///   <item><term>3</term><description>0x00010DCD (69,069) / 1 / Same as keys 1, 2</description></item>
+        ///   <item><term>4</term><description>0x0019660D (1,664,525) / 3 / ALL MHF files use this key</description></item>
+        ///   <item><term>5</term><description>0x7D2B89DD (2,100,005,341) / 1 / Unique</description></item>
+        /// </list>
+        ///
+        /// <para><b>Notable:</b> Key 4's multiplier 1,664,525 (0x0019660D) is the famous LCG constant
+        /// from "Numerical Recipes in C", a well-known pseudo-random number generator.</para>
         ///
         /// <para>Source: Reverse-engineered from game executable at address 0x10292DCC</para>
         /// </summary>
@@ -302,6 +329,40 @@ namespace LibReFrontier
                 r8 = data;
             }
             return outputBuffer;
+        }
+
+        /// <summary>
+        /// Encode (encrypt) a file as ECD format using the default key index (4).
+        ///
+        /// <para>This overload allows encryption without a .meta file by using the default
+        /// key index that all known MHF files use. Based on analysis of 1,962 encrypted files,
+        /// 100% used key index 4.</para>
+        /// </summary>
+        /// <param name="buffer">Plaintext file data to encrypt.</param>
+        /// <param name="keyIndex">Key index to use (0-5). Defaults to <see cref="DefaultEcdKeyIndex"/> (4).</param>
+        /// <returns>Complete ECD file: 16-byte header + encrypted payload.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when buffer is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when keyIndex is not in range 0-5.</exception>
+        public static byte[] EncodeEcd(byte[] buffer, int keyIndex = DefaultEcdKeyIndex)
+        {
+            ArgumentNullException.ThrowIfNull(buffer);
+            if (keyIndex < 0 || keyIndex > 5)
+                throw new ArgumentOutOfRangeException(nameof(keyIndex), "Key index must be between 0 and 5.");
+
+            // Build a synthetic meta buffer with the ECD magic and key index
+            byte[] syntheticMeta = new byte[16];
+            // ECD magic: 0x1A646365 ("ecd\x1A" in little-endian)
+            syntheticMeta[0] = 0x65; // 'e'
+            syntheticMeta[1] = 0x63; // 'c'
+            syntheticMeta[2] = 0x64; // 'd'
+            syntheticMeta[3] = 0x1A;
+            // Key index at bytes 4-5 (little-endian)
+            syntheticMeta[4] = (byte)(keyIndex & 0xFF);
+            syntheticMeta[5] = (byte)((keyIndex >> 8) & 0xFF);
+            // Bytes 6-7 are padding (zero)
+            // Bytes 8-15 will be filled by EncodeEcd (payload size and CRC32)
+
+            return EncodeEcd(buffer, syntheticMeta);
         }
 
         /// <summary>

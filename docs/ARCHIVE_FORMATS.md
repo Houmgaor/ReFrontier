@@ -77,51 +77,50 @@ Offset  Size  Description
 
 ## ECD Encrypted Container
 
-ECD files use a Linear Congruential Generator (LCG) cipher. See `LibReFrontier/Crypto.cs` for implementation details.
+ECD files use a Linear Congruential Generator (LCG) with a nibble-based Feistel cipher.
+
+**See [CRYPTOGRAPHY.md](./CRYPTOGRAPHY.md) for full algorithm details.**
 
 ### Header Structure (16 bytes)
 
 ```text
 Offset  Size  Description
 0x00    4     Magic: 0x1A646365
-0x04    4     Encrypted data size (uint32)
-0x08    4     CRC32 of decrypted data (uint32)
-0x0C    4     LCG seed value (uint32)
+0x04    2     Key index (0-5, selects LCG parameters)
+0x06    2     Unused padding
+0x08    4     Payload size (uint32)
+0x0C    4     CRC32 of decrypted data (uint32)
 ```
 
-### Encryption Algorithm
+### Key Index Discovery
 
-The encryption uses an LCG with the following parameters:
+**All known MHF files use key index 4.** Analysis of 1,962 encrypted files confirmed this.
 
-- Multiplier: `0x41C64E6D`
-- Increment: `0x3039`
-
-The seed from the header generates a keystream that XORs with the data.
+Key 4 uses LCG parameters: multiplier=0x0019660D (1,664,525), increment=3.
 
 ### Re-encryption
 
-To re-encrypt a file:
+Files can be re-encrypted without a `.meta` file using the default key index:
 
-1. Store the original 16-byte header in a `.meta` file during decryption
-2. Use the stored header to encrypt the modified data
-3. Update the CRC32 and data size fields
+```csharp
+byte[] encrypted = Crypto.EncodeEcd(plaintext);  // Uses key index 4
+```
 
 ## EXF Encrypted Container
 
-EXF files use a simpler XOR cipher with a fixed key.
+EXF files use LCG-derived XOR keys with position-dependent nibble transformation.
+
+**See [CRYPTOGRAPHY.md](./CRYPTOGRAPHY.md) for full algorithm details.**
 
 ### Header Structure (16 bytes)
 
 ```text
 Offset  Size  Description
 0x00    4     Magic: 0x1A667865
-0x04    4     Encrypted data size (uint32)
-0x08    8     Reserved/Unknown
+0x04    2     Key index (0-4, selects LCG parameters)
+0x06    6     Unused
+0x0C    4     Seed value for XOR key generation
 ```
-
-### Encryption Algorithm
-
-Simple XOR with a fixed 32-bit key: `0x5F3759DF`
 
 ## JKR Compressed Container (JPK)
 

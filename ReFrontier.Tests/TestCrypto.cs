@@ -161,6 +161,101 @@ namespace ReFrontier.Tests
 
         #endregion
 
+        #region ECD Encoding Without Meta Tests
+
+        [Fact]
+        public void EncodeEcd_WithoutMeta_UsesDefaultKeyIndex()
+        {
+            byte[] original = TestHelpers.RandomData(64, seed: 1234);
+
+            // Encode using default key index (should be 4)
+            byte[] encoded = Crypto.EncodeEcd(original);
+
+            // Verify header has correct magic
+            uint magic = BitConverter.ToUInt32(encoded, 0);
+            Assert.Equal(0x1A646365u, magic);
+
+            // Verify key index is 4 (default)
+            ushort keyIndex = BitConverter.ToUInt16(encoded, 4);
+            Assert.Equal(Crypto.DefaultEcdKeyIndex, keyIndex);
+        }
+
+        [Fact]
+        public void EncodeEcd_WithoutMeta_RoundTrip_Works()
+        {
+            byte[] original = TestHelpers.RandomData(256, seed: 5678);
+
+            // Encode using default key index
+            byte[] encoded = Crypto.EncodeEcd(original);
+
+            // Decode
+            Crypto.DecodeEcd(encoded);
+
+            // Extract and verify payload
+            byte[] decoded = new byte[original.Length];
+            Array.Copy(encoded, 16, decoded, 0, original.Length);
+
+            TestHelpers.AssertBytesEqual(original, decoded, "ECD without-meta round-trip");
+        }
+
+        [Fact]
+        public void EncodeEcd_WithExplicitKeyIndex_RoundTrip_Works()
+        {
+            byte[] original = TestHelpers.RandomData(128, seed: 9012);
+
+            // Encode using explicit key index 3
+            byte[] encoded = Crypto.EncodeEcd(original, keyIndex: 3);
+
+            // Verify key index is 3
+            ushort keyIndex = BitConverter.ToUInt16(encoded, 4);
+            Assert.Equal(3, keyIndex);
+
+            // Decode
+            Crypto.DecodeEcd(encoded);
+
+            // Extract and verify payload
+            byte[] decoded = new byte[original.Length];
+            Array.Copy(encoded, 16, decoded, 0, original.Length);
+
+            TestHelpers.AssertBytesEqual(original, decoded, "ECD explicit key index round-trip");
+        }
+
+        [Fact]
+        public void EncodeEcd_WithoutMeta_MatchesMetaVersion()
+        {
+            byte[] original = TestHelpers.RandomData(100, seed: 3456);
+
+            // Encode using the new no-meta overload
+            byte[] encodedNoMeta = Crypto.EncodeEcd(original);
+
+            // Encode using the original meta-based method with key index 4
+            byte[] meta = CreateEcdMeta(Crypto.DefaultEcdKeyIndex);
+            byte[] encodedWithMeta = Crypto.EncodeEcd(original, meta);
+
+            // Both should produce identical output
+            TestHelpers.AssertBytesEqual(encodedWithMeta, encodedNoMeta, "No-meta matches meta version");
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(6)]
+        [InlineData(100)]
+        public void EncodeEcd_InvalidKeyIndex_ThrowsArgumentOutOfRange(int invalidKeyIndex)
+        {
+            byte[] data = TestHelpers.RandomData(32, seed: 111);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => Crypto.EncodeEcd(data, invalidKeyIndex));
+        }
+
+        [Fact]
+        public void DefaultEcdKeyIndex_IsFour()
+        {
+            // Document the discovery that all MHF files use key index 4
+            Assert.Equal(4, Crypto.DefaultEcdKeyIndex);
+        }
+
+        #endregion
+
         #region EXF Decoding Tests
 
         [Fact]
