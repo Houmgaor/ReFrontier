@@ -148,7 +148,7 @@ namespace ReFrontier.Orchestration
             if (!Console.IsOutputRedirected && !processingArgs.quiet)
             {
                 AnsiConsole.Progress()
-                    .AutoClear(true)
+                    .AutoClear(false)
                     .HideCompleted(false)
                     .Columns(
                         new TaskDescriptionColumn(),

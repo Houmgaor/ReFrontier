@@ -45,7 +45,6 @@ For installation and quick start, see the [main README](../README.md).
 
 | Option | Description |
 |--------|-------------|
-| `--close` | Close terminal after execution |
 | `--cleanUp` | Delete intermediate/original files |
 | `--help` | Show help message |
 | `--version` | Show version |

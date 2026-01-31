@@ -88,5 +88,4 @@ Fix encoding issues from CAT tools:
 | `--merge` | Merge two CSV files |
 | `--cleanTrados` | Fix CAT tool encoding |
 | `--insertCAT` | Insert CAT file into CSV |
-| `--close` | Close terminal after execution |
 | `--help` | Show help |

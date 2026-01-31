@@ -31,7 +31,6 @@ namespace ReFrontier.Tests.CLI
 
             Assert.Equal("test.bin", cliArgs.FilePath);
             Assert.True(cliArgs.ProcessingArgs.createLog);
-            Assert.False(cliArgs.CloseAfterCompletion);
         }
 
         [Fact]

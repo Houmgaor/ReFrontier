@@ -201,11 +201,6 @@ namespace ReFrontier
                     Console.Error.WriteLine($"Error: {ex.Message}");
                     exitCode = 1;
                 }
-                finally
-                {
-                    if (!cliArgs.CloseAfterCompletion)
-                        Console.Read();
-                }
                 return exitCode;
             });
 

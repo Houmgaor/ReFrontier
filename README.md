@@ -61,7 +61,6 @@ For detailed command reference, see [ReFrontier/README.md](./ReFrontier/README.m
 | Option | Description |
 |--------|-------------|
 | `--help` | Display CLI help |
-| `--close` | Close terminal after execution |
 | `--log` | Generate `.meta` file (required for re-encryption) |
 | `--cleanUp` | Delete intermediate files |
 

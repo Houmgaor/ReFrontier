@@ -16,11 +16,6 @@ namespace ReFrontier.CLI
         public InputArguments ProcessingArgs { get; init; }
 
         /// <summary>
-        /// Whether to close the application window after completion.
-        /// </summary>
-        public bool CloseAfterCompletion { get; init; }
-
-        /// <summary>
         /// Number of parallel threads to use (0 = auto-detect).
         /// </summary>
         public int Parallelism { get; init; }

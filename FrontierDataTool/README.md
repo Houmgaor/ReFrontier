@@ -86,5 +86,4 @@ Adjust shop prices in `mhfdat.bin` (buy price / 50, sell price * 5):
 | `--mhfdat <file>` | Path to mhfdat.bin |
 | `--mhfpac <file>` | Path to mhfpac.bin |
 | `--mhfinf <file>` | Path to mhfinf.bin |
-| `--close` | Close terminal after execution |
 | `--help` | Show help |

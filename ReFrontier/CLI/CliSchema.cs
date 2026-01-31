@@ -22,7 +22,6 @@ namespace ReFrontier.CLI
         private readonly Option<string?> _compressTypeOption;
         private readonly Option<int> _compressLevelOption;
         private readonly Option<bool> _encryptOption;
-        private readonly Option<bool> _closeOption;
         private readonly Option<int> _parallelismOption;
         private readonly Option<bool> _quietOption;
 
@@ -100,12 +99,6 @@ namespace ReFrontier.CLI
                 Description = "Encrypt input file with ECD algorithm"
             };
 
-            // General options
-            _closeOption = new Option<bool>("--close")
-            {
-                Description = "Close window after finishing process"
-            };
-
             _parallelismOption = new Option<int>("--parallelism")
             {
                 Description = "Number of parallel threads (0 = auto-detect, default: 0)",
@@ -142,7 +135,6 @@ namespace ReFrontier.CLI
                 _compressTypeOption,
                 _compressLevelOption,
                 _encryptOption,
-                _closeOption,
                 _parallelismOption,
                 _quietOption
             };
@@ -170,7 +162,6 @@ namespace ReFrontier.CLI
             var compressType = parseResult.GetValue(_compressTypeOption);
             var compressLevel = parseResult.GetValue(_compressLevelOption);
             var encrypt = parseResult.GetValue(_encryptOption);
-            var close = parseResult.GetValue(_closeOption);
             var parallelism = parseResult.GetValue(_parallelismOption);
             var quiet = parseResult.GetValue(_quietOption);
 
@@ -207,7 +198,6 @@ namespace ReFrontier.CLI
             {
                 FilePath = file,
                 ProcessingArgs = processingArgs,
-                CloseAfterCompletion = close,
                 Parallelism = parallelism,
                 Quiet = quiet
             };
