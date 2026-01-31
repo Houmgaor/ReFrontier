@@ -142,8 +142,17 @@ namespace ReFrontier
         /// </summary>
         private void RegisterHandlers()
         {
-            // Register MOMO handler as proof-of-concept
+            // Register handlers in order (priority is set in each handler)
+            // Higher priority handlers are checked first for same magic number
+            _fileRouter.RegisterHandler(new StageContainerHandler(_logger, _unpackingService));
+            _fileRouter.RegisterHandler(new NoDecryptionHandler(_logger));
+            _fileRouter.RegisterHandler(new EcdEncryptionHandler(_logger, _fileProcessingService));
+            _fileRouter.RegisterHandler(new ExfEncryptionHandler(_logger, _fileProcessingService));
+            _fileRouter.RegisterHandler(new JkrCompressionHandler(_fileSystem, _logger, _unpackingService));
             _fileRouter.RegisterHandler(new MomoArchiveHandler(_logger, _unpackingService));
+            _fileRouter.RegisterHandler(new MhaArchiveHandler(_logger, _unpackingService));
+            _fileRouter.RegisterHandler(new FtxtTextHandler(_logger, _unpackingService));
+            _fileRouter.RegisterHandler(new SimpleArchiveHandler(_logger, _unpackingService));
         }
 
         /// <summary>
@@ -287,88 +296,16 @@ namespace ReFrontier
             }
             uint fileMagic = brInput.ReadUInt32();
 
-            // Try router first
+            // Route file to appropriate handler
             brInput.BaseStream.Seek(0, SeekOrigin.Begin);
             var routerResult = _fileRouter.Route(filePath, fileMagic, brInput, inputArguments);
-            if (routerResult.WasProcessed)
-            {
-                outputPath = routerResult.OutputPath!;
-            }
-            // Since stage containers have no file magic, check for them first
-            else if (inputArguments.stageContainer)
-            {
-                brInput.BaseStream.Seek(0, SeekOrigin.Begin);
-                outputPath = _unpackingService.UnpackStageContainer(filePath, brInput, inputArguments.createLog, inputArguments.cleanUp);
-            }
-            // MOMO handled by router now - this branch should not be reached
-            else if (fileMagic == FileMagic.MOMO)
-            {
-                // MOMO Header: snp, snd
-                _logger.WriteLine("MOMO Header detected (fallback).");
-                outputPath = _unpackingService.UnpackSimpleArchive(
-                    filePath, brInput, 8, inputArguments.createLog, inputArguments.cleanUp, inputArguments.autoStage
-                );
-            }
-            else if (fileMagic == FileMagic.ECD)
-            {
-                // ECD Header
-                _logger.WriteLine("ECD Header detected.");
-                if (inputArguments.noDecryption)
-                {
-                    _logger.PrintWithSeparator("Not decrypting due to flag.", false);
-                    return ProcessFileResult.Skipped("Decryption disabled");
-                }
-                outputPath = _fileProcessingService.DecryptEcdFile(
-                    filePath,
-                    inputArguments.createLog,
-                    inputArguments.cleanUp,
-                    inputArguments.rewriteOldFile
-                );
-            }
-            else if (fileMagic == FileMagic.EXF)
-            {
-                // EXF Header
-                _logger.WriteLine("EXF Header detected.");
-                outputPath = _fileProcessingService.DecryptExfFile(filePath, inputArguments.cleanUp);
-            }
-            else if (fileMagic == FileMagic.JKR)
-            {
-                // JKR Header
-                _logger.WriteLine("JKR Header detected.");
-                outputPath = filePath;
-                if (!inputArguments.ignoreJPK)
-                {
-                    outputPath = _unpackingService.UnpackJPK(filePath);
-                    _logger.WriteLine($"File decompressed to {outputPath}.");
 
-                    // Replace input file, deprecated behavior, will be removed in 2.0.0
-                    if (
-                        inputArguments.rewriteOldFile && outputPath != filePath &&
-                        _fileSystem.GetAttributes(outputPath).HasFlag(FileAttributes.Normal)
-                    )
-                        _fileSystem.Copy(outputPath, filePath);
-                }
-            }
-            else if (fileMagic == FileMagic.MHA)
+            if (!routerResult.WasProcessed)
             {
-                // MHA Header
-                _logger.WriteLine("MHA Header detected.");
-                outputPath = _unpackingService.UnpackMHA(filePath, brInput, inputArguments.createLog);
+                return routerResult; // Return skip result if no handler found
             }
-            else if (fileMagic == FileMagic.FTXT)
-            {
-                // MHF Text file
-                _logger.WriteLine("MHF Text file detected.");
-                outputPath = _unpackingService.PrintFTXT(filePath, brInput);
-            }
-            else
-            {
-                // Try to unpack as simple container: i.e. txb, bin, pac, gab
-                brInput.BaseStream.Seek(0, SeekOrigin.Begin);
-                outputPath = _unpackingService.UnpackSimpleArchive(
-                    filePath, brInput, 4, inputArguments.createLog, inputArguments.cleanUp, inputArguments.autoStage
-                );
-            }
+
+            outputPath = routerResult.OutputPath!;
 
             _logger.WriteSeparator();
             // Decompress file if it was an ECD (encrypted)
