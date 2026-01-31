@@ -232,7 +232,7 @@ namespace ReFrontier.Services
                 throw new FileNotFoundException(
                     $"META file {metaFile} does not exist, " +
                     $"cannot encrypt {inputFile}. " +
-                    "Make sure to decrypt the initial file with the --log option, " +
+                    "Make sure to decrypt the initial file with the --saveMeta option, " +
                     "and to place the generated meta file in the same folder as the file " +
                     "to encrypt."
                 );

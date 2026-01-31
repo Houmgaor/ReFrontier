@@ -14,7 +14,7 @@ For installation and quick start, see the [main README](../README.md).
 
 | Option | Description |
 |--------|-------------|
-| `--log` | Generate `.meta` file (required for re-encryption) |
+| `--saveMeta` | Save metadata files (required for repacking/re-encryption) |
 | `--decryptOnly` | Decrypt without decompressing |
 | `--noDecryption` | Skip decryption entirely |
 
@@ -54,13 +54,13 @@ For installation and quick start, see the [main README](../README.md).
 ### Decrypt and decompress a file
 
 ```shell
-./ReFrontier mhfdat.bin --log
+./ReFrontier mhfdat.bin --saveMeta
 ```
 
 ### Decrypt only (preserve compression)
 
 ```shell
-./ReFrontier mhfdat.bin --log --decryptOnly
+./ReFrontier mhfdat.bin --saveMeta --decryptOnly
 ```
 
 ### Compress with LZ at level 50
@@ -78,7 +78,7 @@ For installation and quick start, see the [main README](../README.md).
 ### Unpack a folder recursively
 
 ```shell
-./ReFrontier dat_folder/ --log
+./ReFrontier dat_folder/ --saveMeta
 ```
 
 ### Repack a directory

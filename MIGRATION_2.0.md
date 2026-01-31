@@ -8,6 +8,8 @@ This guide covers breaking changes when upgrading from ReFrontier 1.x to 2.0.
 2. **CLI**: Custom argument parser replaced with System.CommandLine
 3. **Auto-preprocessing**: FrontierTextTool and FrontierDataTool now auto-detect encrypted/compressed files
 4. **File output behavior**: Removed `--noFileRewrite` option - files are no longer overwritten in place
+5. **CLI option renamed**: `--log` renamed to `--saveMeta` for clarity
+6. **CLI option removed**: `--close` removed - program now always exits immediately
 
 ## Architecture Changes
 
@@ -60,18 +62,18 @@ The CLI now uses System.CommandLine for argument parsing.
 ### ReFrontier CLI
 
 ```bash
-# 1.x syntax (still works)
+# 1.x syntax
 ./ReFrontier mhfdat.bin --log --recursive
 
-# 2.0 preferred syntax
-./ReFrontier mhfdat.bin --log --recursive
+# 2.0 syntax (--log renamed to --saveMeta)
+./ReFrontier mhfdat.bin --saveMeta --recursive
 ```
 
 Most CLI arguments remain compatible. Key options:
 
 | Option | Description |
 |--------|-------------|
-| `--log` | Generate metadata for re-encryption |
+| `--saveMeta` | Save metadata files for repacking/re-encryption (was `--log`) |
 | `--recursive` / `--nonRecursive` | Control recursive unpacking |
 | `--compress=<type>,<level>` | Compress with specified type (0-4) and level |
 | `--encrypt` | Encrypt output file |
@@ -111,6 +113,24 @@ FrontierTextTool and FrontierDataTool now automatically handle encrypted (ECD/EX
 ./FrontierTextTool extract mhfdat.bin --output texts.csv
 ```
 
+## CLI Option Changes
+
+### Renamed: `--log` → `--saveMeta`
+
+The `--log` option has been renamed to `--saveMeta` to better describe its purpose: saving metadata files (`.meta` and `.log`) required for repacking and re-encryption.
+
+```bash
+# Before (1.x)
+./ReFrontier mhfdat.bin --log
+
+# After (2.0)
+./ReFrontier mhfdat.bin --saveMeta
+```
+
+### Removed: `--close`
+
+The `--close` option has been removed. The program now always exits immediately after completion. This was legacy behavior for Windows GUI usage that is no longer needed for a CLI tool.
+
 ## Service Layer
 
 New service classes provide better separation of concerns:
@@ -143,3 +163,5 @@ This is safer and more predictable. If you relied on the old overwrite behavior,
 - [ ] Remove manual decrypt/decompress steps for FrontierTextTool/FrontierDataTool
 - [ ] Update any custom integrations to use the new DI pattern
 - [ ] Update scripts that relied on `--noFileRewrite` or in-place file modification
+- [ ] Replace `--log` with `--saveMeta` in all scripts
+- [ ] Remove `--close` from scripts (no longer needed)

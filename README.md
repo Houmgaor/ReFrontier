@@ -61,16 +61,16 @@ For detailed command reference, see [ReFrontier/README.md](./ReFrontier/README.m
 | Option | Description |
 |--------|-------------|
 | `--help` | Display CLI help |
-| `--log` | Generate `.meta` file (required for re-encryption) |
+| `--saveMeta` | Save metadata files (required for repacking/re-encryption) |
 | `--cleanUp` | Delete intermediate files |
 
 ### Decryption
 
 ReFrontier decrypts (ECD → JPK) and decompresses files by default.
 
-To preserve metadata for later re-encryption, use `--log`:
+To preserve metadata for later re-encryption, use `--saveMeta`:
 ```shell
-./ReFrontier mhfdat.bin --log --decryptOnly
+./ReFrontier mhfdat.bin --saveMeta --decryptOnly
 ```
 
 ### Decompression

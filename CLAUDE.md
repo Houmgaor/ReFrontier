@@ -114,11 +114,11 @@ Files are identified by magic headers:
 ## CLI Usage
 
 ```bash
-# Basic unpacking with log (required for re-encryption)
-./ReFrontier mhfdat.bin --log
+# Basic unpacking with metadata (required for repacking/re-encryption)
+./ReFrontier mhfdat.bin --saveMeta
 
 # Auto-detect optimal parallelism (default)
-./ReFrontier mhfdat.bin --log
+./ReFrontier mhfdat.bin --saveMeta
 
 # Use 8 parallel threads
 ./ReFrontier directory/ --parallelism 8
@@ -142,7 +142,7 @@ Files are identified by magic headers:
 Key options:
 - `--parallelism` - Number of parallel threads (0=auto-detect using CPU cores, default: 0)
 - `--quiet` - Suppress progress output during processing (reduces logging overhead for better parallelism)
-- `--log` - Write log file (required for re-encryption)
+- `--saveMeta` - Save metadata files (required for repacking/re-encryption)
 - `--recursive`/`--nonRecursive` - Control recursive unpacking
 - `--compress=[type],[level]` - Compression settings
 - `--encrypt` - Encrypt output

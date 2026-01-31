@@ -37,9 +37,9 @@ namespace ReFrontier.CLI
             };
 
             // Unpacking options
-            _logOption = new Option<bool>("--log")
+            _logOption = new Option<bool>("--saveMeta")
             {
-                Description = "Write log file (required for re-encryption)"
+                Description = "Save metadata files (required for repacking/re-encryption)"
             };
 
             _stageContainerOption = new Option<bool>("--stageContainer")

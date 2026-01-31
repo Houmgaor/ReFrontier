@@ -434,7 +434,7 @@ namespace ReFrontier.Services
                 throw new FileNotFoundException(
                     $"META file {metaFile} does not exist, " +
                     $"cannot pack {inputFile}. " +
-                    "Make sure to extract the original file with the --log option, " +
+                    "Make sure to extract the original file with the --saveMeta option, " +
                     "and to place the generated meta file in the same folder as the file " +
                     "to pack."
                 );

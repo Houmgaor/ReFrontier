@@ -25,7 +25,7 @@ namespace ReFrontier.Tests.CLI
             var schema = new CliSchema();
             var command = schema.CreateRootCommand("1.0.0", "TestApp", "Test");
 
-            var args = new[] { "test.bin", "--log" };
+            var args = new[] { "test.bin", "--saveMeta" };
             var parseResult = command.Parse(args);
             var cliArgs = schema.ExtractArguments(parseResult);
 
