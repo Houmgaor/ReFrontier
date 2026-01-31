@@ -54,27 +54,46 @@ Packing reverses this flow: Pack → Compress → Encrypt.
 
 ### Key Components
 
-**ReFrontier/Program.cs**: Main entry point containing `InputArguments` struct and file processing logic. Uses parallel processing (4 concurrent threads) with `ConcurrentQueue` for recursive unpacking. Supports dependency injection via constructor for testability.
+**Application Entry Point:**
 
-**ReFrontier/Pack.cs**: Handles repacking directories and JPK compression (`JPKEncode`). Delegates to `PackingService`.
+**ReFrontier/Program.cs**: Main entry point reduced to ~40 lines. Contains `InputArguments` struct. Main method delegates to CLI layer and orchestrator. Program class manages parallel processing (4 concurrent threads) with `ConcurrentQueue` for recursive unpacking. Supports dependency injection via constructor for testability.
 
-**ReFrontier/Unpack.cs**: Handles archive extraction and JPK decompression. Delegates to `UnpackingService`.
+**CLI Layer** (`ReFrontier/CLI/`):
+- `CliSchema` - Defines all CLI options and creates System.CommandLine RootCommand
+- `CliArguments` - Immutable DTO containing parsed CLI arguments
+- Separates CLI infrastructure from business logic
 
-**ReFrontier/Services/**: Service layer providing testable implementations:
+**Orchestration** (`ReFrontier/Orchestration/`):
+- `ApplicationOrchestrator` - Coordinates high-level application flow (file/directory validation, routing to processing methods)
+- Uses two-constructor DI pattern for testability
+
+**File Routing** (`ReFrontier/Routing/`):
+- `IFileTypeHandler` - Interface for file type handlers with `CanHandle()`, `Handle()`, and `Priority`
+- `FileRouter` - Registry-based router that selects handler by magic number and priority
+- `Handlers/` - One handler per file type (stage containers, ECD/EXF encryption, JPK compression, MOMO/MHA archives, FTXT text, simple archives)
+- ProcessFile method reduced from ~100 lines to ~30 lines by delegating to router
+
+**Services** (`ReFrontier/Services/`):
 - `FileProcessingService` - Encryption/decryption operations
 - `PackingService` - JPK encoding and archive packing
 - `UnpackingService` - JPK decoding and archive unpacking
 - `FileProcessingConfig` - Configurable paths and suffixes
 
-**ReFrontier/Jpk/**: Compression codec implementations following `IJPKEncode`/`IJPKDecode` interfaces for different algorithms (RW, HFI, HFIRW, LZ). Uses `ICodecFactory` for testable codec creation.
+**Compression** (`ReFrontier/Jpk/`):
+- Codec implementations following `IJPKEncode`/`IJPKDecode` interfaces for different algorithms (RW, HFI, HFIRW, LZ)
+- `ICodecFactory` for testable codec creation
 
-**LibReFrontier/Abstractions/**: Dependency injection abstractions:
+**Abstractions** (`LibReFrontier/Abstractions/`):
 - `IFileSystem` / `RealFileSystem` - File system operations
 - `ILogger` / `ConsoleLogger` - Console output
+
+**Core Libraries:**
 
 **LibReFrontier/Crypto.cs**: ECD encryption/decryption and EXF decoding with CRC32 validation.
 
 **LibReFrontier/Compression.cs**: `CompressionType` enum (RW, None, HFIRW, LZ, HFI) and `Compression` struct.
+
+**LibReFrontier/FileMagic.cs**: Magic number constants for all file formats.
 
 ### Supported File Formats
 
@@ -117,6 +136,10 @@ Tests are in `ReFrontier.Tests/` using xUnit. The main project uses `InternalsVi
 ### Test Organization
 
 - `ReFrontier.Tests/Mocks/` - Test doubles (`InMemoryFileSystem`, `TestLogger`)
+- `ReFrontier.Tests/CLI/` - CLI schema and argument parsing tests
+- `ReFrontier.Tests/Orchestration/` - Application orchestrator tests
+- `ReFrontier.Tests/Routing/` - File router tests
+- `ReFrontier.Tests/Routing/Handlers/` - Individual handler tests
 - `ReFrontier.Tests/Services/` - Service-level unit tests
 - `ReFrontier.Tests/Integration/` - Integration tests (roundtrip, text tool)
 - `ReFrontier.Tests/Jpk/` - Codec factory tests
@@ -126,7 +149,11 @@ Tests are in `ReFrontier.Tests/` using xUnit. The main project uses `InternalsVi
 
 ### Testing Pattern
 
-Services use constructor injection for testability. Static methods delegate to instance methods internally, allowing both backward-compatible static API and testable instance-based code
+Services and components use the two-constructor DI pattern:
+- Default parameterless constructor creates real dependencies (for production use)
+- Injection constructor accepts interfaces for testing (IFileSystem, ILogger, etc.)
+
+This allows both backward-compatible instantiation and fully testable code with mock dependencies
 
 ## Dependencies
 
