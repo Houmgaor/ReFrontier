@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.IO;
 using System.Text;
 
@@ -365,25 +366,39 @@ namespace ReFrontier.Services
             // Decompress file
             int startOffset = br.ReadInt32();
             int outSize = br.ReadInt32();
-            byte[] outBuffer = new byte[outSize];
-            ms.Seek(startOffset, SeekOrigin.Begin);
+
+            // Use ArrayPool to reduce GC pressure for large decompression buffers
+            byte[] outBuffer = ArrayPool<byte>.Shared.Rent(outSize);
             try
             {
-                decoder.ProcessOnDecode(ms, outBuffer);
+                ms.Seek(startOffset, SeekOrigin.Begin);
+                try
+                {
+                    decoder.ProcessOnDecode(ms, outBuffer, outSize);
+                }
+                catch (ReFrontierException ex)
+                {
+                    throw ex.WithFilePath(input);
+                }
+
+                // Get extension (only needs to read first few bytes)
+                string extension = ByteOperations.DetectExtension(outBuffer, out _);
+
+                string output = $"{input}.{extension}";
+                _fileSystem.DeleteFile(input);
+
+                // Write only the actual data size, not the full rented buffer
+                using (var outStream = _fileSystem.OpenWrite(output))
+                {
+                    outStream.Write(outBuffer, 0, outSize);
+                }
+
+                return output;
             }
-            catch (ReFrontierException ex)
+            finally
             {
-                throw ex.WithFilePath(input);
+                ArrayPool<byte>.Shared.Return(outBuffer);
             }
-
-            // Get extension
-            string extension = ByteOperations.DetectExtension(outBuffer, out _);
-
-            string output = $"{input}.{extension}";
-            _fileSystem.DeleteFile(input);
-            _fileSystem.WriteAllBytes(output, outBuffer);
-
-            return output;
         }
 
         /// <summary>

@@ -84,10 +84,11 @@ namespace ReFrontier.Jpk
         /// </summary>
         /// <param name="inStream">Stream to read from.</param>
         /// <param name="outBuffer">Buffer of decompressed data to write to.</param>
-        public virtual void ProcessOnDecode(Stream inStream, byte[] outBuffer)
+        /// <param name="outSize">Actual output size.</param>
+        public virtual void ProcessOnDecode(Stream inStream, byte[] outBuffer, int outSize)
         {
             int outIndex = 0;
-            while (inStream.Position < inStream.Length && outIndex < outBuffer.Length)
+            while (inStream.Position < inStream.Length && outIndex < outSize)
             {
                 if (!JpkBitLz(inStream))
                 {

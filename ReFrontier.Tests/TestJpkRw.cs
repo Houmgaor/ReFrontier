@@ -76,7 +76,7 @@ namespace ReFrontier.Tests
             byte[] outBuffer = new byte[0];
 
             using var inStream = new MemoryStream([]);
-            decoder.ProcessOnDecode(inStream, outBuffer);
+            decoder.ProcessOnDecode(inStream, outBuffer, outBuffer.Length);
 
             Assert.Empty(outBuffer);
         }
@@ -89,7 +89,7 @@ namespace ReFrontier.Tests
             byte[] outBuffer = new byte[1];
 
             using var inStream = new MemoryStream(input);
-            decoder.ProcessOnDecode(inStream, outBuffer);
+            decoder.ProcessOnDecode(inStream, outBuffer, outBuffer.Length);
 
             Assert.Equal(0x42, outBuffer[0]);
         }
@@ -103,7 +103,7 @@ namespace ReFrontier.Tests
             byte[] outBuffer = new byte[10];
 
             using var inStream = new MemoryStream(input);
-            decoder.ProcessOnDecode(inStream, outBuffer);
+            decoder.ProcessOnDecode(inStream, outBuffer, outBuffer.Length);
 
             // First 3 bytes should match input
             Assert.Equal(0x01, outBuffer[0]);
@@ -122,7 +122,7 @@ namespace ReFrontier.Tests
             byte[] outBuffer = new byte[3];
 
             using var inStream = new MemoryStream(input);
-            decoder.ProcessOnDecode(inStream, outBuffer);
+            decoder.ProcessOnDecode(inStream, outBuffer, outBuffer.Length);
 
             Assert.Equal(0x01, outBuffer[0]);
             Assert.Equal(0x02, outBuffer[1]);
@@ -153,7 +153,7 @@ namespace ReFrontier.Tests
             // Decode
             using var decodeStream = new MemoryStream(encoded);
             byte[] decoded = new byte[original.Length];
-            decoder.ProcessOnDecode(decodeStream, decoded);
+            decoder.ProcessOnDecode(decodeStream, decoded, decoded.Length);
 
             TestHelpers.AssertBytesEqual(original, decoded, $"RW round-trip size={size}");
         }
@@ -175,7 +175,7 @@ namespace ReFrontier.Tests
             // Decode
             using var decodeStream = new MemoryStream(encoded);
             byte[] decoded = new byte[original.Length];
-            decoder.ProcessOnDecode(decodeStream, decoded);
+            decoder.ProcessOnDecode(decodeStream, decoded, decoded.Length);
 
             TestHelpers.AssertBytesEqual(original, decoded, "RW round-trip all byte values");
         }

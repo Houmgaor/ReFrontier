@@ -245,7 +245,7 @@ namespace ReFrontier
             byte[] decompressedData = new byte[decompressedSize];
 
             msInput.Seek(startOffset, SeekOrigin.Begin);
-            decoder.ProcessOnDecode(msInput, decompressedData);
+            decoder.ProcessOnDecode(msInput, decompressedData, decompressedSize);
 
             string outputFile = filePath + ".temp.jpk";
             _fileSystem.WriteAllBytes(outputFile, decompressedData);

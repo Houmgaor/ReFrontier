@@ -18,6 +18,7 @@ namespace ReFrontier.Jpk
         /// </summary>
         /// <param name="inStream">Input stream.</param>
         /// <param name="outBuffer">Output buffer.</param>
-        void ProcessOnDecode(Stream inStream, byte[] outBuffer);
+        /// <param name="outSize">Actual output size (may be less than buffer length when using pooled buffers).</param>
+        void ProcessOnDecode(Stream inStream, byte[] outBuffer, int outSize);
     }
 }

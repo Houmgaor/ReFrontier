@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Threading;
@@ -352,7 +353,7 @@ namespace ReFrontier
             while (!filesToProcess.IsEmpty)
             {
                 // Get current batch of files to process
-                var currentBatch = new System.Collections.Generic.List<string>();
+                var currentBatch = new List<string>();
                 while (filesToProcess.TryDequeue(out string? tempInputFile))
                 {
                     if (tempInputFile != null)

@@ -85,10 +85,11 @@ namespace ReFrontier.Jpk
         /// </summary>
         /// <param name="inStream">Stream to read from.</param>
         /// <param name="outBuffer">Outpute buffer.</param>
-        public override void ProcessOnDecode(Stream inStream, byte[] outBuffer)
+        /// <param name="outSize">Actual output size.</param>
+        public override void ProcessOnDecode(Stream inStream, byte[] outBuffer, int outSize)
         {
             InitializeTable(inStream);
-            base.ProcessOnDecode(inStream, outBuffer);
+            base.ProcessOnDecode(inStream, outBuffer, outSize);
         }
 
         /// <summary>

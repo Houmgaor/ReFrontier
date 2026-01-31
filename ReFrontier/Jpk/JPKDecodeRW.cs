@@ -14,9 +14,10 @@ namespace ReFrontier.Jpk
         /// </summary>
         /// <param name="inStream">Input stream to read bytes from.</param>
         /// <param name="outBuffer">Buffer to write to.</param>
-        public void ProcessOnDecode(Stream inStream, byte[] outBuffer)
+        /// <param name="outSize">Actual output size.</param>
+        public void ProcessOnDecode(Stream inStream, byte[] outBuffer, int outSize)
         {
-            for (int index = 0; index < outBuffer.Length; index++)
+            for (int index = 0; index < outSize; index++)
             {
                 if (inStream.Position >= inStream.Length)
                     break;

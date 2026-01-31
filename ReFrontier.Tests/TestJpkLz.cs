@@ -85,7 +85,7 @@ namespace ReFrontier.Tests
             // Decode
             using var decodeStream = new MemoryStream(encoded);
             byte[] decoded = new byte[original.Length];
-            decoder.ProcessOnDecode(decodeStream, decoded);
+            decoder.ProcessOnDecode(decodeStream, decoded, decoded.Length);
 
             TestHelpers.AssertBytesEqual(original, decoded, $"LZ round-trip random size={size}");
         }
@@ -108,7 +108,7 @@ namespace ReFrontier.Tests
             // Decode
             using var decodeStream = new MemoryStream(encoded);
             byte[] decoded = new byte[original.Length];
-            decoder.ProcessOnDecode(decodeStream, decoded);
+            decoder.ProcessOnDecode(decodeStream, decoded, decoded.Length);
 
             TestHelpers.AssertBytesEqual(original, decoded, $"LZ round-trip repetitive size={size}");
         }
@@ -130,7 +130,7 @@ namespace ReFrontier.Tests
             // Decode
             using var decodeStream = new MemoryStream(encoded);
             byte[] decoded = new byte[original.Length];
-            decoder.ProcessOnDecode(decodeStream, decoded);
+            decoder.ProcessOnDecode(decodeStream, decoded, decoded.Length);
 
             TestHelpers.AssertBytesEqual(original, decoded, $"LZ round-trip mixed size={size}");
         }
@@ -156,7 +156,7 @@ namespace ReFrontier.Tests
             // Decode
             using var decodeStream = new MemoryStream(encoded);
             byte[] decoded = new byte[original.Length];
-            decoder.ProcessOnDecode(decodeStream, decoded);
+            decoder.ProcessOnDecode(decodeStream, decoded, decoded.Length);
 
             TestHelpers.AssertBytesEqual(original, decoded, $"LZ round-trip level={level}");
         }
@@ -180,7 +180,7 @@ namespace ReFrontier.Tests
             // Decode
             using var decodeStream = new MemoryStream(encoded);
             byte[] decoded = new byte[original.Length];
-            decoder.ProcessOnDecode(decodeStream, decoded);
+            decoder.ProcessOnDecode(decodeStream, decoded, decoded.Length);
 
             TestHelpers.AssertBytesEqual(original, decoded, "LZ round-trip all-zeros");
         }
@@ -201,7 +201,7 @@ namespace ReFrontier.Tests
             // Decode
             using var decodeStream = new MemoryStream(encoded);
             byte[] decoded = new byte[original.Length];
-            decoder.ProcessOnDecode(decodeStream, decoded);
+            decoder.ProcessOnDecode(decodeStream, decoded, decoded.Length);
 
             TestHelpers.AssertBytesEqual(original, decoded, "LZ round-trip all-0xFF");
         }
@@ -223,7 +223,7 @@ namespace ReFrontier.Tests
             // Decode
             using var decodeStream = new MemoryStream(encoded);
             byte[] decoded = new byte[original.Length];
-            decoder.ProcessOnDecode(decodeStream, decoded);
+            decoder.ProcessOnDecode(decodeStream, decoded, decoded.Length);
 
             TestHelpers.AssertBytesEqual(original, decoded, "LZ round-trip sequential");
         }
@@ -248,7 +248,7 @@ namespace ReFrontier.Tests
 
             using var decodeStream = new MemoryStream(encoded);
             byte[] decoded = new byte[original.Length];
-            decoder.ProcessOnDecode(decodeStream, decoded);
+            decoder.ProcessOnDecode(decodeStream, decoded, decoded.Length);
 
             TestHelpers.AssertBytesEqual(original, decoded, $"LZ round-trip large size={size}");
         }
@@ -271,7 +271,7 @@ namespace ReFrontier.Tests
 
             using var decodeStream = new MemoryStream(encoded);
             byte[] decoded = new byte[original.Length];
-            decoder.ProcessOnDecode(decodeStream, decoded);
+            decoder.ProcessOnDecode(decodeStream, decoded, decoded.Length);
 
             TestHelpers.AssertBytesEqual(original, decoded, "LZ round-trip long repeating pattern");
         }
@@ -296,7 +296,7 @@ namespace ReFrontier.Tests
 
             using var decodeStream = new MemoryStream(encoded);
             byte[] decoded = new byte[original.Length];
-            decoder.ProcessOnDecode(decodeStream, decoded);
+            decoder.ProcessOnDecode(decodeStream, decoded, decoded.Length);
 
             TestHelpers.AssertBytesEqual(original, decoded, "LZ round-trip alternating blocks");
         }

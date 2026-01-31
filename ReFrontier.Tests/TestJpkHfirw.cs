@@ -75,7 +75,7 @@ namespace ReFrontier.Tests
             // Act - Decode
             byte[] decoded = new byte[original.Length];
             using var decodeStream = new MemoryStream(encoded);
-            decoder.ProcessOnDecode(decodeStream, decoded);
+            decoder.ProcessOnDecode(decodeStream, decoded, decoded.Length);
 
             // Assert
             Assert.Equal(original, decoded);
@@ -100,7 +100,7 @@ namespace ReFrontier.Tests
             // Act - Decode
             byte[] decoded = new byte[original.Length];
             using var decodeStream = new MemoryStream(encoded);
-            decoder.ProcessOnDecode(decodeStream, decoded);
+            decoder.ProcessOnDecode(decodeStream, decoded, decoded.Length);
 
             // Assert
             Assert.Equal(original, decoded);
@@ -122,7 +122,7 @@ namespace ReFrontier.Tests
             // Act - Decode
             byte[] decoded = new byte[original.Length];
             using var decodeStream = new MemoryStream(encoded);
-            decoder.ProcessOnDecode(decodeStream, decoded);
+            decoder.ProcessOnDecode(decodeStream, decoded, decoded.Length);
 
             // Assert
             Assert.Equal(original, decoded);
@@ -147,7 +147,7 @@ namespace ReFrontier.Tests
             // Act - Decode
             byte[] decoded = new byte[original.Length];
             using var decodeStream = new MemoryStream(encoded);
-            decoder.ProcessOnDecode(decodeStream, decoded);
+            decoder.ProcessOnDecode(decodeStream, decoded, decoded.Length);
 
             // Assert
             Assert.Equal(original, decoded);
@@ -169,7 +169,7 @@ namespace ReFrontier.Tests
             // Act - Decode
             byte[] decoded = new byte[original.Length];
             using var decodeStream = new MemoryStream(encoded);
-            decoder.ProcessOnDecode(decodeStream, decoded);
+            decoder.ProcessOnDecode(decodeStream, decoded, decoded.Length);
 
             // Assert
             Assert.Equal(original, decoded);
@@ -191,7 +191,7 @@ namespace ReFrontier.Tests
             // Act - Decode
             byte[] decoded = new byte[original.Length];
             using var decodeStream = new MemoryStream(encoded);
-            decoder.ProcessOnDecode(decodeStream, decoded);
+            decoder.ProcessOnDecode(decodeStream, decoded, decoded.Length);
 
             // Assert
             Assert.Equal(original, decoded);
