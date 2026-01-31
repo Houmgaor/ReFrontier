@@ -365,7 +365,7 @@ namespace LibReFrontier
             {
                 byte[] keybuf = CreateXorkeyExf(header);
 
-                for (int i = 16; i < buffer.Length - header.Length; i++)
+                for (int i = 16; i < buffer.Length; i++)
                 {
                     uint r28 = (uint)(i - 0x10);    // Position offset from payload start
                     byte r8 = buffer[i];            // Read encrypted byte
@@ -387,8 +387,96 @@ namespace LibReFrontier
 
 
         /// <summary>
+        /// Encode (encrypt) a file as EXF format.
+        ///
+        /// <para>This is the inverse of DecodeExf. Creates a new buffer with 16-byte header
+        /// followed by encrypted payload.</para>
+        ///
+        /// <para><b>Algorithm:</b></para>
+        /// <para>For each plaintext byte, we need to find the encrypted byte that produces
+        /// the correct plaintext when passed through the DecodeExf transformation.
+        /// Since the transformation is not easily invertible, we use brute-force search
+        /// over all 256 possible values (O(256) per byte).</para>
+        /// </summary>
+        /// <param name="buffer">Plaintext file data to encrypt.</param>
+        /// <param name="bufferMeta">Original EXF header (from .meta file) containing key index and seed.</param>
+        /// <returns>Complete EXF file: 16-byte header + encrypted payload.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when buffer or bufferMeta is null.</exception>
+        /// <exception cref="DecryptionException">Thrown when bufferMeta is too small (less than 16 bytes).</exception>
+        public static byte[] EncodeExf(byte[] buffer, byte[] bufferMeta)
+        {
+            ArgumentNullException.ThrowIfNull(buffer);
+            ArgumentNullException.ThrowIfNull(bufferMeta);
+            if (bufferMeta.Length < 16)
+                throw new DecryptionException("EXF meta buffer too small: minimum 16 bytes required for header.");
+
+            // Verify EXF magic in meta
+            if (BitConverter.ToUInt32(bufferMeta, 0) != 0x1a667865)
+                throw new DecryptionException("Invalid EXF magic in meta buffer.");
+
+            // Create output buffer: 16-byte header + payload
+            byte[] outputBuffer = new byte[16 + buffer.Length];
+            Array.Copy(bufferMeta, outputBuffer, 16);
+
+            // Generate the XOR key from the header
+            byte[] keybuf = CreateXorkeyExf(bufferMeta);
+
+            // Encrypt each byte
+            for (int i = 0; i < buffer.Length; i++)
+            {
+                uint r28 = (uint)i;  // Position offset from payload start
+                byte plaintext = buffer[i];
+                byte encrypted = FindEncryptedByte(plaintext, r28, keybuf);
+                outputBuffer[16 + i] = encrypted;
+            }
+
+            return outputBuffer;
+        }
+
+        /// <summary>
+        /// Find the encrypted byte value that produces the desired plaintext when decrypted.
+        ///
+        /// <para>This is a brute-force search over all 256 possible byte values.
+        /// For each candidate, we apply the DecodeExf transformation and check
+        /// if it produces the desired plaintext.</para>
+        /// </summary>
+        /// <param name="plaintext">The desired decrypted byte value.</param>
+        /// <param name="position">Position offset from payload start (r28 in original code).</param>
+        /// <param name="keybuf">16-byte XOR key buffer.</param>
+        /// <returns>The encrypted byte value that decrypts to plaintext.</returns>
+        /// <exception cref="DecryptionException">Thrown if no valid encrypted byte is found (should never happen).</exception>
+        private static byte FindEncryptedByte(byte plaintext, uint position, byte[] keybuf)
+        {
+            // Try all 256 possible encrypted byte values
+            for (int candidate = 0; candidate < 256; candidate++)
+            {
+                // Apply DecodeExf transformation to the candidate
+                byte r8 = (byte)candidate;
+                int index = (int)(position & 0xf);
+                uint r4 = r8 ^ position;
+                uint r12 = keybuf[index];
+                uint r0 = (r4 & 0xf0) >> 4;
+                uint r7 = keybuf[r0];
+                uint r9 = r4 >> 4;
+                uint r5 = r7 >> 4;
+                r9 ^= r12;
+                uint r26 = r5 ^ r4;
+                r26 = (uint)(r26 & ~0xf0) | ((r9 & 0xf) << 4);
+
+                // Check if this candidate decrypts to the desired plaintext
+                if ((byte)r26 == plaintext)
+                {
+                    return (byte)candidate;
+                }
+            }
+
+            // This should never happen - there should always be a valid encrypted byte
+            throw new DecryptionException($"Failed to find encrypted byte for plaintext 0x{plaintext:X2} at position {position}.");
+        }
+
+        /// <summary>
         /// Compute CRC32 for byte array.
-        /// 
+        ///
         /// It is just to remove dependency from FrontierTextTool
         /// </summary>
         /// <param name="array">Array to hash</param>

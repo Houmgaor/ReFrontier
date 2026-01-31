@@ -15,6 +15,7 @@ This fork is fully compatible with [mhvuze/ReFrontier](https://github.com/mhvuze
 
 - **Cross-platform**: Works on Windows, Linux, and macOS
 - **Performance**: 4x faster single-threaded, with multithreaded unpacking support
+- **Round-trip editing**: Full support for ECD/EXF encryption and FTXT text repacking
 - **Single command**: Compress and encrypt files in one step
 - **Reliability**: Fixed duplicate filename issues ([#5](https://github.com/Houmgaor/ReFrontier/issues/5))
 - **Security**: Removed memory-unsafe code and outdated libraries
@@ -122,6 +123,20 @@ You can compress and encrypt in a single command:
 
 ```shell
 ./ReFrontier mhfdat.bin --compress hfi --level 80 --encrypt
+```
+
+Both ECD and EXF encryption formats are fully supported for round-trip editing.
+
+### Text File Editing (FTXT)
+
+FTXT text files can be extracted and repacked:
+
+```shell
+# Extract text with metadata
+./ReFrontier text.ftxt --log
+
+# Edit the generated .txt file, then repack
+./ReFrontier text.ftxt.txt --pack
 ```
 
 ## Build

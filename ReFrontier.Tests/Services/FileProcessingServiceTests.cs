@@ -94,7 +94,7 @@ namespace ReFrontier.Tests.Services
             _fileSystem.AddFile("/test/file.bin", fullFile);
 
             // Act
-            string result = _service.DecryptExfFile("/test/file.bin", cleanUp: false);
+            string result = _service.DecryptExfFile("/test/file.bin", createLog: false, cleanUp: false);
 
             // Assert
             TestHelpers.AssertPathsEqual("/test/file.bin.dexf", result);

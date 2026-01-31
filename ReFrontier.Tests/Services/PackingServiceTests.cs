@@ -1,3 +1,5 @@
+using System.Text;
+
 using LibReFrontier;
 using LibReFrontier.Exceptions;
 
@@ -201,5 +203,199 @@ namespace ReFrontier.Tests.Services
             Assert.True(_logger.ContainsMessage("LZ"));
             Assert.True(_logger.ContainsMessage("level 10"));
         }
+
+        #region FTXT Packing Tests
+
+        [Fact]
+        public void PackFTXT_CreatesPackedFile()
+        {
+            // Arrange
+            byte[] meta = CreateFtxtMeta(2); // 2 strings
+            _fileSystem.AddFile("/test/file.ftxt.meta", meta);
+            _fileSystem.AddFile("/test/file.ftxt.txt", "Hello\nWorld");
+
+            // Act
+            string result = _service.PackFTXT("/test/file.ftxt.txt", "/test/file.ftxt.meta", false);
+
+            // Assert
+            Assert.Equal("/test/file.ftxt", result);
+            Assert.True(_fileSystem.FileExists("/test/file.ftxt"));
+        }
+
+        [Fact]
+        public void PackFTXT_WritesCorrectHeader()
+        {
+            // Arrange
+            byte[] meta = CreateFtxtMeta(2);
+            _fileSystem.AddFile("/test/file.ftxt.meta", meta);
+            _fileSystem.AddFile("/test/file.ftxt.txt", "Hello\nWorld");
+
+            // Act
+            _service.PackFTXT("/test/file.ftxt.txt", "/test/file.ftxt.meta", false);
+
+            // Assert
+            byte[] result = _fileSystem.ReadAllBytes("/test/file.ftxt");
+
+            // First 10 bytes should match meta
+            for (int i = 0; i < 10; i++)
+            {
+                Assert.Equal(meta[i], result[i]);
+            }
+
+            // String count at offset 10 (2 bytes, little-endian)
+            short stringCount = BitConverter.ToInt16(result, 10);
+            Assert.Equal(2, stringCount);
+        }
+
+        [Fact]
+        public void PackFTXT_WritesStringsWithNullTerminators()
+        {
+            // Arrange
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            byte[] meta = CreateFtxtMeta(2);
+            _fileSystem.AddFile("/test/file.ftxt.meta", meta);
+            _fileSystem.AddFile("/test/file.ftxt.txt", "ABC\nXYZ");
+
+            // Act
+            _service.PackFTXT("/test/file.ftxt.txt", "/test/file.ftxt.meta", false);
+
+            // Assert
+            byte[] result = _fileSystem.ReadAllBytes("/test/file.ftxt");
+
+            // Skip 16-byte header, check strings
+            // "ABC" + null + "XYZ" + null = 8 bytes
+            Assert.Equal((byte)'A', result[16]);
+            Assert.Equal((byte)'B', result[17]);
+            Assert.Equal((byte)'C', result[18]);
+            Assert.Equal((byte)0, result[19]); // null terminator
+            Assert.Equal((byte)'X', result[20]);
+            Assert.Equal((byte)'Y', result[21]);
+            Assert.Equal((byte)'Z', result[22]);
+            Assert.Equal((byte)0, result[23]); // null terminator
+        }
+
+        [Fact]
+        public void PackFTXT_ReplacesNewlineMarkers()
+        {
+            // Arrange
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            byte[] meta = CreateFtxtMeta(1);
+            _fileSystem.AddFile("/test/file.ftxt.meta", meta);
+            _fileSystem.AddFile("/test/file.ftxt.txt", "Hello<NEWLINE>World");
+
+            // Act
+            _service.PackFTXT("/test/file.ftxt.txt", "/test/file.ftxt.meta", false);
+
+            // Assert
+            byte[] result = _fileSystem.ReadAllBytes("/test/file.ftxt");
+
+            // Find the newline character in the output (0x0A)
+            bool foundNewline = false;
+            for (int i = 16; i < result.Length; i++)
+            {
+                if (result[i] == 0x0A)
+                {
+                    foundNewline = true;
+                    break;
+                }
+            }
+            Assert.True(foundNewline, "Should contain actual newline character");
+        }
+
+        [Fact]
+        public void PackFTXT_CalculatesCorrectTextBlockSize()
+        {
+            // Arrange
+            byte[] meta = CreateFtxtMeta(2);
+            _fileSystem.AddFile("/test/file.ftxt.meta", meta);
+            _fileSystem.AddFile("/test/file.ftxt.txt", "AB\nCD");
+
+            // Act
+            _service.PackFTXT("/test/file.ftxt.txt", "/test/file.ftxt.meta", false);
+
+            // Assert
+            byte[] result = _fileSystem.ReadAllBytes("/test/file.ftxt");
+
+            // Text block size at offset 12 (4 bytes, little-endian)
+            // "AB" + null + "CD" + null = 6 bytes
+            int textBlockSize = BitConverter.ToInt32(result, 12);
+            Assert.Equal(6, textBlockSize);
+        }
+
+        [Fact]
+        public void PackFTXT_WithMissingMetaFile_ThrowsFileNotFoundException()
+        {
+            // Arrange
+            _fileSystem.AddFile("/test/file.ftxt.txt", "Hello");
+
+            // Act & Assert
+            Assert.Throws<FileNotFoundException>(() =>
+                _service.PackFTXT("/test/file.ftxt.txt", "/test/file.ftxt.meta", false));
+        }
+
+        [Fact]
+        public void PackFTXT_WithTooSmallMetaFile_ThrowsPackingException()
+        {
+            // Arrange
+            byte[] tooSmallMeta = new byte[10]; // Less than 16 bytes
+            _fileSystem.AddFile("/test/file.ftxt.meta", tooSmallMeta);
+            _fileSystem.AddFile("/test/file.ftxt.txt", "Hello");
+
+            // Act & Assert
+            var ex = Assert.Throws<PackingException>(() =>
+                _service.PackFTXT("/test/file.ftxt.txt", "/test/file.ftxt.meta", false));
+            Assert.Contains("too small", ex.Message);
+        }
+
+        [Fact]
+        public void PackFTXT_WithCleanUp_DeletesInputFiles()
+        {
+            // Arrange
+            byte[] meta = CreateFtxtMeta(1);
+            _fileSystem.AddFile("/test/file.ftxt.meta", meta);
+            _fileSystem.AddFile("/test/file.ftxt.txt", "Hello");
+
+            // Act
+            _service.PackFTXT("/test/file.ftxt.txt", "/test/file.ftxt.meta", cleanUp: true);
+
+            // Assert
+            Assert.False(_fileSystem.FileExists("/test/file.ftxt.txt"));
+            Assert.False(_fileSystem.FileExists("/test/file.ftxt.meta"));
+            Assert.True(_fileSystem.FileExists("/test/file.ftxt"));
+        }
+
+        [Fact]
+        public void PackFTXT_LogsPackingInfo()
+        {
+            // Arrange
+            byte[] meta = CreateFtxtMeta(2);
+            _fileSystem.AddFile("/test/file.ftxt.meta", meta);
+            _fileSystem.AddFile("/test/file.ftxt.txt", "Hello\nWorld");
+
+            // Act
+            _service.PackFTXT("/test/file.ftxt.txt", "/test/file.ftxt.meta", false);
+
+            // Assert
+            Assert.True(_logger.ContainsMessage("FTXT packed"));
+            Assert.True(_logger.ContainsMessage("2 strings"));
+        }
+
+        /// <summary>
+        /// Creates a valid FTXT meta buffer.
+        /// </summary>
+        private static byte[] CreateFtxtMeta(int stringCount)
+        {
+            byte[] meta = new byte[16];
+            // First 10 bytes can be any padding/unknown values
+            meta[0] = 0x01;
+            meta[1] = 0x02;
+            // Offset 10-11: string count (will be overwritten during packing)
+            meta[10] = (byte)(stringCount & 0xFF);
+            meta[11] = (byte)((stringCount >> 8) & 0xFF);
+            // Offset 12-15: text block size (will be overwritten during packing)
+            return meta;
+        }
+
+        #endregion
     }
 }

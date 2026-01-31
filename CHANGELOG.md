@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **EXF encryption**: Full round-trip support for EXF encrypted files (decrypt with `--log`, re-encrypt with `--encrypt`)
+- **FTXT repacking**: Pack extracted text files back to FTXT binary format (extract with `--log`, repack with `--pack`)
 - **Auto decrypt/decompress**: FrontierTextTool and FrontierDataTool now automatically detect and process encrypted (ECD/EXF) and compressed (JPK) files
 - `FilePreprocessor` class for automatic file preprocessing with cleanup support
 - Unit tests for Crypto, JPK compression codecs, ArgumentsParser, ByteOperations, and FileOperations
@@ -28,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- EXF decryption now processes all bytes (was stopping 16 bytes early)
 - Removed dead nullspace fill loop in Crypto.cs
 - Improved exception types throughout the codebase
 - Added proper `using` statements for streams and readers to prevent resource leaks

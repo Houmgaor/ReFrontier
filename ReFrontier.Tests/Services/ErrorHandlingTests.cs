@@ -388,7 +388,7 @@ namespace ReFrontier.Tests.Services
 
             // Act & Assert
             var ex = Assert.Throws<DecryptionException>(() =>
-                service.DecryptExfFile("/test/small.exf", false)
+                service.DecryptExfFile("/test/small.exf", createLog: false, cleanUp: false)
             );
             Assert.Equal("/test/small.exf", ex.FilePath);
             Assert.Contains("too small", ex.Message);

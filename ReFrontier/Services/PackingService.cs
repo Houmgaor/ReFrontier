@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 
 using LibReFrontier;
 using LibReFrontier.Abstractions;
@@ -408,6 +409,98 @@ namespace ReFrontier.Services
                 $"{fsot.Length} bytes ({1 - (decimal)fsot.Length / insize:P} saved) in {finnish - start:%m\\:ss\\.ff}",
                 false
             );
+        }
+
+        /// <summary>
+        /// Pack an FTXT text file from extracted .txt format.
+        ///
+        /// The input file should be a .txt file with one string per line.
+        /// Newlines within strings are represented as &lt;NEWLINE&gt; markers.
+        /// </summary>
+        /// <param name="inputFile">Input .txt file path.</param>
+        /// <param name="metaFile">Meta file containing the original 16-byte header.</param>
+        /// <param name="cleanUp">Remove input and meta files after packing.</param>
+        /// <param name="quiet">Suppress progress output.</param>
+        /// <returns>Output file path.</returns>
+        /// <exception cref="FileNotFoundException">Thrown if the meta file does not exist.</exception>
+        /// <exception cref="PackingException">Thrown if packing fails.</exception>
+        public string PackFTXT(string inputFile, string metaFile, bool cleanUp, bool quiet = false)
+        {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            Encoding shiftJis = Encoding.GetEncoding("shift-jis");
+
+            if (!_fileSystem.FileExists(metaFile))
+            {
+                throw new FileNotFoundException(
+                    $"META file {metaFile} does not exist, " +
+                    $"cannot pack {inputFile}. " +
+                    "Make sure to extract the original file with the --log option, " +
+                    "and to place the generated meta file in the same folder as the file " +
+                    "to pack."
+                );
+            }
+
+            // Read meta (original header)
+            byte[] meta = _fileSystem.ReadAllBytes(metaFile);
+            if (meta.Length < FileFormatConstants.FtxtHeaderLength)
+            {
+                throw new PackingException(
+                    $"META file {metaFile} is too small: expected {FileFormatConstants.FtxtHeaderLength} bytes, got {meta.Length}.",
+                    inputFile
+                );
+            }
+
+            // Read strings from text file
+            string[] lines = _fileSystem.ReadAllLines(inputFile);
+            List<byte[]> encodedStrings = new();
+
+            foreach (string line in lines)
+            {
+                // Replace <NEWLINE> markers back to actual newlines
+                string processed = line.Replace("<NEWLINE>", "\n");
+                byte[] encoded = shiftJis.GetBytes(processed);
+                encodedStrings.Add(encoded);
+            }
+
+            // Calculate text block size (sum of encoded lengths + null terminators)
+            int textBlockSize = 0;
+            foreach (byte[] encoded in encodedStrings)
+            {
+                textBlockSize += encoded.Length + 1; // +1 for null terminator
+            }
+
+            // Build output: 16-byte header + string data
+            // From file.ftxt.txt to file.ftxt
+            string outputFile = Path.Join(
+                Path.GetDirectoryName(inputFile),
+                Path.GetFileNameWithoutExtension(inputFile)
+            );
+
+            using var stream = _fileSystem.OpenWrite(outputFile);
+            using BinaryWriter bw = new(stream);
+
+            // Write header: copy first 10 bytes from meta, then update count and size
+            bw.Write(meta, 0, 10);
+            bw.Write((short)encodedStrings.Count);
+            bw.Write(textBlockSize);
+
+            // Write strings with null terminators
+            foreach (byte[] encoded in encodedStrings)
+            {
+                bw.Write(encoded);
+                bw.Write((byte)0); // null terminator
+            }
+
+            if (!quiet)
+                _logger.PrintWithSeparator($"FTXT packed to {outputFile} ({encodedStrings.Count} strings).", false);
+
+            if (cleanUp)
+            {
+                _fileSystem.DeleteFile(inputFile);
+                _fileSystem.DeleteFile(metaFile);
+            }
+
+            return outputFile;
         }
     }
 }

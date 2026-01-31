@@ -518,8 +518,9 @@ namespace ReFrontier.Services
         /// </summary>
         /// <param name="input">Input ftxt file, usually has MHF header.</param>
         /// <param name="brInput">Binary reader to the file.</param>
+        /// <param name="createLog">True if we should create a meta file with the header.</param>
         /// <returns>Output file path.</returns>
-        public string PrintFTXT(string input, BinaryReader brInput)
+        public string PrintFTXT(string input, BinaryReader brInput, bool createLog = false)
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
@@ -528,8 +529,17 @@ namespace ReFrontier.Services
                 _fileSystem.DeleteFile(outputPath);
             using var txtOutput = _fileSystem.CreateStreamWriter(outputPath, true, Encoding.GetEncoding("shift-jis"));
 
+            // Save the 16-byte header as meta if requested
+            if (createLog)
+            {
+                brInput.BaseStream.Seek(0, SeekOrigin.Begin);
+                byte[] header = brInput.ReadBytes(FileFormatConstants.FtxtHeaderLength);
+                string metaPath = $"{input}{_config.MetaSuffix}";
+                _fileSystem.WriteAllBytes(metaPath, header);
+            }
+
             // Read header
-            brInput.BaseStream.Seek(10, SeekOrigin.Current);
+            brInput.BaseStream.Seek(10, SeekOrigin.Begin);
             int stringCount = brInput.ReadInt16();
             brInput.ReadInt32(); // textBlockSize
 

@@ -234,6 +234,138 @@ namespace ReFrontier.Tests
 
         #endregion
 
+        #region EXF Round-trip Tests
+
+        [Theory]
+        [InlineData(16, 0)]
+        [InlineData(64, 1)]
+        [InlineData(256, 2)]
+        [InlineData(1024, 3)]
+        [InlineData(16, 4)]
+        public void ExfRoundTrip_VariousSizesAndKeys_RecoversOriginal(int size, int keyIndex)
+        {
+            byte[] original = TestHelpers.RandomData(size, seed: size + keyIndex + 1000);
+
+            // Create meta buffer with the key index
+            byte[] meta = CreateExfMeta(keyIndex);
+
+            // Encode
+            byte[] encoded = Crypto.EncodeExf(original, meta);
+
+            // Decode in place
+            Crypto.DecodeExf(encoded);
+
+            // Extract payload (skip 16-byte header)
+            byte[] decoded = new byte[original.Length];
+            Array.Copy(encoded, 16, decoded, 0, original.Length);
+
+            TestHelpers.AssertBytesEqual(original, decoded, $"EXF round-trip size={size}, key={keyIndex}");
+        }
+
+        [Fact]
+        public void ExfRoundTrip_SingleByte_Works()
+        {
+            byte[] original = TestHelpers.SingleByte(0x42);
+            byte[] meta = CreateExfMeta(0);
+
+            byte[] encoded = Crypto.EncodeExf(original, meta);
+            Crypto.DecodeExf(encoded);
+
+            Assert.Equal(original[0], encoded[16]);
+        }
+
+        [Fact]
+        public void ExfRoundTrip_AllZeros_Works()
+        {
+            byte[] original = new byte[64]; // All zeros
+            byte[] meta = CreateExfMeta(1);
+
+            byte[] encoded = Crypto.EncodeExf(original, meta);
+            Crypto.DecodeExf(encoded);
+
+            byte[] decoded = new byte[original.Length];
+            Array.Copy(encoded, 16, decoded, 0, original.Length);
+
+            TestHelpers.AssertBytesEqual(original, decoded, "EXF all-zeros");
+        }
+
+        [Fact]
+        public void ExfRoundTrip_AllOnes_Works()
+        {
+            byte[] original = new byte[64];
+            Array.Fill(original, (byte)0xFF);
+            byte[] meta = CreateExfMeta(2);
+
+            byte[] encoded = Crypto.EncodeExf(original, meta);
+            Crypto.DecodeExf(encoded);
+
+            byte[] decoded = new byte[original.Length];
+            Array.Copy(encoded, 16, decoded, 0, original.Length);
+
+            TestHelpers.AssertBytesEqual(original, decoded, "EXF all-0xFF");
+        }
+
+        [Fact]
+        public void ExfRoundTrip_LargeFile_Works()
+        {
+            // Test with a larger file to ensure the algorithm scales
+            byte[] original = TestHelpers.RandomData(4096, seed: 9999);
+            byte[] meta = CreateExfMeta(3);
+
+            byte[] encoded = Crypto.EncodeExf(original, meta);
+            Crypto.DecodeExf(encoded);
+
+            byte[] decoded = new byte[original.Length];
+            Array.Copy(encoded, 16, decoded, 0, original.Length);
+
+            TestHelpers.AssertBytesEqual(original, decoded, "EXF large file");
+        }
+
+        #endregion
+
+        #region EXF Encoding Structure Tests
+
+        [Fact]
+        public void EncodeExf_ProducesCorrectHeaderMagic()
+        {
+            byte[] original = TestHelpers.RandomData(32, seed: 123);
+            byte[] meta = CreateExfMeta(0);
+
+            byte[] encoded = Crypto.EncodeExf(original, meta);
+
+            // First 4 bytes should contain magic from meta
+            uint magic = BitConverter.ToUInt32(encoded, 0);
+            Assert.Equal(0x1a667865u, magic); // EXF magic
+        }
+
+        [Fact]
+        public void EncodeExf_OutputLengthIsInputPlusHeader()
+        {
+            byte[] original = TestHelpers.RandomData(50, seed: 789);
+            byte[] meta = CreateExfMeta(0);
+
+            byte[] encoded = Crypto.EncodeExf(original, meta);
+
+            Assert.Equal(16 + original.Length, encoded.Length);
+        }
+
+        [Fact]
+        public void EncodeExf_PreservesHeaderFromMeta()
+        {
+            byte[] original = TestHelpers.RandomData(32, seed: 456);
+            byte[] meta = CreateExfMeta(2);
+
+            byte[] encoded = Crypto.EncodeExf(original, meta);
+
+            // Header should match meta
+            byte[] header = new byte[16];
+            Array.Copy(encoded, 0, header, 0, 16);
+
+            TestHelpers.AssertBytesEqual(meta, header, "EXF header preserved");
+        }
+
+        #endregion
+
         #region Helper Methods
 
         /// <summary>
@@ -250,6 +382,28 @@ namespace ReFrontier.Tests
             // Set key index at offset 4 (16-bit)
             meta[4] = (byte)(keyIndex & 0xFF);
             meta[5] = (byte)((keyIndex >> 8) & 0xFF);
+            return meta;
+        }
+
+        /// <summary>
+        /// Creates an EXF meta buffer with the specified key index.
+        /// </summary>
+        private static byte[] CreateExfMeta(int keyIndex)
+        {
+            byte[] meta = new byte[16];
+            // Set EXF magic (0x1a667865 in little-endian)
+            meta[0] = 0x65;
+            meta[1] = 0x78;
+            meta[2] = 0x66;
+            meta[3] = 0x1A;
+            // Set key index at offset 4 (16-bit)
+            meta[4] = (byte)(keyIndex & 0xFF);
+            meta[5] = (byte)((keyIndex >> 8) & 0xFF);
+            // Set seed value at offset 12 (used for XOR key generation)
+            // Use a deterministic seed based on key index
+            uint seed = (uint)(0x12345678 + keyIndex * 0x11111111);
+            byte[] seedBytes = BitConverter.GetBytes(seed);
+            Array.Copy(seedBytes, 0, meta, 12, 4);
             return meta;
         }
 

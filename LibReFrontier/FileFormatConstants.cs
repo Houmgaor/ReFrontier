@@ -39,4 +39,10 @@ public static class FileFormatConstants
     /// Contains: offset, size, unk.
     /// </summary>
     public const int StageContainerRestEntrySize = 0x0C;
+
+    /// <summary>
+    /// Header length for FTXT text files (16 bytes).
+    /// Contains: 10 bytes padding/unknown, 2 bytes string count, 4 bytes text block size.
+    /// </summary>
+    public const int FtxtHeaderLength = 0x10;
 }

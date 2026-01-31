@@ -40,7 +40,7 @@ namespace ReFrontier.Routing.Handlers
         {
             if (!args.quiet)
                 _logger.WriteLine("MHF Text file detected.");
-            var outputPath = _unpackingService.PrintFTXT(filePath, reader);
+            var outputPath = _unpackingService.PrintFTXT(filePath, reader, args.createLog);
             return ProcessFileResult.Success(outputPath);
         }
     }

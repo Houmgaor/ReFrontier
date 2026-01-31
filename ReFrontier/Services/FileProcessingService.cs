@@ -161,11 +161,12 @@ namespace ReFrontier.Services
         /// Decrypt an Exf file.
         /// </summary>
         /// <param name="inputFile">Input file path.</param>
+        /// <param name="createLog">True if we should create a meta file with the header.</param>
         /// <param name="cleanUp">Should the original file be removed.</param>
         /// <param name="quiet">Suppress progress output.</param>
         /// <returns>Output file at {inputFile}.dexf</returns>
         /// <exception cref="ReFrontierException">Thrown if decryption fails.</exception>
-        public string DecryptExfFile(string inputFile, bool cleanUp, bool quiet = false)
+        public string DecryptExfFile(string inputFile, bool createLog, bool cleanUp, bool quiet = false)
         {
             byte[] buffer = _fileSystem.ReadAllBytes(inputFile);
             try
@@ -176,14 +177,85 @@ namespace ReFrontier.Services
             {
                 throw ex.WithFilePath(inputFile);
             }
-            var (_, bufferStripped) = StripEncryptionHeader(buffer);
+
+            var (exfHeader, bufferStripped) = StripEncryptionHeader(buffer);
+
             string outputFile = inputFile + _config.DecryptedExfSuffix;
             _fileSystem.WriteAllBytes(outputFile, bufferStripped);
+            if (!quiet)
+            {
+                _logger.Write($"File decrypted to {outputFile}");
+                if (createLog)
+                {
+                    string metaFile = $"{inputFile}{_config.MetaSuffix}";
+                    _fileSystem.WriteAllBytes(metaFile, exfHeader);
+                    _logger.Write($", log file at {metaFile}");
+                }
+                _logger.Write(".\n");
+            }
+            else if (createLog)
+            {
+                // Still need to write the meta file even in quiet mode
+                string metaFile = $"{inputFile}{_config.MetaSuffix}";
+                _fileSystem.WriteAllBytes(metaFile, exfHeader);
+            }
             if (cleanUp)
                 _fileSystem.DeleteFile(inputFile);
-            if (!quiet)
-                _logger.WriteLine($"File decrypted to {outputFile}.");
+
             return outputFile;
+        }
+
+        /// <summary>
+        /// Encrypt a single file to EXF format.
+        ///
+        /// If inputFile is "file.exf.dexf",
+        /// metaFile should be "file.exf.meta" and
+        /// the output file will be "file.exf".
+        /// </summary>
+        /// <param name="inputFile">Input file to encrypt.</param>
+        /// <param name="metaFile">EXF header data to use for encryption.</param>
+        /// <param name="cleanUp">Remove both inputFile and metaFile.</param>
+        /// <param name="quiet">Suppress progress output.</param>
+        /// <returns>Encrypted file path.</returns>
+        /// <exception cref="FileNotFoundException">Thrown if the meta file does not exist.</exception>
+        /// <exception cref="ReFrontierException">Thrown if encryption fails.</exception>
+        public string EncryptExfFile(string inputFile, string metaFile, bool cleanUp, bool quiet = false)
+        {
+            byte[] buffer = _fileSystem.ReadAllBytes(inputFile);
+            // From file.exf.dexf to file.exf
+            string encryptedFilePath = Path.Join(
+                Path.GetDirectoryName(inputFile),
+                Path.GetFileNameWithoutExtension(inputFile)
+            );
+            if (!_fileSystem.FileExists(metaFile))
+            {
+                throw new FileNotFoundException(
+                    $"META file {metaFile} does not exist, " +
+                    $"cannot encrypt {inputFile}. " +
+                    "Make sure to decrypt the initial file with the --log option, " +
+                    "and to place the generated meta file in the same folder as the file " +
+                    "to encrypt."
+                );
+            }
+            byte[] bufferMeta = _fileSystem.ReadAllBytes(metaFile);
+            try
+            {
+                buffer = Crypto.EncodeExf(buffer, bufferMeta);
+            }
+            catch (ReFrontierException ex)
+            {
+                throw ex.WithFilePath(inputFile);
+            }
+            _fileSystem.WriteAllBytes(encryptedFilePath, buffer);
+            if (!quiet)
+                _logger.PrintWithSeparator($"File encrypted to {encryptedFilePath}.", false);
+            _fileOperations.GetUpdateEntryInstance(inputFile);
+            if (cleanUp)
+            {
+                _fileSystem.DeleteFile(inputFile);
+                _fileSystem.DeleteFile(metaFile);
+            }
+            return encryptedFilePath;
         }
     }
 }
