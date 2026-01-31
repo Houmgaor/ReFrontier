@@ -1,0 +1,120 @@
+using System;
+using System.IO;
+
+using LibReFrontier.Abstractions;
+
+using ReFrontier.CLI;
+using ReFrontier.Jpk;
+using ReFrontier.Services;
+
+namespace ReFrontier.Orchestration
+{
+    /// <summary>
+    /// Orchestrates the high-level application flow for ReFrontier.
+    /// </summary>
+    public class ApplicationOrchestrator
+    {
+        private readonly IFileSystem _fileSystem;
+        private readonly ILogger _logger;
+        private readonly Program _program;
+        private readonly string _productName;
+        private readonly string _version;
+        private readonly string _description;
+
+        /// <summary>
+        /// Create a new ApplicationOrchestrator instance with default dependencies.
+        /// </summary>
+        public ApplicationOrchestrator()
+            : this(new RealFileSystem(), new ConsoleLogger(), new DefaultCodecFactory(), FileProcessingConfig.Default())
+        {
+        }
+
+        /// <summary>
+        /// Create a new ApplicationOrchestrator instance with injectable dependencies.
+        /// </summary>
+        /// <param name="fileSystem">File system abstraction.</param>
+        /// <param name="logger">Logger abstraction.</param>
+        /// <param name="codecFactory">Codec factory.</param>
+        /// <param name="config">Configuration settings.</param>
+        public ApplicationOrchestrator(IFileSystem fileSystem, ILogger logger, ICodecFactory codecFactory, FileProcessingConfig config)
+            : this(fileSystem, logger, codecFactory, config, "ReFrontier", "unknown", "")
+        {
+        }
+
+        /// <summary>
+        /// Create a new ApplicationOrchestrator instance with full configuration.
+        /// </summary>
+        /// <param name="fileSystem">File system abstraction.</param>
+        /// <param name="logger">Logger abstraction.</param>
+        /// <param name="codecFactory">Codec factory.</param>
+        /// <param name="config">Configuration settings.</param>
+        /// <param name="productName">Product name for display.</param>
+        /// <param name="version">Application version.</param>
+        /// <param name="description">Application description.</param>
+        public ApplicationOrchestrator(
+            IFileSystem fileSystem,
+            ILogger logger,
+            ICodecFactory codecFactory,
+            FileProcessingConfig config,
+            string productName,
+            string version,
+            string description)
+        {
+            _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _program = new Program(fileSystem, logger, codecFactory, config);
+            _productName = productName;
+            _version = version;
+            _description = description;
+        }
+
+        /// <summary>
+        /// Execute the application with the provided CLI arguments.
+        /// </summary>
+        /// <param name="args">Parsed CLI arguments.</param>
+        /// <returns>Exit code (0 for success, 1 for failure).</returns>
+        public int Execute(CliArguments args)
+        {
+            // Print header
+            _logger.WriteLine($"{_productName} v{_version} - {_description}, by MHVuze, additions by Houmgaor");
+            _logger.WriteLine("==============================");
+
+            // Validate file exists
+            if (!File.Exists(args.FilePath) && !Directory.Exists(args.FilePath))
+            {
+                _logger.WriteLine($"Error: '{args.FilePath}' does not exist.");
+                return 1;
+            }
+
+            // Start input processing
+            if (File.GetAttributes(args.FilePath).HasFlag(FileAttributes.Directory))
+            {
+                // Input is directory
+                if (args.ProcessingArgs.compression.Level != 0)
+                {
+                    _logger.WriteLine("Error: Cannot compress a directory.");
+                    return 1;
+                }
+                if (args.ProcessingArgs.encrypt)
+                {
+                    _logger.WriteLine("Error: Cannot encrypt a directory.");
+                    return 1;
+                }
+                _program.StartProcessingDirectory(args.FilePath, args.ProcessingArgs);
+            }
+            else
+            {
+                // Input is a file
+                if (args.ProcessingArgs.repack)
+                {
+                    _logger.WriteLine("Error: A single file cannot be used while in repacking mode.");
+                    return 1;
+                }
+                _program.StartProcessingFile(args.FilePath, args.ProcessingArgs);
+            }
+
+            _logger.WriteLine("Done.");
+            return 0;
+        }
+    }
+}

@@ -1,4 +1,5 @@
 using System.CommandLine;
+
 using LibReFrontier;
 
 namespace ReFrontier.CLI

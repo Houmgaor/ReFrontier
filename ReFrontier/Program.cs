@@ -12,6 +12,7 @@ using LibReFrontier.Exceptions;
 
 using ReFrontier.CLI;
 using ReFrontier.Jpk;
+using ReFrontier.Orchestration;
 using ReFrontier.Services;
 
 namespace ReFrontier
@@ -163,37 +164,17 @@ namespace ReFrontier
 
                 try
                 {
-                    Console.WriteLine($"{productName} v{fileVersionAttribute} - {description}, by MHVuze, additions by Houmgaor");
-                    Console.WriteLine("==============================");
-
-                    // Validate file exists
-                    if (!File.Exists(cliArgs.FilePath) && !Directory.Exists(cliArgs.FilePath))
-                    {
-                        Console.Error.WriteLine($"Error: '{cliArgs.FilePath}' does not exist.");
-                        return 1;
-                    }
-
-                    // Create program instance and start processing
-                    var program = new Program();
-
-                    // Start input processing
-                    if (File.GetAttributes(cliArgs.FilePath).HasFlag(FileAttributes.Directory))
-                    {
-                        // Input is directory
-                        if (cliArgs.ProcessingArgs.compression.Level != 0)
-                            throw new InvalidOperationException("Cannot compress a directory.");
-                        if (cliArgs.ProcessingArgs.encrypt)
-                            throw new InvalidOperationException("Cannot encrypt a directory.");
-                        program.StartProcessingDirectory(cliArgs.FilePath, cliArgs.ProcessingArgs);
-                    }
-                    else
-                    {
-                        // Input is a file
-                        if (cliArgs.ProcessingArgs.repack)
-                            throw new InvalidOperationException("A single file cannot be used while in repacking mode.");
-                        program.StartProcessingFile(cliArgs.FilePath, cliArgs.ProcessingArgs);
-                    }
-                    Console.WriteLine("Done.");
+                    // Create orchestrator and execute
+                    var orchestrator = new ApplicationOrchestrator(
+                        new RealFileSystem(),
+                        new ConsoleLogger(),
+                        new DefaultCodecFactory(),
+                        FileProcessingConfig.Default(),
+                        productName,
+                        fileVersionAttribute,
+                        description
+                    );
+                    exitCode = orchestrator.Execute(cliArgs);
                 }
                 catch (Exception ex)
                 {
