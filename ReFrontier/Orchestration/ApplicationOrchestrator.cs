@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 
 using LibReFrontier.Abstractions;
 
@@ -80,14 +79,14 @@ namespace ReFrontier.Orchestration
             _logger.WriteLine("==============================");
 
             // Validate file exists
-            if (!File.Exists(args.FilePath) && !Directory.Exists(args.FilePath))
+            if (!_fileSystem.FileExists(args.FilePath) && !_fileSystem.DirectoryExists(args.FilePath))
             {
                 _logger.WriteLine($"Error: '{args.FilePath}' does not exist.");
                 return 1;
             }
 
             // Start input processing
-            if (File.GetAttributes(args.FilePath).HasFlag(FileAttributes.Directory))
+            if (_fileSystem.DirectoryExists(args.FilePath))
             {
                 // Input is directory
                 if (args.ProcessingArgs.compression.Level != 0)
