@@ -15,6 +15,9 @@ dotnet build
 # Build (release)
 dotnet build --configuration Release
 
+# Run directly (without building separately)
+dotnet run --project ReFrontier -- mhfdat.bin --saveMeta
+
 # Run tests
 dotnet test
 
@@ -117,9 +120,6 @@ Files are identified by magic headers:
 # Basic unpacking with metadata (required for repacking/re-encryption)
 ./ReFrontier mhfdat.bin --saveMeta
 
-# Auto-detect optimal parallelism (default)
-./ReFrontier mhfdat.bin --saveMeta
-
 # Use 8 parallel threads
 ./ReFrontier directory/ --parallelism 8
 
@@ -133,7 +133,7 @@ Files are identified by magic headers:
 ./ReFrontier file.bin --decryptOnly
 
 # Compress and encrypt
-./ReFrontier file.bin --compress=3,50 --encrypt
+./ReFrontier file.bin --compress hfi --level 80 --encrypt
 
 # Repack directory
 ./ReFrontier file.bin --pack
@@ -144,8 +144,14 @@ Key options:
 - `--quiet` - Suppress progress output during processing (reduces logging overhead for better parallelism)
 - `--saveMeta` - Save metadata files (required for repacking/re-encryption)
 - `--recursive`/`--nonRecursive` - Control recursive unpacking
-- `--compress=[type],[level]` - Compression settings
-- `--encrypt` - Encrypt output
+- `--compress <type>` - Compression type: `rw`, `hfirw`, `lz`, `hfi` (or `0`, `2`, `3`, `4`)
+- `--level <n>` - Compression level (1-100, diminishing returns above ~80)
+- `--encrypt` - Encrypt output (requires `.meta` file)
+- `--decryptOnly` - Decrypt without decompressing
+- `--noDecryption` - Skip decryption entirely
+- `--stageContainer` - Treat file as stage-specific container
+- `--autoStage` - Auto-detect stage-specific containers
+- `--ignoreJPK` - Skip JPK decompression
 - `--pack` - Repack directory
 - `--cleanUp` - Delete source files after processing
 
