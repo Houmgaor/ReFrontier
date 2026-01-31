@@ -1,7 +1,4 @@
-using System;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 
 using LibReFrontier;
 
@@ -9,7 +6,6 @@ using ReFrontier.Jpk;
 using ReFrontier.Services;
 using ReFrontier.Tests.Mocks;
 
-using Xunit;
 using Xunit.Abstractions;
 
 namespace ReFrontier.Tests.Performance

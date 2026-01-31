@@ -6,8 +6,6 @@ using ReFrontier.Orchestration;
 using ReFrontier.Services;
 using ReFrontier.Tests.Mocks;
 
-using Xunit;
-
 namespace ReFrontier.Tests.Orchestration
 {
     /// <summary>

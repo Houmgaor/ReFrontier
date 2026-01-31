@@ -1,12 +1,6 @@
-using System;
-
-using LibReFrontier;
-
 using ReFrontier.Jpk;
 using ReFrontier.Services;
 using ReFrontier.Tests.Mocks;
-
-using Xunit;
 
 namespace ReFrontier.Tests.Integration
 {
