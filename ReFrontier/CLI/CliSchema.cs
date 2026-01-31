@@ -24,6 +24,7 @@ namespace ReFrontier.CLI
         private readonly Option<int> _compressLevelOption;
         private readonly Option<bool> _encryptOption;
         private readonly Option<bool> _closeOption;
+        private readonly Option<int> _parallelismOption;
 
         /// <summary>
         /// Creates a new CliSchema instance and initializes all CLI options.
@@ -109,6 +110,12 @@ namespace ReFrontier.CLI
             {
                 Description = "Close window after finishing process"
             };
+
+            _parallelismOption = new Option<int>("--parallelism")
+            {
+                Description = "Number of parallel threads (0 = auto-detect, default: 0)",
+                DefaultValueFactory = _ => 0
+            };
         }
 
         /// <summary>
@@ -136,7 +143,8 @@ namespace ReFrontier.CLI
                 _compressTypeOption,
                 _compressLevelOption,
                 _encryptOption,
-                _closeOption
+                _closeOption,
+                _parallelismOption
             };
 
             return rootCommand;
@@ -164,6 +172,7 @@ namespace ReFrontier.CLI
             var compressLevel = parseResult.GetValue(_compressLevelOption);
             var encrypt = parseResult.GetValue(_encryptOption);
             var close = parseResult.GetValue(_closeOption);
+            var parallelism = parseResult.GetValue(_parallelismOption);
 
             // Parse compression if specified
             Compression compression = new();
@@ -199,7 +208,8 @@ namespace ReFrontier.CLI
             {
                 FilePath = file,
                 ProcessingArgs = processingArgs,
-                CloseAfterCompletion = close
+                CloseAfterCompletion = close,
+                Parallelism = parallelism
             };
         }
     }

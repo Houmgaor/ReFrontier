@@ -39,6 +39,7 @@ namespace ReFrontier
         /// </summary>
         public bool rewriteOldFile;
         public Compression compression;
+        public int parallelism;
 
         public override bool Equals(object? obj)
         {
@@ -58,7 +59,8 @@ namespace ReFrontier
                 && stageContainer == other.stageContainer
                 && autoStage == other.autoStage
                 && rewriteOldFile == other.rewriteOldFile
-                && compression.Equals(other.compression);
+                && compression.Equals(other.compression)
+                && parallelism == other.parallelism;
         }
 
         public override int GetHashCode()
@@ -76,6 +78,7 @@ namespace ReFrontier
             hash.Add(autoStage);
             hash.Add(rewriteOldFile);
             hash.Add(compression);
+            hash.Add(parallelism);
             return hash.ToHashCode();
         }
 
@@ -95,11 +98,6 @@ namespace ReFrontier
     /// </summary>
     public class Program
     {
-        /// <summary>
-        /// Number of parallel processes on reading folders.
-        /// </summary>
-        const int MAX_PARALLEL_PROCESSES = 4;
-
         private readonly IFileSystem _fileSystem;
         private readonly ILogger _logger;
         private readonly FileProcessingService _fileProcessingService;
@@ -329,9 +327,14 @@ namespace ReFrontier
         /// <param name="inputArguments">Configuration arguments from CLI.</param>
         public void ProcessMultipleLevels(string[] filePathes, InputArguments inputArguments)
         {
+            // Use specified parallelism, or default to Environment.ProcessorCount if not set
+            int effectiveParallelism = inputArguments.parallelism > 0
+                ? inputArguments.parallelism
+                : Environment.ProcessorCount;
+
             var parallelOptions = new ParallelOptions()
             {
-                MaxDegreeOfParallelism = MAX_PARALLEL_PROCESSES
+                MaxDegreeOfParallelism = effectiveParallelism
             };
 
             // Use a concurrent queue to manage files/directories to process

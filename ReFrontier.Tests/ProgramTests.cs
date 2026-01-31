@@ -296,5 +296,56 @@ namespace ReFrontier.Tests
         }
 
         #endregion
+
+        #region InputArguments Equality Tests
+
+        [Fact]
+        public void InputArguments_Equals_ConsidersParallelism()
+        {
+            var args1 = new InputArguments
+            {
+                parallelism = 4,
+                createLog = true
+            };
+
+            var args2 = new InputArguments
+            {
+                parallelism = 8,
+                createLog = true
+            };
+
+            var args3 = new InputArguments
+            {
+                parallelism = 4,
+                createLog = true
+            };
+
+            // Different parallelism should not be equal
+            Assert.NotEqual(args1, args2);
+
+            // Same parallelism should be equal
+            Assert.Equal(args1, args3);
+        }
+
+        [Fact]
+        public void InputArguments_GetHashCode_ConsidersParallelism()
+        {
+            var args1 = new InputArguments
+            {
+                parallelism = 4,
+                createLog = true
+            };
+
+            var args2 = new InputArguments
+            {
+                parallelism = 8,
+                createLog = true
+            };
+
+            // Different parallelism should produce different hash codes (most of the time)
+            Assert.NotEqual(args1.GetHashCode(), args2.GetHashCode());
+        }
+
+        #endregion
     }
 }

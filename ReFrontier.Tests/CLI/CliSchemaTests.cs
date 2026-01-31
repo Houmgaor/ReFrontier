@@ -90,5 +90,44 @@ namespace ReFrontier.Tests.CLI
 
             Assert.True(cliArgs.ProcessingArgs.recursive);
         }
+
+        [Fact]
+        public void ExtractArguments_ParallelismNotSpecified_DefaultsToZero()
+        {
+            var schema = new CliSchema();
+            var command = schema.CreateRootCommand("1.0.0", "TestApp", "Test");
+
+            var args = new[] { "test.bin" };
+            var parseResult = command.Parse(args);
+            var cliArgs = schema.ExtractArguments(parseResult);
+
+            Assert.Equal(0, cliArgs.Parallelism);
+        }
+
+        [Fact]
+        public void ExtractArguments_ExplicitParallelism_ParsesCorrectly()
+        {
+            var schema = new CliSchema();
+            var command = schema.CreateRootCommand("1.0.0", "TestApp", "Test");
+
+            var args = new[] { "test.bin", "--parallelism", "8" };
+            var parseResult = command.Parse(args);
+            var cliArgs = schema.ExtractArguments(parseResult);
+
+            Assert.Equal(8, cliArgs.Parallelism);
+        }
+
+        [Fact]
+        public void ExtractArguments_ParallelismZero_AllowedForAutoDetect()
+        {
+            var schema = new CliSchema();
+            var command = schema.CreateRootCommand("1.0.0", "TestApp", "Test");
+
+            var args = new[] { "test.bin", "--parallelism", "0" };
+            var parseResult = command.Parse(args);
+            var cliArgs = schema.ExtractArguments(parseResult);
+
+            Assert.Equal(0, cliArgs.Parallelism);
+        }
     }
 }

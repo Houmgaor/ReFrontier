@@ -85,31 +85,44 @@ namespace ReFrontier.Orchestration
                 return 1;
             }
 
+            // Resolve parallelism value (0 = auto-detect)
+            int effectiveParallelism = args.Parallelism == 0
+                ? Environment.ProcessorCount
+                : args.Parallelism;
+
+            // Cap at reasonable maximum
+            if (effectiveParallelism > 64)
+                effectiveParallelism = 64;
+
+            // Update processing args with resolved parallelism
+            var processingArgs = args.ProcessingArgs;
+            processingArgs.parallelism = effectiveParallelism;
+
             // Start input processing
             if (_fileSystem.DirectoryExists(args.FilePath))
             {
                 // Input is directory
-                if (args.ProcessingArgs.compression.Level != 0)
+                if (processingArgs.compression.Level != 0)
                 {
                     _logger.WriteLine("Error: Cannot compress a directory.");
                     return 1;
                 }
-                if (args.ProcessingArgs.encrypt)
+                if (processingArgs.encrypt)
                 {
                     _logger.WriteLine("Error: Cannot encrypt a directory.");
                     return 1;
                 }
-                _program.StartProcessingDirectory(args.FilePath, args.ProcessingArgs);
+                _program.StartProcessingDirectory(args.FilePath, processingArgs);
             }
             else
             {
                 // Input is a file
-                if (args.ProcessingArgs.repack)
+                if (processingArgs.repack)
                 {
                     _logger.WriteLine("Error: A single file cannot be used while in repacking mode.");
                     return 1;
                 }
-                _program.StartProcessingFile(args.FilePath, args.ProcessingArgs);
+                _program.StartProcessingFile(args.FilePath, processingArgs);
             }
 
             _logger.WriteLine("Done.");

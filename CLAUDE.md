@@ -56,7 +56,7 @@ Packing reverses this flow: Pack → Compress → Encrypt.
 
 **Application Entry Point:**
 
-**ReFrontier/Program.cs**: Main entry point reduced to ~40 lines. Contains `InputArguments` struct. Main method delegates to CLI layer and orchestrator. Program class manages parallel processing (4 concurrent threads) with `ConcurrentQueue` for recursive unpacking. Supports dependency injection via constructor for testability.
+**ReFrontier/Program.cs**: Main entry point reduced to ~40 lines. Contains `InputArguments` struct. Main method delegates to CLI layer and orchestrator. Program class manages parallel processing (configurable via `--parallelism` CLI option) with `ConcurrentQueue` for recursive unpacking. Supports dependency injection via constructor for testability.
 
 **CLI Layer** (`ReFrontier/CLI/`):
 - `CliSchema` - Defines all CLI options and creates System.CommandLine RootCommand
@@ -117,6 +117,15 @@ Files are identified by magic headers:
 # Basic unpacking with log (required for re-encryption)
 ./ReFrontier mhfdat.bin --log
 
+# Auto-detect optimal parallelism (default)
+./ReFrontier mhfdat.bin --log
+
+# Use 8 parallel threads
+./ReFrontier directory/ --parallelism 8
+
+# Single-threaded processing
+./ReFrontier file.bin --parallelism 1
+
 # Decrypt only
 ./ReFrontier file.bin --decryptOnly
 
@@ -127,7 +136,14 @@ Files are identified by magic headers:
 ./ReFrontier file.bin --pack
 ```
 
-Key options: `--log`, `--recursive`/`--nonRecursive`, `--compress=[type],[level]`, `--encrypt`, `--pack`, `--cleanUp`
+Key options:
+- `--parallelism` - Number of parallel threads (0=auto-detect using CPU cores, default: 0)
+- `--log` - Write log file (required for re-encryption)
+- `--recursive`/`--nonRecursive` - Control recursive unpacking
+- `--compress=[type],[level]` - Compression settings
+- `--encrypt` - Encrypt output
+- `--pack` - Repack directory
+- `--cleanUp` - Delete source files after processing
 
 ## Testing
 
