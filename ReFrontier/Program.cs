@@ -225,12 +225,54 @@ namespace ReFrontier
                 _packingService.ProcessPackInput(directoryPath);
             else
             {
-                // Process each element in directory
-                string[] inputFiles = _fileSystem.GetFiles(
+                // Process each element in directory, excluding output files from previous runs
+                string[] allFiles = _fileSystem.GetFiles(
                     directoryPath, "*.*", SearchOption.AllDirectories
                 );
+                string[] inputFiles = FilterInputFiles(allFiles);
                 ProcessMultipleLevels(inputFiles, inputArguments);
             }
+        }
+
+        /// <summary>
+        /// Filter out output files from previous processing runs.
+        /// </summary>
+        /// <param name="files">All files to filter.</param>
+        /// <returns>Files that should be processed.</returns>
+        private static string[] FilterInputFiles(string[] files)
+        {
+            // Extensions to exclude (output files from previous runs)
+            var excludedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ".decd",   // Decrypted ECD files
+                ".dexf",   // Decrypted EXF files
+                ".meta",   // Encryption metadata
+                ".log",    // Unpacking logs
+                ".txt",    // FTXT text output
+                ".png",    // Extracted images
+            };
+
+            // Directory suffix to exclude
+            const string unpackedSuffix = ".unpacked";
+
+            var filtered = new List<string>();
+            foreach (var file in files)
+            {
+                string extension = Path.GetExtension(file);
+
+                // Skip files with excluded extensions
+                if (excludedExtensions.Contains(extension))
+                    continue;
+
+                // Skip files inside .unpacked directories
+                if (file.Contains(unpackedSuffix + Path.DirectorySeparatorChar) ||
+                    file.Contains(unpackedSuffix + Path.AltDirectorySeparatorChar))
+                    continue;
+
+                filtered.Add(file);
+            }
+
+            return filtered.ToArray();
         }
 
         /// <summary>

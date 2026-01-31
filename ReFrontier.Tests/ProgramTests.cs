@@ -1,3 +1,5 @@
+using System.Linq;
+
 using LibReFrontier;
 using LibReFrontier.Exceptions;
 
@@ -145,7 +147,8 @@ namespace ReFrontier.Tests
             // Arrange - Create directory with files
             _fileSystem.AddDirectory("/test/dir");
             // Add a file large enough to pass size check (16+ bytes), but still invalid
-            _fileSystem.AddFile("/test/dir/file1.txt", new byte[20] { 0x48, 0x65, 0x6C, 0x6C, 0x6F, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
+            // Use .bin extension since .txt is excluded as an output file type
+            _fileSystem.AddFile("/test/dir/file1.bin", new byte[20] { 0x48, 0x65, 0x6C, 0x6C, 0x6F, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
 
             var args = new InputArguments
             {
@@ -159,6 +162,64 @@ namespace ReFrontier.Tests
             // Assert - Files should be processed (or at least attempted with skip message)
             // The logger should have some output
             Assert.True(_logger.Lines.Count > 0 || _logger.Messages.Count > 0);
+        }
+
+        [Fact]
+        public void StartProcessingDirectory_FiltersOutputFiles()
+        {
+            // Arrange - Create directory with both source and output files
+            _fileSystem.AddDirectory("/test/dir");
+            // Source file that should be processed
+            _fileSystem.AddFile("/test/dir/file1.bin", new byte[20] { 0x48, 0x65, 0x6C, 0x6C, 0x6F, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
+            // Output files that should be filtered out
+            _fileSystem.AddFile("/test/dir/file1.decd", new byte[20]);
+            _fileSystem.AddFile("/test/dir/file1.dexf", new byte[20]);
+            _fileSystem.AddFile("/test/dir/file1.meta", new byte[20]);
+            _fileSystem.AddFile("/test/dir/file1.log", new byte[20]);
+            _fileSystem.AddFile("/test/dir/file1.txt", new byte[20]);
+            _fileSystem.AddFile("/test/dir/image.png", new byte[20]);
+
+            var args = new InputArguments
+            {
+                repack = false,
+                recursive = false
+            };
+
+            // Act
+            _program.StartProcessingDirectory("/test/dir", args);
+
+            // Assert - Only the .bin file should trigger processing messages
+            // The output files should be silently skipped by the filter
+            var processingMessages = _logger.Messages.Where(m => m.Contains("Processing")).ToList();
+            Assert.Single(processingMessages);
+            Assert.Contains("file1.bin", processingMessages[0]);
+        }
+
+        [Fact]
+        public void StartProcessingDirectory_FiltersUnpackedDirectories()
+        {
+            // Arrange - Create directory structure with .unpacked subdirectory
+            _fileSystem.AddDirectory("/test/dir");
+            _fileSystem.AddDirectory("/test/dir/archive.bin.unpacked");
+            // Source file that should be processed
+            _fileSystem.AddFile("/test/dir/file1.bin", new byte[20] { 0x48, 0x65, 0x6C, 0x6C, 0x6F, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
+            // Files inside .unpacked directory should be filtered out
+            _fileSystem.AddFile("/test/dir/archive.bin.unpacked/extracted.bin", new byte[20]);
+
+            var args = new InputArguments
+            {
+                repack = false,
+                recursive = false
+            };
+
+            // Act
+            _program.StartProcessingDirectory("/test/dir", args);
+
+            // Assert - Only the root .bin file should trigger processing
+            var processingMessages = _logger.Messages.Where(m => m.Contains("Processing")).ToList();
+            Assert.Single(processingMessages);
+            Assert.Contains("file1.bin", processingMessages[0]);
+            Assert.DoesNotContain(processingMessages, m => m.Contains("extracted.bin"));
         }
 
         #endregion

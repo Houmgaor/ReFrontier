@@ -282,6 +282,9 @@ namespace ReFrontier.Services
 
             using var logOutput = InitializeLogFile(input, "MHA", createLog, out string logPath);
 
+            // Skip the 4-byte magic header (already validated by handler)
+            brInput.BaseStream.Seek(4, SeekOrigin.Current);
+
             // Read header
             int pointerEntryMetaBlock = brInput.ReadInt32();
             int count = brInput.ReadInt32();
