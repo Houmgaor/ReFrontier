@@ -56,7 +56,7 @@ namespace ReFrontier.Tests.Routing.Handlers
             using var ms = new MemoryStream(data);
             using var reader = new BinaryReader(ms);
 
-            var result = _handler.Handle("test.bin", reader, new InputArguments());
+            var result = _handler.Handle("test.bin", reader, new InputArguments { verbose = true });
 
             Assert.False(result.WasProcessed);
             Assert.Equal("Decryption disabled", result.SkipReason);

@@ -43,7 +43,7 @@ namespace ReFrontier.Routing.Handlers
                 reader,
                 args.createLog,
                 args.cleanUp,
-                args.quiet
+                args.verbose
             );
             return ProcessFileResult.Success(outputPath);
         }

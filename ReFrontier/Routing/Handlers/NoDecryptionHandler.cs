@@ -33,7 +33,7 @@ namespace ReFrontier.Routing.Handlers
         /// <inheritdoc/>
         public ProcessFileResult Handle(string filePath, BinaryReader reader, InputArguments args)
         {
-            if (!args.quiet)
+            if (args.verbose)
             {
                 _logger.WriteLine("ECD Header detected.");
                 _logger.PrintWithSeparator("Not decrypting due to flag.", false);

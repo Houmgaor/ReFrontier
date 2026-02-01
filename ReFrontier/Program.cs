@@ -37,6 +37,7 @@ namespace ReFrontier
         public Compression compression;
         public int parallelism;
         public bool quiet;
+        public bool verbose;
 
         public override bool Equals(object? obj)
         {
@@ -57,7 +58,8 @@ namespace ReFrontier
                 && autoStage == other.autoStage
                 && compression.Equals(other.compression)
                 && parallelism == other.parallelism
-                && quiet == other.quiet;
+                && quiet == other.quiet
+                && verbose == other.verbose;
         }
 
         public override int GetHashCode()
@@ -76,6 +78,7 @@ namespace ReFrontier
             hash.Add(compression);
             hash.Add(parallelism);
             hash.Add(quiet);
+            hash.Add(verbose);
             return hash.ToHashCode();
         }
 
@@ -321,7 +324,7 @@ namespace ReFrontier
         /// <returns>Result indicating success with output path, or skipped with reason.</returns>
         public ProcessFileResult ProcessFile(string filePath, InputArguments inputArguments)
         {
-            if (!inputArguments.quiet)
+            if (inputArguments.verbose)
                 _logger.PrintWithSeparator($"Processing {filePath}", false);
 
             // Stream file from disk instead of loading entire file into memory
@@ -333,7 +336,7 @@ namespace ReFrontier
             string outputPath;
             if (msInput.Length == 0)
             {
-                if (!inputArguments.quiet)
+                if (inputArguments.verbose)
                     _logger.WriteLine("File is empty. Skipping.");
                 return ProcessFileResult.Skipped("File is empty");
             }
@@ -350,7 +353,7 @@ namespace ReFrontier
 
             outputPath = routerResult.OutputPath!;
 
-            if (!inputArguments.quiet)
+            if (inputArguments.verbose)
                 _logger.WriteSeparator();
             // Decompress file if it was an ECD (encrypted)
             if (fileMagic == FileMagic.ECD && !inputArguments.decryptOnly)
@@ -440,7 +443,7 @@ namespace ReFrontier
                         progressCallback?.Invoke(stats.HandledFiles, stats.TotalFiles);
 
                         // Log the error and continue processing other files
-                        if (!inputArguments.quiet)
+                        if (inputArguments.verbose)
                             _logger.WriteLine($"Skipping {inputFile}: {ex.Message}");
                     }
                 });

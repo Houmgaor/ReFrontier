@@ -21,8 +21,13 @@ namespace ReFrontier.CLI
         public int Parallelism { get; init; }
 
         /// <summary>
-        /// Whether to suppress progress output during processing.
+        /// Whether to suppress progress bar during processing.
         /// </summary>
         public bool Quiet { get; init; }
+
+        /// <summary>
+        /// Whether to show per-file processing messages.
+        /// </summary>
+        public bool Verbose { get; init; }
     }
 }

@@ -38,14 +38,14 @@ namespace ReFrontier.Routing.Handlers
         /// <inheritdoc/>
         public ProcessFileResult Handle(string filePath, BinaryReader reader, InputArguments args)
         {
-            if (!args.quiet)
+            if (args.verbose)
                 _logger.WriteLine("JKR Header detected.");
             string outputPath = filePath;
 
             if (!args.ignoreJPK)
             {
-                outputPath = _unpackingService.UnpackJPK(filePath, args.quiet);
-                if (!args.quiet)
+                outputPath = _unpackingService.UnpackJPK(filePath, args.verbose);
+                if (args.verbose)
                     _logger.WriteLine($"File decompressed to {outputPath}.");
             }
 

@@ -140,7 +140,7 @@ namespace ReFrontier.Tests.Services
             _logger.Clear();
 
             // Act
-            var result = _service.UnpackJPK("/test/compressed.jkr");
+            var result = _service.UnpackJPK("/test/compressed.jkr", verbose: true);
 
             // Assert
             Assert.NotNull(result);
@@ -202,7 +202,7 @@ namespace ReFrontier.Tests.Services
             _logger.Clear();
 
             // Act
-            var result = _service.UnpackJPK("/test/compressed.jkr");
+            var result = _service.UnpackJPK("/test/compressed.jkr", verbose: true);
 
             // Assert
             Assert.NotNull(result);
@@ -229,7 +229,7 @@ namespace ReFrontier.Tests.Services
             _logger.Clear();
 
             // Act
-            var result = _service.UnpackJPK("/test/compressed.jkr");
+            var result = _service.UnpackJPK("/test/compressed.jkr", verbose: true);
 
             // Assert
             Assert.NotNull(result);
@@ -256,7 +256,7 @@ namespace ReFrontier.Tests.Services
             _logger.Clear();
 
             // Act
-            var result = _service.UnpackJPK("/test/compressed.jkr");
+            var result = _service.UnpackJPK("/test/compressed.jkr", verbose: true);
 
             // Assert
             Assert.NotNull(result);

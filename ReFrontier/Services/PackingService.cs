@@ -420,11 +420,11 @@ namespace ReFrontier.Services
         /// <param name="inputFile">Input .txt file path.</param>
         /// <param name="metaFile">Meta file containing the original 16-byte header.</param>
         /// <param name="cleanUp">Remove input and meta files after packing.</param>
-        /// <param name="quiet">Suppress progress output.</param>
+        /// <param name="verbose">Show per-file processing messages.</param>
         /// <returns>Output file path.</returns>
         /// <exception cref="FileNotFoundException">Thrown if the meta file does not exist.</exception>
         /// <exception cref="PackingException">Thrown if packing fails.</exception>
-        public string PackFTXT(string inputFile, string metaFile, bool cleanUp, bool quiet = false)
+        public string PackFTXT(string inputFile, string metaFile, bool cleanUp, bool verbose = false)
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             Encoding shiftJis = Encoding.GetEncoding("shift-jis");
@@ -495,7 +495,7 @@ namespace ReFrontier.Services
                 bw.Write((byte)0); // null terminator
             }
 
-            if (!quiet)
+            if (verbose)
                 _logger.PrintWithSeparator($"FTXT packed to {outputFile} ({encodedStrings.Count} strings).", false);
 
             if (cleanUp)

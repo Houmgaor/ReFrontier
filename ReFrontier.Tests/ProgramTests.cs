@@ -84,7 +84,8 @@ namespace ReFrontier.Tests
             var args = new InputArguments
             {
                 compression = new Compression(CompressionType.RW, 0),
-                encrypt = false
+                encrypt = false,
+                verbose = true
             };
 
             // Act - Should not throw; exceptions are caught and logged
@@ -153,7 +154,8 @@ namespace ReFrontier.Tests
             var args = new InputArguments
             {
                 repack = false,
-                recursive = false
+                recursive = false,
+                verbose = true
             };
 
             // Act - Should not throw; exceptions are caught and logged
@@ -182,7 +184,8 @@ namespace ReFrontier.Tests
             var args = new InputArguments
             {
                 repack = false,
-                recursive = false
+                recursive = false,
+                verbose = true
             };
 
             // Act
@@ -209,7 +212,8 @@ namespace ReFrontier.Tests
             var args = new InputArguments
             {
                 repack = false,
-                recursive = false
+                recursive = false,
+                verbose = true
             };
 
             // Act
@@ -263,7 +267,8 @@ namespace ReFrontier.Tests
             {
                 createLog = true,
                 recursive = false,
-                decryptOnly = true
+                decryptOnly = true,
+                verbose = true
             };
 
             // Act
@@ -296,7 +301,8 @@ namespace ReFrontier.Tests
             var args = new InputArguments
             {
                 recursive = false,
-                ignoreJPK = false
+                ignoreJPK = false,
+                verbose = true
             };
 
             // Act

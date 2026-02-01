@@ -126,8 +126,11 @@ Files are identified by magic headers:
 # Single-threaded processing
 ./ReFrontier file.bin --parallelism 1
 
-# Suppress progress output for faster processing
+# Suppress progress bar (for scripts or logs)
 ./ReFrontier directory/ --quiet
+
+# Show per-file processing messages
+./ReFrontier directory/ --verbose
 
 # Decrypt only
 ./ReFrontier file.bin --decryptOnly
@@ -141,7 +144,8 @@ Files are identified by magic headers:
 
 Key options:
 - `--parallelism` - Number of parallel threads (0=auto-detect using CPU cores, default: 0)
-- `--quiet` - Suppress progress output during processing (reduces logging overhead for better parallelism)
+- `--quiet` - Suppress the progress bar during processing
+- `--verbose` - Show per-file processing messages (off by default for cleaner output)
 - `--saveMeta` - Save metadata files (recommended for repacking/re-encryption)
 - `--recursive`/`--nonRecursive` - Control recursive unpacking
 - `--compress <type>` - Compression type: `rw`, `hfirw`, `lz`, `hfi` (or `0`, `2`, `3`, `4`)

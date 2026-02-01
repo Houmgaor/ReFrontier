@@ -38,7 +38,7 @@ namespace ReFrontier.Routing.Handlers
         /// <inheritdoc/>
         public ProcessFileResult Handle(string filePath, BinaryReader reader, InputArguments args)
         {
-            if (!args.quiet)
+            if (args.verbose)
                 _logger.WriteLine("MOMO Header detected.");
             var outputPath = _unpackingService.UnpackSimpleArchive(
                 filePath,
@@ -47,7 +47,7 @@ namespace ReFrontier.Routing.Handlers
                 args.createLog,
                 args.cleanUp,
                 args.autoStage,
-                args.quiet
+                args.verbose
             );
             return ProcessFileResult.Success(outputPath);
         }

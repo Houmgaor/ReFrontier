@@ -117,7 +117,7 @@ namespace ReFrontier.Services
         /// <param name="size">File size.</param>
         /// <param name="outputDir">Output directory.</param>
         /// <param name="fileNameBase">Base name for output file.</param>
-        /// <param name="quiet">Suppress progress output.</param>
+        /// <param name="verbose">Show per-file processing messages.</param>
         /// <param name="logOutput">Optional log writer.</param>
         /// <param name="logMetadata">Optional additional metadata for log.</param>
         /// <returns>Tuple of (extension, headerInt).</returns>
@@ -127,7 +127,7 @@ namespace ReFrontier.Services
             int size,
             string outputDir,
             string fileNameBase,
-            bool quiet,
+            bool verbose,
             StreamWriter? logOutput = null,
             string? logMetadata = null
         )
@@ -137,7 +137,7 @@ namespace ReFrontier.Services
 
             string extension = ByteOperations.DetectExtension(entryData, out uint headerInt);
 
-            if (!quiet)
+            if (verbose)
                 _logger.WriteLine($"Offset: 0x{offset:X8}, Size: 0x{size:X8} ({extension})");
 
             if (logOutput != null)
@@ -159,12 +159,12 @@ namespace ReFrontier.Services
         /// <param name="createLog">true is a log file should be created.</param>
         /// <param name="cleanUp">Remove the initial input file.</param>
         /// <param name="autoStage">Unpack stage container if true.</param>
-        /// <param name="quiet">Suppress progress output.</param>
+        /// <param name="verbose">Show per-file processing messages.</param>
         /// <returns>Output folder path.</returns>
         /// <exception cref="PackingException">Thrown if the file is too small or not a valid container.</exception>
         public string UnpackSimpleArchive(
             string input, BinaryReader brInput, int magicSize, bool createLog,
-            bool cleanUp, bool autoStage, bool quiet = false
+            bool cleanUp, bool autoStage, bool verbose = false
         )
         {
             long fileLength = _fileSystem.GetFileLength(input);
@@ -186,7 +186,7 @@ namespace ReFrontier.Services
                 brInput.BaseStream.Seek(magicSize, SeekOrigin.Current);
                 if (brInput.BaseStream.Position + 4 > brInput.BaseStream.Length)
                 {
-                    if (!quiet)
+                    if (verbose)
                         _logger.WriteLine($"File terminated early ({i}/{count}) in simple container check.");
                     count = (uint)i;
                     break;
@@ -204,7 +204,7 @@ namespace ReFrontier.Services
                 if (autoStage)
                 {
                     brInput.BaseStream.Seek(0, SeekOrigin.Begin);
-                    UnpackStageContainer(input, brInput, createLog, cleanUp, quiet);
+                    UnpackStageContainer(input, brInput, createLog, cleanUp, verbose);
                 }
                 else
                 {
@@ -221,7 +221,7 @@ namespace ReFrontier.Services
                 throw new PackingException("Not a valid simple container (invalid size or entry count).", input);
             }
 
-            if (!quiet)
+            if (verbose)
                 _logger.WriteLine("Trying to unpack as generic simple container.");
             brInput.BaseStream.Seek(magicSize, SeekOrigin.Begin);
 
@@ -241,7 +241,7 @@ namespace ReFrontier.Services
                     entryOffset + entrySize > brInput.BaseStream.Length
                 )
                 {
-                    if (!quiet)
+                    if (verbose)
                         _logger.WriteLine($"Offset: 0x{entryOffset:X8}, Size: 0x{entrySize:X8} (SKIPPED)");
                     if (createLog)
                         logOutput.WriteLine($"null,{entryOffset},{entrySize},0");
@@ -255,7 +255,7 @@ namespace ReFrontier.Services
                     entrySize,
                     outputDir,
                     $"{i + 1:D4}_{entryOffset:X8}",
-                    quiet,
+                    verbose,
                     createLog ? logOutput : null
                 );
 
@@ -273,9 +273,9 @@ namespace ReFrontier.Services
         /// <param name="input">Input file name to read from.</param>
         /// <param name="brInput">Binary reader to the input file.</param>
         /// <param name="createLog">true is a log file should be created.</param>
-        /// <param name="quiet">Suppress progress output.</param>
+        /// <param name="verbose">Show per-file processing messages.</param>
         /// <returns>Output folder path.</returns>
-        public string UnpackMHA(string input, BinaryReader brInput, bool createLog, bool quiet = false)
+        public string UnpackMHA(string input, BinaryReader brInput, bool createLog, bool verbose = false)
         {
             string outputDir = $"{input}{_config.UnpackedSuffix}";
             _fileSystem.CreateDirectory(outputDir);
@@ -321,7 +321,7 @@ namespace ReFrontier.Services
                 byte[] entryData = brInput.ReadBytes(entrySize);
                 _fileSystem.WriteAllBytes($"{outputDir}/{entryName}", entryData);
 
-                if (!quiet)
+                if (verbose)
                     _logger.WriteLine(
                         $"{entryName}, String Offset: 0x{stringOffset:X8}, Offset: 0x{entryOffset:X8}, Size: 0x{entrySize:X8}, pSize: 0x{pSize:X8}, File ID: 0x{fileId:X8}"
                     );
@@ -335,11 +335,11 @@ namespace ReFrontier.Services
         /// Unpack, decompress, a JPK file.
         /// </summary>
         /// <param name="input">Input file path.</param>
-        /// <param name="quiet">Suppress progress output.</param>
+        /// <param name="verbose">Show per-file processing messages.</param>
         /// <returns>Output file path.</returns>
         /// <exception cref="PackingException">Thrown if the JKR header is invalid or compression type is unsupported.</exception>
         /// <exception cref="ReFrontierException">Thrown if decompression fails.</exception>
-        public string UnpackJPK(string input, bool quiet = false)
+        public string UnpackJPK(string input, bool verbose = false)
         {
             byte[] buffer = _fileSystem.ReadAllBytes(input);
             using MemoryStream ms = new(buffer);
@@ -366,7 +366,7 @@ namespace ReFrontier.Services
                 );
             }
             var compressionType = compressionTypes[type];
-            if (!quiet)
+            if (verbose)
                 _logger.WriteLine($"JPK {compressionType} (type {type})");
             IJPKDecode decoder;
             try
@@ -423,11 +423,11 @@ namespace ReFrontier.Services
         /// <param name="brInput">Binary reader to the input file.</param>
         /// <param name="createLog">true is a log file should be created.</param>
         /// <param name="cleanUp">Remove the initial input file.</param>
-        /// <param name="quiet">Suppress progress output.</param>
+        /// <param name="verbose">Show per-file processing messages.</param>
         /// <returns>Output folder path.</returns>
-        public string UnpackStageContainer(string input, BinaryReader brInput, bool createLog, bool cleanUp, bool quiet = false)
+        public string UnpackStageContainer(string input, BinaryReader brInput, bool createLog, bool cleanUp, bool verbose = false)
         {
-            if (!quiet)
+            if (verbose)
                 _logger.WriteLine("Trying to unpack as stage-specific container.");
 
             string outputDir = $"{input}{_config.UnpackedSuffix}";
@@ -443,7 +443,7 @@ namespace ReFrontier.Services
 
                 if (size == 0)
                 {
-                    if (!quiet)
+                    if (verbose)
                         _logger.WriteLine(
                             $"Offset: 0x{offset:X8}, Size: 0x{size:X8} (SKIPPED)"
                         );
@@ -459,7 +459,7 @@ namespace ReFrontier.Services
                     size,
                     outputDir,
                     $"{i + 1:D4}_{offset:X8}",
-                    quiet,
+                    verbose,
                     createLog ? logOutput : null
                 );
 
@@ -480,7 +480,7 @@ namespace ReFrontier.Services
 
                 if (size == 0)
                 {
-                    if (!quiet)
+                    if (verbose)
                         _logger.WriteLine(
                             $"Offset: 0x{offset:X8}, Size: 0x{size:X8}, Unk: 0x{unk:X8} (SKIPPED)"
                         );
@@ -496,7 +496,7 @@ namespace ReFrontier.Services
                 string extension = ByteOperations.DetectExtension(data, out uint headerInt);
 
                 // Print info with unk value
-                if (!quiet)
+                if (verbose)
                     _logger.WriteLine($"Offset: 0x{offset:X8}, Size: 0x{size:X8}, Unk: 0x{unk:X8} ({extension})");
                 if (createLog)
                     logOutput.WriteLine($"{i + 1:D4}_{offset:X8}.{extension},{offset},{size},{unk},{headerInt}");

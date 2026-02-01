@@ -39,7 +39,7 @@ namespace ReFrontier.Tests.Services
             _fileSystem.AddFile("/test/file.bin", fullFile);
 
             // Act
-            string result = _service.DecryptEcdFile("/test/file.bin", createLog: false, cleanUp: false);
+            string result = _service.DecryptEcdFile("/test/file.bin", createLog: false, cleanUp: false, verbose: true);
 
             // Assert
             TestHelpers.AssertPathsEqual("/test/file.bin.decd", result);
@@ -60,7 +60,7 @@ namespace ReFrontier.Tests.Services
             _fileSystem.AddFile("/test/file.bin", fullFile);
 
             // Act
-            _service.DecryptEcdFile("/test/file.bin", createLog: true, cleanUp: false);
+            _service.DecryptEcdFile("/test/file.bin", createLog: true, cleanUp: false, verbose: true);
 
             // Assert
             Assert.True(_fileSystem.FileExists("/test/file.bin.meta"));
@@ -109,7 +109,7 @@ namespace ReFrontier.Tests.Services
             _fileSystem.AddFile("/test/file.bin.decd", data, DateTime.Now);
 
             // Act
-            string result = _service.EncryptEcdFile("/test/file.bin.decd", "/test/file.bin.meta", cleanUp: false);
+            string result = _service.EncryptEcdFile("/test/file.bin.decd", "/test/file.bin.meta", cleanUp: false, verbose: true);
 
             // Assert - should succeed with warning about using default key
             TestHelpers.AssertPathsEqual("/test/file.bin", result);
@@ -133,7 +133,7 @@ namespace ReFrontier.Tests.Services
             _fileSystem.AddFile("/test/file.bin.meta", metaData);
 
             // Act
-            string result = _service.EncryptEcdFile("/test/file.bin.decd", "/test/file.bin.meta", cleanUp: false);
+            string result = _service.EncryptEcdFile("/test/file.bin.decd", "/test/file.bin.meta", cleanUp: false, verbose: true);
 
             // Assert
             TestHelpers.AssertPathsEqual("/test/file.bin", result);

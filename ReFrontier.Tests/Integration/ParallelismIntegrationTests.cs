@@ -35,7 +35,8 @@ namespace ReFrontier.Tests.Integration
             {
                 parallelism = parallelism,
                 recursive = false,
-                createLog = false
+                createLog = false,
+                verbose = true
             };
 
             // Act & Assert - Should not throw with any parallelism level
@@ -67,7 +68,8 @@ namespace ReFrontier.Tests.Integration
             {
                 parallelism = 0, // Auto-detect
                 recursive = false,
-                createLog = false
+                createLog = false,
+                verbose = true
             };
 
             // Act - Should not throw
@@ -116,7 +118,8 @@ namespace ReFrontier.Tests.Integration
             var args = new InputArguments
             {
                 recursive = false,
-                createLog = false
+                createLog = false,
+                verbose = true
             };
 
             // Act - Should use auto-detected parallelism (Environment.ProcessorCount)

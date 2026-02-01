@@ -49,7 +49,7 @@ namespace ReFrontier.Routing.Handlers
                 args.createLog,
                 args.cleanUp,
                 args.autoStage,
-                args.quiet
+                args.verbose
             );
             return ProcessFileResult.Success(outputPath);
         }

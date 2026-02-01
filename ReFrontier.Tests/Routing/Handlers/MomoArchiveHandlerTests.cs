@@ -68,7 +68,7 @@ namespace ReFrontier.Tests.Routing.Handlers
 
             try
             {
-                var result = _handler.Handle("test.bin", reader, new InputArguments());
+                var result = _handler.Handle("test.bin", reader, new InputArguments { verbose = true });
                 // If it doesn't throw, the handler was called
                 Assert.True(true);
             }

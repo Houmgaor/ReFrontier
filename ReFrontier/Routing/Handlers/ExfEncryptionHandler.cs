@@ -38,9 +38,9 @@ namespace ReFrontier.Routing.Handlers
         /// <inheritdoc/>
         public ProcessFileResult Handle(string filePath, BinaryReader reader, InputArguments args)
         {
-            if (!args.quiet)
+            if (args.verbose)
                 _logger.WriteLine("EXF Header detected.");
-            var outputPath = _fileProcessingService.DecryptExfFile(filePath, args.createLog, args.cleanUp, args.quiet);
+            var outputPath = _fileProcessingService.DecryptExfFile(filePath, args.createLog, args.cleanUp, args.verbose);
             return ProcessFileResult.Success(outputPath);
         }
     }

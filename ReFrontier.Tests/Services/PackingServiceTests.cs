@@ -373,7 +373,7 @@ namespace ReFrontier.Tests.Services
             _fileSystem.AddFile("/test/file.ftxt.txt", "Hello\nWorld");
 
             // Act
-            _service.PackFTXT("/test/file.ftxt.txt", "/test/file.ftxt.meta", false);
+            _service.PackFTXT("/test/file.ftxt.txt", "/test/file.ftxt.meta", false, verbose: true);
 
             // Assert
             Assert.True(_logger.ContainsMessage("FTXT packed"));
