@@ -78,20 +78,25 @@ namespace ReFrontier.Services
                 Path.GetDirectoryName(inputFile),
                 Path.GetFileNameWithoutExtension(inputFile)
             );
-            if (!_fileSystem.FileExists(metaFile))
-            {
-                throw new FileNotFoundException(
-                    $"META file {metaFile} does not exist, " +
-                    $"cannot encrypt {inputFile}. " +
-                    "Make sure to decrypt the initial file with the -log option, " +
-                    "and to place the generated meta file in the same folder as the file " +
-                    "to encrypt."
-                );
-            }
-            byte[] bufferMeta = _fileSystem.ReadAllBytes(metaFile);
             try
             {
-                buffer = Crypto.EncodeEcd(buffer, bufferMeta);
+                if (_fileSystem.FileExists(metaFile))
+                {
+                    byte[] bufferMeta = _fileSystem.ReadAllBytes(metaFile);
+                    buffer = Crypto.EncodeEcd(buffer, bufferMeta);
+                }
+                else
+                {
+                    if (!quiet)
+                    {
+                        _logger.Write(
+                            $"WARNING: META file {metaFile} not found. " +
+                            $"Using default ECD key index {Crypto.DefaultEcdKeyIndex}. " +
+                            "This works for all known MHF files, but may not match other game versions/regions.\n"
+                        );
+                    }
+                    buffer = Crypto.EncodeEcd(buffer, Crypto.DefaultEcdKeyIndex);
+                }
             }
             catch (ReFrontierException ex)
             {

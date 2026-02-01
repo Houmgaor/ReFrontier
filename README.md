@@ -38,7 +38,7 @@ You can drag-and-drop files or folders onto the executable, or use the command l
 
 2. Decrypt and decompress the file:
     ```shell
-    ./ReFrontier mhfdat.bin --log
+    ./ReFrontier mhfdat.bin --saveMeta
     ```
 
 3. Edit the extracted data (see [tools](#see-also) and [included utilities](#data-editing)).
@@ -116,7 +116,8 @@ Encrypt a compressed file with `--encrypt`:
 ./ReFrontier mhfdat.bin --encrypt
 ```
 
-This requires a `.meta` file (e.g., `mhfdat.bin.meta`) created during [decryption](#decryption).
+If a `.meta` file exists (e.g., `mhfdat.bin.meta` created during [decryption](#decryption)), it will be used.
+Otherwise, the default ECD key index (4) is used automatically. This works for all known MHF files, but may not match other game versions or regions.
 
 You can compress and encrypt in a single command:
 
@@ -132,7 +133,7 @@ FTXT text files can be extracted and repacked:
 
 ```shell
 # Extract text with metadata
-./ReFrontier text.ftxt --log
+./ReFrontier text.ftxt --saveMeta
 
 # Edit the generated .txt file, then repack
 ./ReFrontier text.ftxt.txt --pack

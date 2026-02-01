@@ -13,8 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CSV encoding auto-detection**: When reading CSV files, encoding is automatically detected (UTF-8 BOM or Shift-JIS)
 - **Shift-JIS validation**: Warns when inserting text containing characters that cannot be encoded to Shift-JIS
 - `--shift-jis` option for FrontierTextTool and FrontierDataTool to output CSV files in Shift-JIS encoding
-- **EXF encryption**: Full round-trip support for EXF encrypted files (decrypt with `--log`, re-encrypt with `--encrypt`)
-- **FTXT repacking**: Pack extracted text files back to FTXT binary format (extract with `--log`, repack with `--pack`)
+- **EXF encryption**: Full round-trip support for EXF encrypted files (decrypt with `--saveMeta`, re-encrypt with `--encrypt`)
+- **FTXT repacking**: Pack extracted text files back to FTXT binary format (extract with `--saveMeta`, repack with `--pack`)
 - **Auto decrypt/decompress**: FrontierTextTool and FrontierDataTool now automatically detect and process encrypted (ECD/EXF) and compressed (JPK) files
 - `FilePreprocessor` class for automatic file preprocessing with cleanup support
 - Unit tests for Crypto, JPK compression codecs, ArgumentsParser, ByteOperations, and FileOperations

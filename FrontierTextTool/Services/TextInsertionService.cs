@@ -217,16 +217,20 @@ namespace FrontierTextTool.Services
 
                 // Use the meta file from the original input file
                 string metaFile = $"{inputFile}.meta";
-                if (!_fileSystem.FileExists(metaFile))
+                if (_fileSystem.FileExists(metaFile))
                 {
-                    throw new FileNotFoundException(
-                        $"META file {metaFile} does not exist. " +
-                        "Make sure the original file is encrypted with ECD format, " +
-                        "or that you previously decrypted it with ReFrontier using the --log option."
-                    );
+                    byte[] bufferMeta = _fileSystem.ReadAllBytes(metaFile);
+                    buffer = Crypto.EncodeEcd(buffer, bufferMeta);
                 }
-                byte[] bufferMeta = _fileSystem.ReadAllBytes(metaFile);
-                buffer = Crypto.EncodeEcd(buffer, bufferMeta);
+                else
+                {
+                    _logger.WriteLine(
+                        $"WARNING: META file {metaFile} not found. " +
+                        $"Using default ECD key index {Crypto.DefaultEcdKeyIndex}. " +
+                        "This works for all known MHF files, but may not match other game versions/regions."
+                    );
+                    buffer = Crypto.EncodeEcd(buffer, Crypto.DefaultEcdKeyIndex);
+                }
                 _logger.WriteLine($"Writing file to {outputFile}.");
                 _fileSystem.WriteAllBytes(outputFile, buffer);
 

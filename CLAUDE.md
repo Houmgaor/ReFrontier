@@ -142,11 +142,11 @@ Files are identified by magic headers:
 Key options:
 - `--parallelism` - Number of parallel threads (0=auto-detect using CPU cores, default: 0)
 - `--quiet` - Suppress progress output during processing (reduces logging overhead for better parallelism)
-- `--saveMeta` - Save metadata files (required for repacking/re-encryption)
+- `--saveMeta` - Save metadata files (recommended for repacking/re-encryption)
 - `--recursive`/`--nonRecursive` - Control recursive unpacking
 - `--compress <type>` - Compression type: `rw`, `hfirw`, `lz`, `hfi` (or `0`, `2`, `3`, `4`)
 - `--level <n>` - Compression level (1-100, diminishing returns above ~80)
-- `--encrypt` - Encrypt output (requires `.meta` file)
+- `--encrypt` - Encrypt output (uses `.meta` file if available, otherwise default key index 4)
 - `--decryptOnly` - Decrypt without decompressing
 - `--noDecryption` - Skip decryption entirely
 - `--stageContainer` - Treat file as stage-specific container

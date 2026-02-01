@@ -29,7 +29,7 @@ For installation and quick start, see the [main README](../README.md).
 
 | Option | Description |
 |--------|-------------|
-| `--encrypt` | Encrypt with ECD algorithm (requires `.meta` file) |
+| `--encrypt` | Encrypt with ECD algorithm (uses `.meta` file if available, otherwise default key) |
 
 ### Unpacking Options
 

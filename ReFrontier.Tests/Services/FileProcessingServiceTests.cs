@@ -102,14 +102,20 @@ namespace ReFrontier.Tests.Services
         }
 
         [Fact]
-        public void EncryptEcdFile_WithMissingMetaFile_ThrowsFileNotFoundException()
+        public void EncryptEcdFile_WithMissingMetaFile_UsesDefaultKeyAndWarns()
         {
             // Arrange
-            _fileSystem.AddFile("/test/file.bin.decd", new byte[] { 0x01 });
+            byte[] data = new byte[] { 0x01, 0x02, 0x03, 0x04 };
+            _fileSystem.AddFile("/test/file.bin.decd", data, DateTime.Now);
 
-            // Act & Assert
-            Assert.Throws<FileNotFoundException>(() =>
-                _service.EncryptEcdFile("/test/file.bin.decd", "/test/file.bin.meta", cleanUp: false));
+            // Act
+            string result = _service.EncryptEcdFile("/test/file.bin.decd", "/test/file.bin.meta", cleanUp: false);
+
+            // Assert - should succeed with warning about using default key
+            TestHelpers.AssertPathsEqual("/test/file.bin", result);
+            Assert.True(_fileSystem.FileExists("/test/file.bin"));
+            Assert.True(_logger.ContainsMessage("WARNING"));
+            Assert.True(_logger.ContainsMessage("default ECD key index"));
         }
 
         [Fact]
