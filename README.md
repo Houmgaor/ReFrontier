@@ -5,13 +5,13 @@
 [![Platform](https://img.shields.io/badge/platform-windows%20%7C%20linux%20%7C%20macos-lightgrey)](https://github.com/Houmgaor/ReFrontier/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Tools for unpacking, decrypting, and editing Monster Hunter Frontier Online game files.
-
-Special thanks to enler for their help!
+ReFrontier is a command-line toolset for modding Monster Hunter Frontier Online. It handles the full round-trip workflow: unpacking, decrypting, and decompressing game files for editing, then compressing, encrypting, and repacking them for use in-game.
 
 ## Features
 
-This fork is fully compatible with [mhvuze/ReFrontier](https://github.com/mhvuze/ReFrontier) and [Chakratos/ReFrontier](https://github.com/Chakratos/ReFrontier), with the following improvements:
+Originally based on [mhvuze/ReFrontier](https://github.com/mhvuze/ReFrontier), ReFrontier has been extensively rewritten. Version 2.0 introduced breaking changes—see [MIGRATION_2.0.md](./MIGRATION_2.0.md) for upgrade instructions. You can use any release pre-2.0 for a version fully compatible with the original.
+
+Key features:
 
 - **Cross-platform**: Works on Windows, Linux, and macOS
 - **Performance**: 4x faster single-threaded, with multithreaded unpacking support
@@ -165,6 +165,12 @@ Related tools and projects:
 | [FrontierTextHandler](https://github.com/Houmgaor/FrontierTextHandler) | Python tool for text editing |
 | [MHFrontier-Blender-Addon](https://github.com/Houmgaor/MHFrontier-Blender-Addon) | Import 3D models |
 | [Erupe](https://github.com/Houmgaor/Erupe) | MHFrontier private server |
+
+## Credits
+
+- Based on [mhvuze/ReFrontier](https://github.com/mhvuze/ReFrontier)
+- With additional features from [chakratos/ReFrontier](https://github.com/chakratos/ReFrontier)
+- Special thanks to enler for their help!
 
 ## License
 
