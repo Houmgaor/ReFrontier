@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/banner.png" alt="ReFrontier Banner" width="800">
+</p>
+
 # ReFrontier
 
 [![CI](https://github.com/Houmgaor/ReFrontier/actions/workflows/ci.yml/badge.svg)](https://github.com/Houmgaor/ReFrontier/actions/workflows/ci.yml)
