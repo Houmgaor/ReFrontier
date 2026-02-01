@@ -139,18 +139,44 @@ Offset  Size  Description
 
 ### Compression Types
 
-| Type | Name  | Description |
-|------|-------|-------------|
-| 0    | RW    | Run-length with window |
-| 1    | None  | No compression (raw data) |
-| 2    | HFIRW | Huffman + RW |
-| 3    | LZ    | LZ77-based compression |
-| 4    | HFI   | Huffman indexed |
+| Type | Name  | Algorithm | Compression Ratio | Speed |
+|------|-------|-----------|-------------------|-------|
+| 0    | RW    | Raw Writing (no compression) | 1:1 | Fastest |
+| 1    | None  | No compression (decode-only marker) | 1:1 | Fastest |
+| 2    | HFIRW | Huffman coding only | ~60-90% | Fast |
+| 3    | LZ    | LZ77 sliding window | ~30-70% | Moderate |
+| 4    | HFI   | Huffman + LZ77 | ~20-50% | Slowest |
 
-### Notes
+### Algorithm Details
 
-- Type 3 (LZ) is most commonly used for game data
-- Compression level affects window size and search depth
+**RW (Raw Writing)**: Data is stored as-is with no transformation. Use for pre-compressed data or when decompression speed is critical.
+
+**HFIRW (Huffman only)**: Builds a Huffman tree where frequently-occurring byte values get shorter bit codes. Effective when data has a skewed byte distribution but few repeated sequences.
+
+**LZ (LZ77)**: Sliding window compression that replaces repeated byte sequences with back-references (offset, length). Uses a flag-bit system where each group of 8 items is preceded by a flag byte. Window size up to 8191 bytes, match length 3-280 bytes.
+
+**HFI (Huffman + LZ77)**: First applies LZ77 to find repeated sequences, then encodes the resulting byte stream using Huffman coding. Achieves best compression at the cost of processing time.
+
+### Compression Level
+
+The `--level` parameter (1-100) controls compression aggressiveness for LZ-based algorithms:
+
+| Parameter | Range | Effect |
+|-----------|-------|--------|
+| Match length | 6-280 bytes | Maximum length of repeated sequences to encode |
+| Window size | 50-8191 bytes | How far back to search for matches |
+
+**Important notes:**
+- Level only affects **LZ** and **HFI** compression. It is ignored by RW and HFIRW.
+- Higher level = better compression ratio but slower encoding.
+- Diminishing returns above level ~80.
+- Recommended: `--compress hfi --level 80` for a good balance.
+
+### Encoding Notes
+
+- HFI (type 4) is recommended for maximum compression
+- The Huffman tree is randomly shuffled at encode time, so the same input produces different (but equally valid) output on each run
+- Decoding always works because the tree is stored in the file header (510 entries × 2 bytes = 1020 bytes overhead)
 
 ## Stage Container
 

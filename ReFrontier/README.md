@@ -23,7 +23,9 @@ For installation and quick start, see the [main README](../README.md).
 | Option | Description |
 |--------|-------------|
 | `--compress <type>` | Compression type: `rw`, `hfirw`, `lz`, `hfi` (or `0`, `2`, `3`, `4`) |
-| `--level <n>` | Compression level (1-100). Higher = better ratio but slower. Diminishing returns above ~80. |
+| `--level <n>` | Compression level (1-100). Only affects `lz` and `hfi`. Diminishing returns above ~80. |
+
+See [ARCHIVE_FORMATS.md](../docs/ARCHIVE_FORMATS.md#compression-types) for algorithm details.
 
 ### Encryption Options
 
@@ -89,7 +91,7 @@ For installation and quick start, see the [main README](../README.md).
 
 ## Compression Performance
 
-Compression efficiency varies by level. Testing on vanilla `mhfdat.bin`:
+Compression efficiency varies by level. Testing HFI compression on vanilla `mhfdat.bin` (26.5 MB decompressed):
 
 | Level | Size (bytes) | Savings | Time |
 |-------|--------------|---------|------|
@@ -99,3 +101,5 @@ Compression efficiency varies by level. Testing on vanilla `mhfdat.bin`:
 | Original (COG) | 5,363,764 | 79.7% | - |
 
 Levels above 80 offer diminishing returns for significantly longer compression times.
+
+Note: Level only affects LZ-based compression (`lz`, `hfi`). For `rw` and `hfirw`, level is ignored.

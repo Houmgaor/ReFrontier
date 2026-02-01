@@ -17,7 +17,7 @@ This fork is fully compatible with [mhvuze/ReFrontier](https://github.com/mhvuze
 - **Performance**: 4x faster single-threaded, with multithreaded unpacking support
 - **Round-trip editing**: Full support for ECD/EXF encryption and FTXT text repacking
 - **Single command**: Compress and encrypt files in one step
-- **Reliability**: Fixed duplicate filename issues ([#5](https://github.com/Houmgaor/ReFrontier/issues/5))
+- **Reliability**: Fixed duplicate filename issues
 - **Security**: Removed memory-unsafe code and outdated libraries
 - **Text tools**: Improved CSV parsing and cleaner fulldump output
 
@@ -34,7 +34,7 @@ You can drag-and-drop files or folders onto the executable, or use the command l
 
 ### Quick Start
 
-1. Copy `mhfdat.bin` (or any file) from the MHFrontier `dat/` folder to the same directory as the executable.
+1. Copy `mhfdat.bin` (or any file or folder) from the MHFrontier `dat/` folder to the same directory as the executable.
 
 2. Decrypt and decompress the file:
     ```shell
@@ -95,18 +95,22 @@ Once files are decrypted and decompressed, you can edit them using:
 
 Compress files using `--compress <type> --level <level>`:
 
-| Type | Alias | Description |
-|------|-------|-------------|
-| `rw` | `0` | RW compression |
-| `hfirw` | `2` | HFIRW compression (decode only) |
-| `lz` | `3` | LZ compression |
-| `hfi` | `4` | HFI Huffman compression |
+| Type | Alias | Algorithm | Ratio |
+|------|-------|-----------|-------|
+| `rw` | `0` | No compression (raw) | 1:1 |
+| `hfirw` | `2` | Huffman coding only | ~60-90% |
+| `lz` | `3` | LZ77 sliding window | ~30-70% |
+| `hfi` | `4` | Huffman + LZ77 (best) | ~20-50% |
+
+The `--level` parameter (1-100) controls compression aggressiveness for `lz` and `hfi` only (ignored by `rw` and `hfirw`). Diminishing returns above ~80.
 
 ```shell
 ./ReFrontier mhfdat.bin --compress hfi --level 80
 ```
 
 Output is written to the `output/` directory.
+
+For technical details on compression algorithms, see [docs/ARCHIVE_FORMATS.md](./docs/ARCHIVE_FORMATS.md#compression-types).
 
 ### Encryption
 
@@ -164,6 +168,6 @@ Related tools and projects:
 
 ## License
 
-Licensed under the [MIT License](LICENSE).
+Edits in this project are licensed under the [MIT License](LICENSE).
 
-This fork is published with the agreement of the original author ([mhvuze](https://github.com/mhvuze)).
+See [ReFrontier#2](https://github.com/mhvuze/ReFrontier/issues/2) for license information on the original code.
