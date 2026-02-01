@@ -67,9 +67,9 @@ namespace ReFrontier.Tests.TextToolTests
         }
 
         [Fact]
-        public void DumpAndHashInternal_ReplacesTabWithMarker()
+        public void DumpAndHashInternal_PreservesTabInString()
         {
-            // Arrange
+            // Arrange - tabs are preserved as-is, RFC 4180 CSV will quote them
             byte[] data = TestDataFactory.CreateBinaryWithStrings("Hello\tWorld");
 
             using var ms = new MemoryStream(data);
@@ -80,13 +80,13 @@ namespace ReFrontier.Tests.TextToolTests
 
             // Assert
             Assert.Single(result);
-            Assert.Equal("Hello\\tWorld", result[0].JString);
+            Assert.Equal("Hello\tWorld", result[0].JString);
         }
 
         [Fact]
-        public void DumpAndHashInternal_ReplacesNewlineWithMarker()
+        public void DumpAndHashInternal_PreservesNewlineInString()
         {
-            // Arrange
+            // Arrange - newlines are preserved as-is, RFC 4180 CSV will quote them
             byte[] data = TestDataFactory.CreateBinaryWithStrings("Line1\nLine2");
 
             using var ms = new MemoryStream(data);
@@ -97,13 +97,13 @@ namespace ReFrontier.Tests.TextToolTests
 
             // Assert
             Assert.Single(result);
-            Assert.Equal("Line1\\nLine2", result[0].JString);
+            Assert.Equal("Line1\nLine2", result[0].JString);
         }
 
         [Fact]
-        public void DumpAndHashInternal_ReplacesCarriageReturnNewlineWithMarker()
+        public void DumpAndHashInternal_PreservesCarriageReturnNewlineInString()
         {
-            // Arrange
+            // Arrange - CRLF is preserved as-is, RFC 4180 CSV will quote them
             byte[] data = TestDataFactory.CreateBinaryWithStrings("Line1\r\nLine2");
 
             using var ms = new MemoryStream(data);
@@ -114,7 +114,7 @@ namespace ReFrontier.Tests.TextToolTests
 
             // Assert
             Assert.Single(result);
-            Assert.Equal("Line1\\r\\nLine2", result[0].JString);
+            Assert.Equal("Line1\r\nLine2", result[0].JString);
         }
 
         [Fact]
@@ -259,9 +259,9 @@ namespace ReFrontier.Tests.TextToolTests
         #region Additional DumpAndHashInternal Tests
 
         [Fact]
-        public void DumpAndHashInternal_ReplacesBackslashWithEscaped()
+        public void DumpAndHashInternal_PreservesBackslashInString()
         {
-            // Arrange - backslash should become double backslash
+            // Arrange - backslash is preserved as-is in RFC 4180 CSV
             byte[] data = TestDataFactory.CreateBinaryWithStrings("Path\\File");
 
             using var ms = new MemoryStream(data);
@@ -272,7 +272,7 @@ namespace ReFrontier.Tests.TextToolTests
 
             // Assert
             Assert.Single(result);
-            Assert.Equal("Path\\\\File", result[0].JString);
+            Assert.Equal("Path\\File", result[0].JString);
         }
 
         [Fact]

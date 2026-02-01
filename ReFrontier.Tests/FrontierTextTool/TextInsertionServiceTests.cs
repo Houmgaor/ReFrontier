@@ -51,10 +51,10 @@ namespace ReFrontier.Tests.TextToolTests
         }
 
         [Fact]
-        public void LoadCsvToStringDatabase_ReplacesTabMarker()
+        public void LoadCsvToStringDatabase_HandlesTabInQuotedField()
         {
-            // Arrange
-            string csv = "Offset\tHash\tJString\tEString\n0\t123\tTest\tHello\\tWorld\n";
+            // Arrange - RFC 4180 CSV with tab character in quoted field
+            string csv = "Offset,Hash,JString,EString\n0,123,Test,\"Hello\tWorld\"\n";
             _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
 
             // Act
@@ -66,10 +66,10 @@ namespace ReFrontier.Tests.TextToolTests
         }
 
         [Fact]
-        public void LoadCsvToStringDatabase_ReplacesNewlineMarker()
+        public void LoadCsvToStringDatabase_HandlesNewlineInQuotedField()
         {
-            // Arrange
-            string csv = "Offset\tHash\tJString\tEString\n0\t123\tTest\tLine1\\nLine2\n";
+            // Arrange - RFC 4180 CSV with newline in quoted field
+            string csv = "Offset,Hash,JString,EString\n0,123,Test,\"Line1\nLine2\"\n";
             _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
 
             // Act
@@ -81,10 +81,10 @@ namespace ReFrontier.Tests.TextToolTests
         }
 
         [Fact]
-        public void LoadCsvToStringDatabase_ReplacesCarriageReturnMarker()
+        public void LoadCsvToStringDatabase_HandlesCarriageReturnInQuotedField()
         {
-            // Arrange
-            string csv = "Offset\tHash\tJString\tEString\n0\t123\tTest\tLine1\\r\\nLine2\n";
+            // Arrange - RFC 4180 CSV with CRLF in quoted field
+            string csv = "Offset,Hash,JString,EString\n0,123,Test,\"Line1\r\nLine2\"\n";
             _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
 
             // Act
@@ -272,10 +272,10 @@ namespace ReFrontier.Tests.TextToolTests
         #region Additional LoadCsvToStringDatabase Tests
 
         [Fact]
-        public void LoadCsvToStringDatabase_ReplacesBackslashMarker()
+        public void LoadCsvToStringDatabase_HandlesBackslash()
         {
-            // Arrange - escaped backslash should become single backslash
-            string csv = "Offset\tHash\tJString\tEString\n0\t123\tTest\tPath\\\\File\n";
+            // Arrange - backslash is just regular text in RFC 4180
+            string csv = "Offset,Hash,JString,EString\n0,123,Test,Path\\File\n";
             _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
 
             // Act
@@ -290,7 +290,7 @@ namespace ReFrontier.Tests.TextToolTests
         public void LoadCsvToStringDatabase_HandlesUtf8BomEncoding()
         {
             // Arrange - UTF-8 with BOM
-            string csv = "Offset\tHash\tJString\tEString\n0\t123\tTest\tEnglish\n";
+            string csv = "Offset,Hash,JString,EString\n0,123,Test,English\n";
             byte[] utf8Bom = new byte[] { 0xEF, 0xBB, 0xBF };
             byte[] content = Encoding.UTF8.GetBytes(csv);
             byte[] withBom = new byte[utf8Bom.Length + content.Length];
@@ -310,7 +310,7 @@ namespace ReFrontier.Tests.TextToolTests
         public void LoadCsvToStringDatabase_WithEmptyEString_ReturnsEmptyString()
         {
             // Arrange
-            string csv = "Offset\tHash\tJString\tEString\n0\t123\tTest\t\n";
+            string csv = "Offset,Hash,JString,EString\n0,123,Test,\n";
             _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
 
             // Act
@@ -325,7 +325,7 @@ namespace ReFrontier.Tests.TextToolTests
         public void LoadCsvToStringDatabase_ParsesHashCorrectly()
         {
             // Arrange
-            string csv = "Offset\tHash\tJString\tEString\n0\t4294967295\tTest\tEnglish\n";
+            string csv = "Offset,Hash,JString,EString\n0,4294967295,Test,English\n";
             _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
 
             // Act

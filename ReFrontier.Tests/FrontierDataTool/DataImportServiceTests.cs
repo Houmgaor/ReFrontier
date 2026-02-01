@@ -673,11 +673,11 @@ namespace ReFrontier.Tests.DataToolTests
         private static string CreateMeleeCsv(int count)
         {
             var sb = new StringBuilder();
-            sb.AppendLine("Name\tModelId\tModelIdData\tRarity\tClassId\tZennyCost\tSharpnessId\tRawDamage\tDefense\tAffinity\tElementId\tEleDamage\tAilmentId\tAilDamage\tSlots\tUnk3\tUnk4\tUnk5\tUnk6\tUnk7\tUnk8\tUnk9\tUnk10\tUnk11\tUnk12\tUnk13\tUnk14\tUnk15\tUnk16\tUnk17");
+            sb.AppendLine("Name,ModelId,ModelIdData,Rarity,ClassId,ZennyCost,SharpnessId,RawDamage,Defense,Affinity,ElementId,EleDamage,AilmentId,AilDamage,Slots,Unk3,Unk4,Unk5,Unk6,Unk7,Unk8,Unk9,Unk10,Unk11,Unk12,Unk13,Unk14,Unk15,Unk16,Unk17");
 
             for (int i = 0; i < count; i++)
             {
-                sb.AppendLine($"TestMelee{i}\t{i}\twe{i:D3}\t5\t大剣\t1000\t100\t1500\t10\t5\t火\t300\t毒\t200\t2\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0");
+                sb.AppendLine($"TestMelee{i},{i},we{i:D3},5,大剣,1000,100,1500,10,5,火,300,毒,200,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0");
             }
 
             return sb.ToString();
@@ -686,11 +686,11 @@ namespace ReFrontier.Tests.DataToolTests
         private static string CreateRangedCsv(int count)
         {
             var sb = new StringBuilder();
-            sb.AppendLine("Name\tModelId\tModelIdData\tRarity\tMaxSlotsMaybe\tClassId\tUnk2_1\tEqType\tUnk2_3\tUnk3_1\tUnk3_2\tUnk3_3\tUnk3_4\tUnk4_1\tUnk4_2\tUnk4_3\tUnk4_4\tUnk5_1\tUnk5_2\tUnk5_3\tUnk5_4\tZennyCost\tRawDamage\tDefense\tRecoilMaybe\tSlots\tAffinity\tSortOrderMaybe\tUnk6_1\tElementId\tEleDamage\tUnk6_4\tUnk7_1\tUnk7_2\tUnk7_3\tUnk7_4\tUnk8_1\tUnk8_2\tUnk8_3\tUnk8_4\tUnk9_1\tUnk9_2\tUnk9_3\tUnk9_4\tUnk10_1\tUnk10_2\tUnk10_3\tUnk10_4\tUnk11_1\tUnk11_2\tUnk11_3\tUnk11_4\tUnk12_1\tUnk12_2\tUnk12_3\tUnk12_4");
+            sb.AppendLine("Name,ModelId,ModelIdData,Rarity,MaxSlotsMaybe,ClassId,Unk2_1,EqType,Unk2_3,Unk3_1,Unk3_2,Unk3_3,Unk3_4,Unk4_1,Unk4_2,Unk4_3,Unk4_4,Unk5_1,Unk5_2,Unk5_3,Unk5_4,ZennyCost,RawDamage,Defense,RecoilMaybe,Slots,Affinity,SortOrderMaybe,Unk6_1,ElementId,EleDamage,Unk6_4,Unk7_1,Unk7_2,Unk7_3,Unk7_4,Unk8_1,Unk8_2,Unk8_3,Unk8_4,Unk9_1,Unk9_2,Unk9_3,Unk9_4,Unk10_1,Unk10_2,Unk10_3,Unk10_4,Unk11_1,Unk11_2,Unk11_3,Unk11_4,Unk12_1,Unk12_2,Unk12_3,Unk12_4");
 
             for (int i = 0; i < count; i++)
             {
-                sb.AppendLine($"TestRanged{i}\t{i + 1000}\twf{i:D3}\t6\t3\tヘビィボウガン\t0\t5\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t2000\t300\t5\t2\t2\t10\t1\t0\t水\t200\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0");
+                sb.AppendLine($"TestRanged{i},{i + 1000},wf{i:D3},6,3,ヘビィボウガン,0,5,0,0,0,0,0,0,0,0,0,0,0,0,0,2000,300,5,2,2,10,1,0,水,200,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0");
             }
 
             return sb.ToString();
@@ -699,11 +699,11 @@ namespace ReFrontier.Tests.DataToolTests
         private static string CreateQuestCsv(int count)
         {
             var sb = new StringBuilder();
-            sb.AppendLine("Title\tTextMain\tTextSubA\tTextSubB\tUnk1\tUnk2\tUnk3\tUnk4\tLevel\tUnk5\tCourseType\tUnk7\tUnk8\tUnk9\tUnk10\tUnk11\tFee\tZennyMain\tZennyKo\tZennySubA\tZennySubB\tTime\tUnk12\tUnk13\tUnk14\tUnk15\tUnk16\tUnk17\tUnk18\tUnk19\tUnk20\tMainGoalType\tMainGoalTarget\tMainGoalCount\tSubAGoalType\tSubAGoalTarget\tSubAGoalCount\tSubBGoalType\tSubBGoalTarget\tSubBGoalCount\tMainGRP\tSubAGRP\tSubBGRP");
+            sb.AppendLine("Title,TextMain,TextSubA,TextSubB,Unk1,Unk2,Unk3,Unk4,Level,Unk5,CourseType,Unk7,Unk8,Unk9,Unk10,Unk11,Fee,ZennyMain,ZennyKo,ZennySubA,ZennySubB,Time,Unk12,Unk13,Unk14,Unk15,Unk16,Unk17,Unk18,Unk19,Unk20,MainGoalType,MainGoalTarget,MainGoalCount,SubAGoalType,SubAGoalTarget,SubAGoalCount,SubBGoalType,SubBGoalTarget,SubBGoalCount,MainGRP,SubAGRP,SubBGRP");
 
             for (int i = 0; i < count; i++)
             {
-                sb.AppendLine($"TestQuest{i}\tMainText{i}\tSubA{i}\tSubB{i}\t0\t0\t0\t0\t5\t0\t6\t0\t0\t0\t0\t0\t500\t1000\t500\t200\t200\t3000\t0\t0\t0\t0\t0\t0\t0\t0\t0\tHunt\t{i + 1}\t1\tDelivery\t100\t5\tNone\t0\t0\t100\t50\t50");
+                sb.AppendLine($"TestQuest{i},MainText{i},SubA{i},SubB{i},0,0,0,0,5,0,6,0,0,0,0,0,500,1000,500,200,200,3000,0,0,0,0,0,0,0,0,0,Hunt,{i + 1},1,Delivery,100,5,None,0,0,100,50,50");
             }
 
             return sb.ToString();

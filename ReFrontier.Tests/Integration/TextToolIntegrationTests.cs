@@ -142,13 +142,13 @@ namespace ReFrontier.Tests.Integration
             var mergeService = new CsvMergeService(_fileSystem, _logger);
 
             // Old CSV has translations
-            string oldCsv = "Offset\tHash\tJString\tEString\n" +
-                           "0\t12345\tOriginal\tTranslated\n";
+            string oldCsv = "Offset,Hash,JString,EString\n" +
+                           "0,12345,Original,Translated\n";
             _fileSystem.AddFile("/test/old.csv", Encoding.GetEncoding("shift-jis").GetBytes(oldCsv));
 
             // New CSV with same hash but different offset (simulating file update)
-            string newCsv = "Offset\tHash\tJString\tEString\n" +
-                           "100\t12345\tOriginal\t\n";
+            string newCsv = "Offset,Hash,JString,EString\n" +
+                           "100,12345,Original,\n";
             _fileSystem.AddFile("/test/new.csv", Encoding.GetEncoding("shift-jis").GetBytes(newCsv));
 
             // Act
@@ -180,19 +180,19 @@ namespace ReFrontier.Tests.Integration
             var extracted = extractionService.DumpAndHashInternal(
                 "test.bin", originalData, br, 0, 0, false, false);
 
-            // Assert - Check escape sequences
-            Assert.Equal("Tab\\tTest", extracted[0].JString);
-            Assert.Equal("Line1\\nLine2", extracted[1].JString);
+            // Assert - Special characters are preserved (RFC 4180 quotes them in CSV output)
+            Assert.Equal("Tab\tTest", extracted[0].JString);
+            Assert.Equal("Line1\nLine2", extracted[1].JString);
 
-            // Create string database with translations that have escape sequences
-            var csv = "Offset\tHash\tJString\tEString\n" +
-                      "0\t123\tTab\\tTest\tNew\\tValue\n";
+            // Create string database with translations using RFC 4180 quoting for special characters
+            var csv = "Offset,Hash,JString,EString\n" +
+                      "0,123,\"Tab\tTest\",\"New\tValue\"\n";
             _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
 
-            // Load and verify marker replacement
+            // Load and verify
             var loaded = insertionService.LoadCsvToStringDatabase("/test/strings.csv");
 
-            Assert.Equal("New\tValue", loaded[0].EString); // \t escape replaced with actual tab
+            Assert.Equal("New\tValue", loaded[0].EString); // RFC 4180 handles quoted tabs
         }
 
         [Fact]
@@ -210,8 +210,8 @@ namespace ReFrontier.Tests.Integration
             var extracted = extractionService.DumpAndHashInternal(
                 "test.bin", originalData, br, 0, 0, false, false);
 
-            // Assert - \r\n escape used for carriage return + newline
-            Assert.Equal("Line1\\r\\nLine2", extracted[0].JString);
+            // Assert - CRLF is preserved (RFC 4180 will quote it in CSV output)
+            Assert.Equal("Line1\r\nLine2", extracted[0].JString);
         }
 
         #endregion

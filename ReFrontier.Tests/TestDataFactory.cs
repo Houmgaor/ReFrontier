@@ -131,7 +131,7 @@ namespace ReFrontier.Tests
         public static string CreateArmorCsv(int count)
         {
             var sb = new StringBuilder();
-            sb.AppendLine("EquipClass\tName\tModelIdMale\tModelIdFemale\tIsMaleEquip\tIsFemaleEquip\tIsBladeEquip\tIsGunnerEquip\tBool1\tIsSPEquip\tBool3\tBool4\tRarity\tMaxLevel\tUnk1_1\tUnk1_2\tUnk1_3\tUnk1_4\tUnk2\tZennyCost\tUnk3\tBaseDefense\tFireRes\tWaterRes\tThunderRes\tDragonRes\tIceRes\tUnk3_1\tBaseSlots\tMaxSlots\tSthEventCrown\tUnk5\tUnk6\tUnk7_1\tUnk7_2\tUnk7_3\tUnk7_4\tUnk8_1\tUnk8_2\tUnk8_3\tUnk8_4\tUnk10\tSkillId1\tSkillPts1\tSkillId2\tSkillPts2\tSkillId3\tSkillPts3\tSkillId4\tSkillPts4\tSkillId5\tSkillPts5\tSthHiden\tUnk12\tUnk13\tUnk14\tUnk15\tUnk16\tUnk17\tUnk18\tUnk19");
+            sb.AppendLine("EquipClass,Name,ModelIdMale,ModelIdFemale,IsMaleEquip,IsFemaleEquip,IsBladeEquip,IsGunnerEquip,Bool1,IsSPEquip,Bool3,Bool4,Rarity,MaxLevel,Unk1_1,Unk1_2,Unk1_3,Unk1_4,Unk2,ZennyCost,Unk3,BaseDefense,FireRes,WaterRes,ThunderRes,DragonRes,IceRes,Unk3_1,BaseSlots,MaxSlots,SthEventCrown,Unk5,Unk6,Unk7_1,Unk7_2,Unk7_3,Unk7_4,Unk8_1,Unk8_2,Unk8_3,Unk8_4,Unk10,SkillId1,SkillPts1,SkillId2,SkillPts2,SkillId3,SkillPts3,SkillId4,SkillPts4,SkillId5,SkillPts5,SthHiden,Unk12,Unk13,Unk14,Unk15,Unk16,Unk17,Unk18,Unk19");
 
             string[] classes = ["頭", "胴", "腕", "腰", "脚"];
 
@@ -139,7 +139,7 @@ namespace ReFrontier.Tests
             {
                 for (int i = 0; i < count; i++)
                 {
-                    sb.AppendLine($"{cls}\tTestArmor{i}\t{i}\t{i}\tTrue\tTrue\tTrue\tFalse\tFalse\tFalse\tFalse\tFalse\t1\t7\t0\t0\t0\t0\t0\t100\t0\t50\t0\t0\t0\t0\t0\t0\t1\t3\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t攻撃\t5\t\t0\t\t0\t\t0\t\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0");
+                    sb.AppendLine($"{cls},TestArmor{i},{i},{i},True,True,True,False,False,False,False,False,1,7,0,0,0,0,0,100,0,50,0,0,0,0,0,0,1,3,0,0,0,0,0,0,0,0,0,0,0,0,攻撃,5,,0,,0,,0,,0,0,0,0,0,0,0,0,0,0");
                 }
             }
 
@@ -154,13 +154,13 @@ namespace ReFrontier.Tests
         public static string CreateStringDatabaseCsv(params (uint offset, string jString, string eString)[] entries)
         {
             var sb = new StringBuilder();
-            sb.AppendLine("Offset\tHash\tJString\tEString");
+            sb.AppendLine("Offset,Hash,JString,EString");
 
             foreach (var (offset, jString, eString) in entries)
             {
                 // Calculate CRC32 hash
                 uint hash = LibReFrontier.Crypto.GetCrc32(Encoding.GetEncoding("shift-jis").GetBytes(jString));
-                sb.AppendLine($"{offset}\t{hash}\t{jString}\t{eString}");
+                sb.AppendLine($"{offset},{hash},{jString},{eString}");
             }
 
             return sb.ToString();

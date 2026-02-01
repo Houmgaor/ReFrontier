@@ -1,16 +1,13 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
 
 using CsvHelper;
-using CsvHelper.Configuration;
 
 using LibReFrontier;
 using LibReFrontier.Abstractions;
-
 using ReFrontier;
 
 namespace FrontierTextTool.Services
@@ -50,11 +47,7 @@ namespace FrontierTextTool.Services
         public StringDatabase[] LoadCsvToStringDatabase(string inputCsv)
         {
             var stringDatabase = new List<StringDatabase>();
-            var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
-            {
-                Delimiter = "\t",
-                Mode = CsvMode.Escape
-            };
+            var configuration = TextFileConfiguration.CreateJapaneseCsvConfig();
 
             using var stream = _fileSystem.OpenRead(inputCsv);
             var encoding = TextFileConfiguration.DetectCsvEncoding(stream);
@@ -65,11 +58,7 @@ namespace FrontierTextTool.Services
             csv.ReadHeader();
             while (csv.Read())
             {
-                string eString = (csv.GetField("EString") ?? string.Empty)
-                    .Replace("\\r\\n", "\r\n")
-                    .Replace("\\n", "\n")
-                    .Replace("\\t", "\t")
-                    .Replace("\\\\", "\\");
+                string eString = csv.GetField("EString") ?? string.Empty;
 
                 // Validate Shift-JIS compatibility for non-empty strings
                 if (!string.IsNullOrEmpty(eString) && !TextFileConfiguration.ValidateShiftJisCompatibility(eString))

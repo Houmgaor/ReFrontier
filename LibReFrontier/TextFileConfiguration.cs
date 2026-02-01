@@ -36,14 +36,16 @@ public static class TextFileConfiguration
     public static Encoding Utf8WithBomEncoding => new UTF8Encoding(encoderShouldEmitUTF8Identifier: true);
 
     /// <summary>
-    /// Create a CSV configuration for Japanese tab-separated files.
+    /// Create a CSV configuration for Japanese CSV files.
+    /// Uses RFC 4180 standard which automatically quotes fields containing
+    /// commas, quotes, or newlines.
     /// </summary>
-    /// <returns>CsvConfiguration with Japanese culture and tab delimiter.</returns>
+    /// <returns>CsvConfiguration with Japanese culture and comma delimiter.</returns>
     public static CsvConfiguration CreateJapaneseCsvConfig()
     {
         return new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
         {
-            Delimiter = "\t",
+            Delimiter = ",",
         };
     }
 

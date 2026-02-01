@@ -117,11 +117,7 @@ namespace FrontierTextTool.Services
                     brInput.BaseStream.Seek(strPos, SeekOrigin.Begin);
                 }
 
-                string str = FileOperations.ReadNullterminatedString(brInput, TextFileConfiguration.ShiftJisEncoding)
-                    .Replace("\\", "\\\\")
-                    .Replace("\t", "\\t")
-                    .Replace("\r\n", "\\r\\n")
-                    .Replace("\n", "\\n");
+                string str = FileOperations.ReadNullterminatedString(brInput, TextFileConfiguration.ShiftJisEncoding);
 
                 stringsDatabase.Add(new StringDatabase
                 {

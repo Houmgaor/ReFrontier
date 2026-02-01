@@ -1,16 +1,13 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
 
 using CsvHelper;
-using CsvHelper.Configuration;
-
-using LibReFrontier.Abstractions;
 
 using LibReFrontier;
+using LibReFrontier.Abstractions;
 
 namespace FrontierTextTool.Services
 {
@@ -57,11 +54,7 @@ namespace FrontierTextTool.Services
         /// <param name="newCsv">New CSV with updated data structure.</param>
         public void Merge(string oldCsv, string newCsv)
         {
-            var csvConf = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
-            {
-                Delimiter = "\t",
-                Mode = CsvMode.Escape
-            };
+            var csvConf = TextFileConfiguration.CreateJapaneseCsvConfig();
 
             // Read old CSV with auto-detected encoding
             var stringDbOld = new List<StringDatabase>();
@@ -151,11 +144,7 @@ namespace FrontierTextTool.Services
 
             // Read existing CSV with auto-detected encoding
             var stringDb = new List<StringDatabase>();
-            var configuration = new CsvConfiguration(CultureInfo.CreateSpecificCulture("jp-JP"))
-            {
-                Delimiter = "\t",
-                Mode = CsvMode.Escape
-            };
+            var configuration = TextFileConfiguration.CreateJapaneseCsvConfig();
 
             using (var stream = _fileSystem.OpenRead(csvFile))
             {
@@ -196,9 +185,10 @@ namespace FrontierTextTool.Services
                 _fileSystem.DeleteFile(fileName);
 
             using var txtOutput = _fileSystem.CreateStreamWriter(fileName, false, _encodingOptions.GetOutputEncoding());
-            txtOutput.WriteLine("Offset\tHash\tJString\tEString");
-            foreach (var obj in stringDb)
-                txtOutput.WriteLine($"{obj.Offset}\t{obj.Hash}\t{obj.JString}\t{obj.EString}");
+            using var csvOutput = new CsvWriter(txtOutput, configuration);
+            csvOutput.WriteHeader<StringDatabase>();
+            csvOutput.NextRecord();
+            csvOutput.WriteRecords(stringDb);
 
             // Backup CAT file
             _fileSystem.CreateDirectory("backup");
