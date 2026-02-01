@@ -268,5 +268,170 @@ namespace ReFrontier.Tests.TextToolTests
         }
 
         #endregion
+
+        #region Additional LoadCsvToStringDatabase Tests
+
+        [Fact]
+        public void LoadCsvToStringDatabase_ReplacesBackslashMarker()
+        {
+            // Arrange - escaped backslash should become single backslash
+            string csv = "Offset\tHash\tJString\tEString\n0\t123\tTest\tPath\\\\File\n";
+            _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+
+            // Act
+            var result = _service.LoadCsvToStringDatabase("/test/strings.csv");
+
+            // Assert
+            Assert.Single(result);
+            Assert.Equal("Path\\File", result[0].EString);
+        }
+
+        [Fact]
+        public void LoadCsvToStringDatabase_HandlesUtf8BomEncoding()
+        {
+            // Arrange - UTF-8 with BOM
+            string csv = "Offset\tHash\tJString\tEString\n0\t123\tTest\tEnglish\n";
+            byte[] utf8Bom = new byte[] { 0xEF, 0xBB, 0xBF };
+            byte[] content = Encoding.UTF8.GetBytes(csv);
+            byte[] withBom = new byte[utf8Bom.Length + content.Length];
+            utf8Bom.CopyTo(withBom, 0);
+            content.CopyTo(withBom, utf8Bom.Length);
+            _fileSystem.AddFile("/test/strings.csv", withBom);
+
+            // Act
+            var result = _service.LoadCsvToStringDatabase("/test/strings.csv");
+
+            // Assert
+            Assert.Single(result);
+            Assert.Equal("English", result[0].EString);
+        }
+
+        [Fact]
+        public void LoadCsvToStringDatabase_WithEmptyEString_ReturnsEmptyString()
+        {
+            // Arrange
+            string csv = "Offset\tHash\tJString\tEString\n0\t123\tTest\t\n";
+            _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+
+            // Act
+            var result = _service.LoadCsvToStringDatabase("/test/strings.csv");
+
+            // Assert
+            Assert.Single(result);
+            Assert.Equal("", result[0].EString);
+        }
+
+        [Fact]
+        public void LoadCsvToStringDatabase_ParsesHashCorrectly()
+        {
+            // Arrange
+            string csv = "Offset\tHash\tJString\tEString\n0\t4294967295\tTest\tEnglish\n";
+            _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+
+            // Act
+            var result = _service.LoadCsvToStringDatabase("/test/strings.csv");
+
+            // Assert
+            Assert.Single(result);
+            Assert.Equal(uint.MaxValue, result[0].Hash);
+        }
+
+        #endregion
+
+        #region Additional UpdateBinaryStrings Tests
+
+        [Fact]
+        public void UpdateBinaryStrings_WithoutTrueOffsets_ScansForPointers()
+        {
+            // Arrange - create data with a pointer value that matches an offset
+            // The pointer value must be at position > 10000 for the scan to work
+            byte[] originalData = new byte[11000];
+            // Write a pointer value at position 10004 that points to offset 0
+            BitConverter.GetBytes(0).CopyTo(originalData, 10004);
+
+            var stringDb = new StringDatabase[]
+            {
+                new() { Offset = 0, EString = "Test" }
+            };
+
+            // Act
+            byte[] result = _service.UpdateBinaryStrings(stringDb, originalData, false, false);
+
+            // Assert - pointer at position 10004 should be updated to new location
+            int newPointer = BitConverter.ToInt32(result, 10004);
+            Assert.Equal(11000, newPointer); // Points to end of original data
+        }
+
+        [Fact]
+        public void UpdateBinaryStrings_SkipsPointersBeforePosition10000()
+        {
+            // Arrange
+            byte[] originalData = new byte[11000];
+            // Write a pointer at position 100 (< 10000, should not be updated)
+            BitConverter.GetBytes(0).CopyTo(originalData, 100);
+
+            var stringDb = new StringDatabase[]
+            {
+                new() { Offset = 0, EString = "Test" }
+            };
+
+            // Act
+            byte[] result = _service.UpdateBinaryStrings(stringDb, originalData, false, false);
+
+            // Assert - pointer at position 100 should NOT be updated
+            int pointerValue = BitConverter.ToInt32(result, 100);
+            Assert.Equal(0, pointerValue); // Should remain unchanged
+        }
+
+        [Fact]
+        public void UpdateBinaryStrings_MultipleTranslations_AppendsInOrder()
+        {
+            // Arrange
+            byte[] originalData = new byte[100];
+            var stringDb = new StringDatabase[]
+            {
+                new() { Offset = 0, EString = "First" },
+                new() { Offset = 10, EString = "Second" },
+                new() { Offset = 20, EString = "Third" }
+            };
+
+            // Act
+            byte[] result = _service.UpdateBinaryStrings(stringDb, originalData, false, false);
+
+            // Assert
+            int firstOffset = originalData.Length;
+            int secondOffset = firstOffset + 6; // "First" + null
+            int thirdOffset = secondOffset + 7; // "Second" + null
+
+            string first = Encoding.GetEncoding("shift-jis").GetString(result, firstOffset, 5);
+            string second = Encoding.GetEncoding("shift-jis").GetString(result, secondOffset, 6);
+            string third = Encoding.GetEncoding("shift-jis").GetString(result, thirdOffset, 5);
+
+            Assert.Equal("First", first);
+            Assert.Equal("Second", second);
+            Assert.Equal("Third", third);
+        }
+
+        [Fact]
+        public void UpdateBinaryStrings_HandlesNullStringsInMiddle()
+        {
+            // Arrange
+            byte[] originalData = new byte[100];
+            var stringDb = new StringDatabase[]
+            {
+                new() { Offset = 0, EString = "First" },
+                new() { Offset = 10, EString = null },     // null - skip
+                new() { Offset = 20, EString = "Third" }
+            };
+
+            // Act
+            byte[] result = _service.UpdateBinaryStrings(stringDb, originalData, false, false);
+
+            // Assert - only two translations added
+            int expectedSize = originalData.Length + 6 + 6; // "First" + null + "Third" + null
+            Assert.Equal(expectedSize, result.Length);
+        }
+
+        #endregion
     }
 }

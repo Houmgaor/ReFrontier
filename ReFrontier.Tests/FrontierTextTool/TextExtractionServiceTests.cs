@@ -246,6 +246,208 @@ namespace ReFrontier.Tests.TextToolTests
             Assert.NotNull(service);
         }
 
+        [Fact]
+        public void Constructor_WithEncodingOptions_CreatesValidInstance()
+        {
+            var encodingOptions = LibReFrontier.CsvEncodingOptions.ShiftJis;
+            var service = new TextExtractionService(_fileSystem, _logger, encodingOptions);
+            Assert.NotNull(service);
+        }
+
+        #endregion
+
+        #region Additional DumpAndHashInternal Tests
+
+        [Fact]
+        public void DumpAndHashInternal_ReplacesBackslashWithEscaped()
+        {
+            // Arrange - backslash should become double backslash
+            byte[] data = TestDataFactory.CreateBinaryWithStrings("Path\\File");
+
+            using var ms = new MemoryStream(data);
+            using var br = new BinaryReader(ms);
+
+            // Act
+            var result = _service.DumpAndHashInternal("test.bin", data, br, 0, 0, false, false);
+
+            // Assert
+            Assert.Single(result);
+            Assert.Equal("Path\\\\File", result[0].JString);
+        }
+
+        [Fact]
+        public void DumpAndHashInternal_WithTrueOffsets_SkipsInvalidPointerTooSmall()
+        {
+            // Arrange - pointer value < 10 should be skipped
+            byte[] data = new byte[50];
+            // Write a pointer with value 5 (less than 10)
+            BitConverter.GetBytes(5).CopyTo(data, 0);
+            // Write a valid pointer
+            BitConverter.GetBytes(20).CopyTo(data, 4);
+            // Write string at offset 20
+            Encoding.GetEncoding("shift-jis").GetBytes("Valid").CopyTo(data, 20);
+
+            using var ms = new MemoryStream(data);
+            using var br = new BinaryReader(ms);
+
+            // Act - read first 8 bytes (2 pointers)
+            var result = _service.DumpAndHashInternal("test.bin", data, br, 0, 8, true, false);
+
+            // Assert - only one string extracted (the valid pointer)
+            Assert.Single(result);
+            Assert.Equal("Valid", result[0].JString);
+        }
+
+        [Fact]
+        public void DumpAndHashInternal_WithTrueOffsets_SkipsPointerBeyondFileLength()
+        {
+            // Arrange - pointer beyond file length should be skipped
+            byte[] data = new byte[50];
+            // Write a pointer with value 100 (beyond file length)
+            BitConverter.GetBytes(100).CopyTo(data, 0);
+            // Write a valid pointer
+            BitConverter.GetBytes(20).CopyTo(data, 4);
+            // Write string at offset 20
+            Encoding.GetEncoding("shift-jis").GetBytes("Valid").CopyTo(data, 20);
+
+            using var ms = new MemoryStream(data);
+            using var br = new BinaryReader(ms);
+
+            // Act
+            var result = _service.DumpAndHashInternal("test.bin", data, br, 0, 8, true, false);
+
+            // Assert - only valid pointer extracted
+            Assert.Single(result);
+            Assert.Equal("Valid", result[0].JString);
+        }
+
+        [Fact]
+        public void DumpAndHashInternal_WithCheckNullPredecessor_SkipsStringWithoutNullBefore()
+        {
+            // Arrange - create data where string doesn't have null predecessor
+            byte[] data = new byte[50];
+            // Write pointer to offset 20
+            BitConverter.GetBytes(20).CopyTo(data, 0);
+            // Write non-null byte before string position (at offset 18)
+            data[18] = 0x41; // 'A'
+            data[19] = 0x00; // This should be non-null for skip
+            // Actually the check is: if (byte at strPos-2 == 0 || byte at strPos-1 != 0) continue
+            // So we need: strPos-2 != 0 AND strPos-1 == 0
+            // To pass: strPos-2 must be != 0, strPos-1 must be == 0
+            data[18] = 0x00; // strPos-2 = 0, should fail first condition and skip
+            data[19] = 0x00; // strPos-1 = 0, second condition check
+            // Write string at offset 20
+            Encoding.GetEncoding("shift-jis").GetBytes("Test").CopyTo(data, 20);
+
+            using var ms = new MemoryStream(data);
+            using var br = new BinaryReader(ms);
+
+            // Act - with checkNullPredecessor = true
+            var result = _service.DumpAndHashInternal("test.bin", data, br, 0, 4, true, true);
+
+            // Assert - string should be skipped because predecessor check fails
+            Assert.Empty(result);
+        }
+
+        [Fact]
+        public void DumpAndHashInternal_WithCheckNullPredecessor_IncludesValidString()
+        {
+            // Arrange - string with proper null predecessor
+            byte[] data = new byte[50];
+            // Write pointer to offset 22
+            BitConverter.GetBytes(22).CopyTo(data, 0);
+            // Set up proper predecessor: strPos-2 != 0, strPos-1 == 0
+            data[20] = 0x41; // strPos-2 != 0 (passes first check)
+            data[21] = 0x00; // strPos-1 == 0 (passes second check)
+            // Write string at offset 22
+            Encoding.GetEncoding("shift-jis").GetBytes("Valid").CopyTo(data, 22);
+
+            using var ms = new MemoryStream(data);
+            using var br = new BinaryReader(ms);
+
+            // Act
+            var result = _service.DumpAndHashInternal("test.bin", data, br, 0, 4, true, true);
+
+            // Assert
+            Assert.Single(result);
+            Assert.Equal("Valid", result[0].JString);
+        }
+
+        [Fact]
+        public void DumpAndHashInternal_ExtractsMultipleStringsWithMixedLengths()
+        {
+            // Arrange - strings with mixed lengths
+            byte[] data = TestDataFactory.CreateBinaryWithStrings("Short", "LongerString", "Med");
+
+            using var ms = new MemoryStream(data);
+            using var br = new BinaryReader(ms);
+
+            // Act
+            var result = _service.DumpAndHashInternal("test.bin", data, br, 0, 0, false, false);
+
+            // Assert
+            Assert.Equal(3, result.Count);
+            Assert.Equal("Short", result[0].JString);
+            Assert.Equal("LongerString", result[1].JString);
+            Assert.Equal("Med", result[2].JString);
+        }
+
+        [Fact]
+        public void DumpAndHashInternal_LogsOffsetRange()
+        {
+            // Arrange
+            byte[] data = TestDataFactory.CreateBinaryWithStrings("Test");
+
+            using var ms = new MemoryStream(data);
+            using var br = new BinaryReader(ms);
+
+            // Act
+            _service.DumpAndHashInternal("test.bin", data, br, 0, 0, false, false);
+
+            // Assert
+            Assert.True(_logger.ContainsMessage("Strings at:"));
+        }
+
+        [Fact]
+        public void DumpAndHashInternal_EndOffsetZero_UsesStreamLength()
+        {
+            // Arrange
+            byte[] data = TestDataFactory.CreateBinaryWithStrings("Test");
+
+            using var ms = new MemoryStream(data);
+            using var br = new BinaryReader(ms);
+
+            // Act - endOffset = 0 should use stream length
+            var result = _service.DumpAndHashInternal("test.bin", data, br, 0, 0, false, false);
+
+            // Assert
+            Assert.Single(result);
+            Assert.Equal("Test", result[0].JString);
+        }
+
+        #endregion
+
+        #region WriteCsv Encoding Tests
+
+        [Fact]
+        public void WriteCsv_WithShiftJisEncoding_CreatesFile()
+        {
+            // Arrange
+            var encodingOptions = LibReFrontier.CsvEncodingOptions.ShiftJis;
+            var service = new TextExtractionService(_fileSystem, _logger, encodingOptions);
+
+            var stringsDb = new List<StringDatabase>
+            {
+                new() { Offset = 0, Hash = 123, JString = "日本語", EString = "" }
+            };
+
+            // Act
+            service.WriteCsv("/test/input.bin", stringsDb);
+
+            // Assert
+            Assert.True(_fileSystem.FileExists("input.csv"));
+        }
+
         #endregion
     }
 }

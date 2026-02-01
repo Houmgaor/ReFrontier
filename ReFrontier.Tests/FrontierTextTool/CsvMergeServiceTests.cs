@@ -262,6 +262,197 @@ namespace ReFrontier.Tests.TextToolTests
             Assert.NotNull(service);
         }
 
+        [Fact]
+        public void Constructor_WithEncodingOptions_CreatesValidInstance()
+        {
+            var encodingOptions = LibReFrontier.CsvEncodingOptions.ShiftJis;
+            var service = new CsvMergeService(_fileSystem, _logger, encodingOptions);
+            Assert.NotNull(service);
+        }
+
+        #endregion
+
+        #region CleanTrados File Tests
+
+        [Fact]
+        public void CleanTrados_ModifiesFileInPlace()
+        {
+            // Arrange
+            string content = "やった！ 成功";
+            _fileSystem.AddFile("/test/file.txt", Encoding.UTF8.GetBytes(content));
+
+            // Act
+            _service.CleanTrados("/test/file.txt");
+
+            // Assert
+            string result = _fileSystem.ReadAllText("/test/file.txt", Encoding.UTF8);
+            Assert.Equal("やった！成功", result);
+        }
+
+        [Fact]
+        public void CleanTrados_LogsCleanedUp()
+        {
+            // Arrange
+            string content = "Test";
+            _fileSystem.AddFile("/test/file.txt", Encoding.UTF8.GetBytes(content));
+
+            // Act
+            _service.CleanTrados("/test/file.txt");
+
+            // Assert
+            Assert.True(_logger.ContainsMessage("Cleaned up"));
+        }
+
+        #endregion
+
+        #region Merge Encoding Tests
+
+        [Fact]
+        public void Merge_HandlesUtf8BomEncoding()
+        {
+            // Arrange - UTF-8 with BOM
+            string oldCsv = "Offset\tHash\tJString\tEString\n0\t123\tTest\tTrans\n";
+            byte[] utf8Bom = new byte[] { 0xEF, 0xBB, 0xBF };
+            byte[] content = Encoding.UTF8.GetBytes(oldCsv);
+            byte[] withBom = new byte[utf8Bom.Length + content.Length];
+            utf8Bom.CopyTo(withBom, 0);
+            content.CopyTo(withBom, utf8Bom.Length);
+            _fileSystem.AddFile("/test/old.csv", withBom);
+
+            string newCsv = "Offset\tHash\tJString\tEString\n0\t123\tTest\t\n";
+            _fileSystem.AddFile("/test/new.csv", Encoding.GetEncoding("shift-jis").GetBytes(newCsv));
+
+            // Act
+            _service.Merge("/test/old.csv", "/test/new.csv");
+
+            // Assert
+            Assert.True(_fileSystem.FileExists("csv/old.csv"));
+        }
+
+        [Fact]
+        public void Merge_DeletesExistingOutputFile()
+        {
+            // Arrange
+            _fileSystem.AddFile("csv/old.csv", "old content");
+
+            string oldCsv = "Offset\tHash\tJString\tEString\n0\t123\tTest\tTrans\n";
+            string newCsv = "Offset\tHash\tJString\tEString\n0\t123\tTest\t\n";
+            _fileSystem.AddFile("/test/old.csv", Encoding.GetEncoding("shift-jis").GetBytes(oldCsv));
+            _fileSystem.AddFile("/test/new.csv", Encoding.GetEncoding("shift-jis").GetBytes(newCsv));
+
+            // Act
+            _service.Merge("/test/old.csv", "/test/new.csv");
+
+            // Assert
+            Assert.True(_fileSystem.FileExists("csv/old.csv"));
+            string result = _fileSystem.ReadAllText("csv/old.csv", Encoding.GetEncoding("shift-jis"));
+            Assert.Contains("Trans", result);
+        }
+
+        [Fact]
+        public void Merge_MatchesMultipleEntriesWithSameHash()
+        {
+            // Arrange - multiple entries with same hash should all get the translation
+            string oldCsv = "Offset\tHash\tJString\tEString\n0\t12345\tText\tTranslated\n";
+            _fileSystem.AddFile("/test/old.csv", Encoding.GetEncoding("shift-jis").GetBytes(oldCsv));
+
+            string newCsv = "Offset\tHash\tJString\tEString\n" +
+                           "100\t12345\tText\t\n" +
+                           "200\t12345\tText\t\n";
+            _fileSystem.AddFile("/test/new.csv", Encoding.GetEncoding("shift-jis").GetBytes(newCsv));
+
+            // Act
+            _service.Merge("/test/old.csv", "/test/new.csv");
+
+            // Assert - both entries should have the translation
+            string result = _fileSystem.ReadAllText("csv/old.csv", Encoding.GetEncoding("shift-jis"));
+            // Count occurrences of "Translated"
+            int count = result.Split(new[] { "Translated" }, StringSplitOptions.None).Length - 1;
+            Assert.Equal(2, count);
+        }
+
+        #endregion
+
+        #region InsertCatFile Additional Tests
+
+        [Fact]
+        public void InsertCatFile_LogsProcessing()
+        {
+            // Arrange
+            string catContent = "Translation\n";
+            _fileSystem.AddFile("/test/cat.txt", Encoding.UTF8.GetBytes(catContent));
+
+            string csvContent = "Offset\tHash\tJString\tEString\n0\t123\tOriginal\t\n";
+            _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csvContent));
+
+            // Act
+            _service.InsertCatFile("/test/cat.txt", "/test/strings.csv");
+
+            // Assert
+            Assert.True(_logger.ContainsMessage("Processing"));
+        }
+
+        [Fact]
+        public void InsertCatFile_DeletesExistingOutputFile()
+        {
+            // Arrange
+            _fileSystem.AddFile("csv/strings.csv", "old content");
+
+            string catContent = "NewTrans\n";
+            _fileSystem.AddFile("/test/cat.txt", Encoding.UTF8.GetBytes(catContent));
+
+            string csvContent = "Offset\tHash\tJString\tEString\n0\t123\tOriginal\t\n";
+            _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csvContent));
+
+            // Act
+            _service.InsertCatFile("/test/cat.txt", "/test/strings.csv");
+
+            // Assert
+            string result = _fileSystem.ReadAllText("csv/strings.csv", Encoding.GetEncoding("shift-jis"));
+            Assert.Contains("NewTrans", result);
+        }
+
+        [Fact]
+        public void InsertCatFile_HandlesUtf8BomInCsv()
+        {
+            // Arrange
+            string catContent = "Translation\n";
+            _fileSystem.AddFile("/test/cat.txt", Encoding.UTF8.GetBytes(catContent));
+
+            string csvContent = "Offset\tHash\tJString\tEString\n0\t123\tOriginal\t\n";
+            byte[] utf8Bom = new byte[] { 0xEF, 0xBB, 0xBF };
+            byte[] content = Encoding.UTF8.GetBytes(csvContent);
+            byte[] withBom = new byte[utf8Bom.Length + content.Length];
+            utf8Bom.CopyTo(withBom, 0);
+            content.CopyTo(withBom, utf8Bom.Length);
+            _fileSystem.AddFile("/test/strings.csv", withBom);
+
+            // Act
+            _service.InsertCatFile("/test/cat.txt", "/test/strings.csv");
+
+            // Assert
+            Assert.True(_fileSystem.FileExists("csv/strings.csv"));
+        }
+
+        [Fact]
+        public void InsertCatFile_KeepsExistingTranslationWhenCatDiffers()
+        {
+            // Arrange
+            string catContent = "DifferentText\n";
+            _fileSystem.AddFile("/test/cat.txt", Encoding.UTF8.GetBytes(catContent));
+
+            // CSV where JString != CAT text, so translation should be updated
+            string csvContent = "Offset\tHash\tJString\tEString\n0\t123\tOriginal\t\n";
+            _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csvContent));
+
+            // Act
+            _service.InsertCatFile("/test/cat.txt", "/test/strings.csv");
+
+            // Assert
+            string result = _fileSystem.ReadAllText("csv/strings.csv", Encoding.GetEncoding("shift-jis"));
+            Assert.Contains("DifferentText", result);
+        }
+
         #endregion
     }
 }
