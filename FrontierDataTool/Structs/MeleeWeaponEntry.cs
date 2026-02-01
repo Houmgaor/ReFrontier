@@ -1,7 +1,7 @@
 namespace FrontierDataTool.Structs
 {
     /// <summary>
-    /// Melee weapon data.
+    /// Melee weapon data (0x34 = 52 bytes per entry).
     /// </summary>
     public class MeleeWeaponEntry
     {
@@ -20,20 +20,63 @@ namespace FrontierDataTool.Structs
         public string? AilmentId { get; set; }
         public int AilDamage { get; set; }
         public byte Slots { get; set; }
-        public byte Unk3 { get; set; }
-        public byte Unk4 { get; set; }
-        public short Unk5 { get; set; }
-        public short Unk6 { get; set; }
-        public short Unk7 { get; set; }
-        public int Unk8 { get; set; }
-        public int Unk9 { get; set; }
-        public short Unk10 { get; set; }
+
+        /// <summary>
+        /// Secondary weapon attribute (e.g., Switch Axe F phial type).
+        /// </summary>
+        public byte WeaponAttribute { get; set; }
+
+        /// <summary>
+        /// Particle effect type (1=ice?, 2=dark?).
+        /// </summary>
+        public byte ParticleEffect { get; set; }
+
+        /// <summary>
+        /// Upgrade tree reference - how many entries back to look for parent weapon. 0xFF = none.
+        /// </summary>
+        public short UpgradePath { get; set; }
+
+        /// <summary>
+        /// Alternate/drawn model ID (often same as ModelId).
+        /// </summary>
+        public short DrawnModelId { get; set; }
+
+        /// <summary>
+        /// Equipment type flags (0=General, 1=SP, 2=Gou, 4=Evolution, 8=HC, 0x24=Ravi).
+        /// Combined from eqType (low byte) and unknown flag (high byte).
+        /// </summary>
+        public short EqType { get; set; }
+
+        /// <summary>
+        /// Weapon reach/length parameter.
+        /// </summary>
+        public int Length { get; set; }
+
+        /// <summary>
+        /// Weapon tier/type classification (zenith, prayer, g-rank, exotic, gou, etc.).
+        /// </summary>
+        public int WeaponType { get; set; }
+
+        /// <summary>
+        /// Visual effect ID for the weapon.
+        /// </summary>
+        public short VisualEffects { get; set; }
+
         public short Unk11 { get; set; }
         public byte Unk12 { get; set; }
         public byte Unk13 { get; set; }
         public byte Unk14 { get; set; }
-        public byte Unk15 { get; set; }
+
+        /// <summary>
+        /// Usually 0x0F - possibly flags or padding.
+        /// </summary>
+        public byte ZeroF { get; set; }
+
         public int Unk16 { get; set; }
-        public int Unk17 { get; set; }
+
+        /// <summary>
+        /// Zenith skill ID (u16 stored in lower 2 bytes, upper 2 bytes are padding).
+        /// </summary>
+        public int ZenithSkill { get; set; }
     }
 }

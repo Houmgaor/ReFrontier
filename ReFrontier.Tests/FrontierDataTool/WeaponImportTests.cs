@@ -168,21 +168,21 @@ namespace ReFrontier.Tests.DataToolTests
                 AilmentId = "麻痺",
                 AilDamage = 250,
                 Slots = 2,
-                Unk3 = 1,
-                Unk4 = 2,
-                Unk5 = 100,
-                Unk6 = 200,
-                Unk7 = 300,
-                Unk8 = 1000,
-                Unk9 = 2000,
-                Unk10 = 50,
+                WeaponAttribute = 1,
+                ParticleEffect = 2,
+                UpgradePath = 100,
+                DrawnModelId = 200,
+                EqType = 300,
+                Length = 1000,
+                WeaponType = 2000,
+                VisualEffects = 50,
                 Unk11 = 60,
                 Unk12 = 3,
                 Unk13 = 4,
                 Unk14 = 5,
-                Unk15 = 6,
+                ZeroF = 6,
                 Unk16 = 3000,
-                Unk17 = 4000
+                ZenithSkill = 4000
             };
 
             // Write
@@ -247,9 +247,9 @@ namespace ReFrontier.Tests.DataToolTests
                 Rarity = 6,
                 MaxSlotsMaybe = 3,
                 ClassId = "ライトボウガン",
-                Unk2_1 = 1,
+                Unk05 = 1,
                 EqType = "10",
-                Unk2_3 = 2,
+                Unk07 = 2,
                 ZennyCost = 8000,
                 RawDamage = 320,
                 Defense = 10,
@@ -257,10 +257,10 @@ namespace ReFrontier.Tests.DataToolTests
                 Slots = 2,
                 Affinity = 10,
                 SortOrderMaybe = 5,
-                Unk6_1 = 3,
+                WeaponAttribute = 3,
                 ElementId = "氷",
                 EleDamage = 180,
-                Unk6_4 = 4
+                Unk23 = 4
             };
 
             // Write
@@ -364,7 +364,7 @@ namespace ReFrontier.Tests.DataToolTests
         private static string CreateMeleeCsv(int count)
         {
             var sb = new StringBuilder();
-            sb.AppendLine("Name,ModelId,ModelIdData,Rarity,ClassId,ZennyCost,SharpnessId,RawDamage,Defense,Affinity,ElementId,EleDamage,AilmentId,AilDamage,Slots,Unk3,Unk4,Unk5,Unk6,Unk7,Unk8,Unk9,Unk10,Unk11,Unk12,Unk13,Unk14,Unk15,Unk16,Unk17");
+            sb.AppendLine("Name,ModelId,ModelIdData,Rarity,ClassId,ZennyCost,SharpnessId,RawDamage,Defense,Affinity,ElementId,EleDamage,AilmentId,AilDamage,Slots,WeaponAttribute,ParticleEffect,UpgradePath,DrawnModelId,EqType,Length,WeaponType,VisualEffects,Unk11,Unk12,Unk13,Unk14,ZeroF,Unk16,ZenithSkill");
 
             for (int i = 0; i < count; i++)
             {
@@ -377,7 +377,7 @@ namespace ReFrontier.Tests.DataToolTests
         private static string CreateRangedCsv(int count)
         {
             var sb = new StringBuilder();
-            sb.AppendLine("Name,ModelId,ModelIdData,Rarity,MaxSlotsMaybe,ClassId,Unk2_1,EqType,Unk2_3,Unk3_1,Unk3_2,Unk3_3,Unk3_4,Unk4_1,Unk4_2,Unk4_3,Unk4_4,Unk5_1,Unk5_2,Unk5_3,Unk5_4,ZennyCost,RawDamage,Defense,RecoilMaybe,Slots,Affinity,SortOrderMaybe,Unk6_1,ElementId,EleDamage,Unk6_4,Unk7_1,Unk7_2,Unk7_3,Unk7_4,Unk8_1,Unk8_2,Unk8_3,Unk8_4,Unk9_1,Unk9_2,Unk9_3,Unk9_4,Unk10_1,Unk10_2,Unk10_3,Unk10_4,Unk11_1,Unk11_2,Unk11_3,Unk11_4,Unk12_1,Unk12_2,Unk12_3,Unk12_4");
+            sb.AppendLine("Name,ModelId,ModelIdData,Rarity,MaxSlotsMaybe,ClassId,Unk05,EqType,Unk07,Unk08_1,Unk08_2,Unk08_3,Unk08_4,WeaponType1,WeaponType2,WeaponType3,WeaponType4,Unk10_1,Unk10_2,Unk10_3,Unk10_4,ZennyCost,RawDamage,Defense,RecoilMaybe,Slots,Affinity,SortOrderMaybe,WeaponAttribute,ElementId,EleDamage,Unk23,Unk24_1,Unk24_2,Unk24_3,Unk24_4,Bullet1,Bullet2,Bullet3,Bullet4,Unk2C_1,Unk2C_2,Unk2C_3,Unk2C_4,Unk30_1,Unk30_2,Unk30_3,Unk30_4,Unk34_1,Unk34_2,Unk34_3,Unk34_4,Unk38_1,Unk38_2,Unk38_3,Unk38_4");
 
             for (int i = 0; i < count; i++)
             {
