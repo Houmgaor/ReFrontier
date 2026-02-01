@@ -165,6 +165,55 @@ namespace ReFrontier.Tests.DataToolTests
             Assert.Equal(5, MhfDataOffsets.MhfDat.Armor.DataPointers.Count);
         }
 
+        [Fact]
+        public void TotalQuestCount_CalculatesCorrectly()
+        {
+            // Assert
+            int expected = 0;
+            foreach (var section in MhfDataOffsets.MhfInf.QuestSections)
+                expected += section.Count;
+            Assert.Equal(expected, MhfDataOffsets.MhfInf.TotalQuestCount);
+        }
+
+        #endregion
+
+        #region CsvEncodingOptions Tests
+
+        [Fact]
+        public void DataExtractionService_WithEncodingOptions_UsesCorrectEncoding()
+        {
+            // Test that the service accepts encoding options
+            var encodingOptions = LibReFrontier.CsvEncodingOptions.Default;
+            var service = new DataExtractionService(_fileSystem, _logger, encodingOptions);
+            Assert.NotNull(service);
+        }
+
+        [Fact]
+        public void DataExtractionService_WithShiftJisEncodingOptions_CreatesService()
+        {
+            var encodingOptions = LibReFrontier.CsvEncodingOptions.ShiftJis;
+            var service = new DataExtractionService(_fileSystem, _logger, encodingOptions);
+            Assert.NotNull(service);
+        }
+
+        #endregion
+
+        #region MhfInf TotalQuestCount Tests
+
+        [Fact]
+        public void MhfInf_QuestSections_HasExpectedSectionCount()
+        {
+            Assert.Equal(13, MhfDataOffsets.MhfInf.QuestSections.Count);
+        }
+
+        [Fact]
+        public void MhfInf_FirstSection_HasExpectedValues()
+        {
+            var firstSection = MhfDataOffsets.MhfInf.QuestSections[0];
+            Assert.Equal(0x6BD60, firstSection.Offset);
+            Assert.Equal(95, firstSection.Count);
+        }
+
         #endregion
 
         #region Helper Methods

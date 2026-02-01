@@ -130,5 +130,585 @@ namespace ReFrontier.Tests.DataToolTests
         }
 
         #endregion
+
+        #region ImportArmorDataInternal Tests
+
+        [Fact]
+        public void ImportArmorDataInternal_WritesOutputFile()
+        {
+            // Arrange
+            byte[] mhfpac = TestDataFactory.CreateMinimalMhfpac(new[] { "攻撃", "防御" });
+            byte[] mhfdat = CreateMhfdatWithArmorData(2);
+            string csv = TestDataFactory.CreateArmorCsv(2);
+
+            _fileSystem.AddFile("/test/mhfpac.bin", mhfpac);
+            _fileSystem.AddFile("/test/mhfdat.bin", mhfdat);
+            _fileSystem.AddFile("/test/Armor.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+
+            // Act
+            _service.ImportArmorDataInternal("/test/mhfdat.bin", "/test/Armor.csv", "/test/mhfpac.bin");
+
+            // Assert
+            Assert.True(_fileSystem.FileExists("output/mhfdat.bin"));
+            Assert.True(_logger.ContainsMessage("Loaded"));
+            Assert.True(_logger.ContainsMessage("armor entries from CSV"));
+        }
+
+        [Fact]
+        public void ImportArmorDataInternal_LogsSkippedClassOnMismatch()
+        {
+            // Arrange
+            byte[] mhfpac = TestDataFactory.CreateMinimalMhfpac(new[] { "攻撃" });
+            byte[] mhfdat = CreateMhfdatWithArmorData(3); // 3 entries per class
+            string csv = TestDataFactory.CreateArmorCsv(2); // Only 2 entries per class
+
+            _fileSystem.AddFile("/test/mhfpac.bin", mhfpac);
+            _fileSystem.AddFile("/test/mhfdat.bin", mhfdat);
+            _fileSystem.AddFile("/test/Armor.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+
+            // Act
+            _service.ImportArmorDataInternal("/test/mhfdat.bin", "/test/Armor.csv", "/test/mhfpac.bin");
+
+            // Assert
+            Assert.True(_logger.ContainsMessage("Skipping this class"));
+        }
+
+        #endregion
+
+        #region ImportMeleeDataInternal Tests
+
+        [Fact]
+        public void ImportMeleeDataInternal_WritesOutputFile()
+        {
+            // Arrange
+            byte[] mhfdat = CreateMhfdatWithWeaponData(3, 0);
+            string csv = CreateMeleeCsv(3);
+
+            _fileSystem.AddFile("/test/mhfdat.bin", mhfdat);
+            _fileSystem.AddFile("/test/Melee.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+
+            // Act
+            _service.ImportMeleeDataInternal("/test/mhfdat.bin", "/test/Melee.csv");
+
+            // Assert
+            Assert.True(_fileSystem.FileExists("output/mhfdat.bin"));
+            Assert.True(_logger.ContainsMessage("melee weapon entries"));
+        }
+
+        [Fact]
+        public void ImportMeleeDataInternal_AbortsOnCountMismatch()
+        {
+            // Arrange
+            byte[] mhfdat = CreateMhfdatWithWeaponData(5, 0); // 5 melee entries
+            string csv = CreateMeleeCsv(3); // Only 3 CSV entries
+
+            _fileSystem.AddFile("/test/mhfdat.bin", mhfdat);
+            _fileSystem.AddFile("/test/Melee.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+
+            // Act
+            _service.ImportMeleeDataInternal("/test/mhfdat.bin", "/test/Melee.csv");
+
+            // Assert - should abort without writing output
+            Assert.True(_logger.ContainsMessage("Aborting"));
+            Assert.False(_fileSystem.FileExists("output/mhfdat.bin"));
+        }
+
+        #endregion
+
+        #region ImportRangedDataInternal Tests
+
+        [Fact]
+        public void ImportRangedDataInternal_AbortsOnCountMismatch()
+        {
+            // Arrange - create file where ranged count = 5
+            byte[] mhfdat = CreateMhfdatForRangedImport(5);
+            string csv = CreateRangedCsv(2); // CSV only has 2 entries
+
+            _fileSystem.AddFile("/test/mhfdat.bin", mhfdat);
+            _fileSystem.AddFile("/test/Ranged.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+
+            // Act
+            _service.ImportRangedDataInternal("/test/mhfdat.bin", "/test/Ranged.csv");
+
+            // Assert
+            Assert.True(_logger.ContainsMessage("Aborting"));
+        }
+
+        [Fact]
+        public void LoadRangedCsv_ParsesEntries()
+        {
+            // Arrange
+            string csv = CreateRangedCsv(3);
+            _fileSystem.AddFile("/test/Ranged.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+
+            // Act
+            var entries = _service.LoadRangedCsv("/test/Ranged.csv");
+
+            // Assert
+            Assert.Equal(3, entries.Count);
+            Assert.Equal("TestRanged0", entries[0].Name);
+            Assert.Equal("ヘビィボウガン", entries[0].ClassId);
+        }
+
+        #endregion
+
+        #region ImportQuestDataInternal Tests
+
+        [Fact]
+        public void ImportQuestDataInternal_AbortsOnCountMismatch()
+        {
+            // Arrange
+            byte[] mhfinf = new byte[0x200000];
+            string csv = CreateQuestCsv(5); // Much less than expected
+
+            _fileSystem.AddFile("/test/mhfinf.bin", mhfinf);
+            _fileSystem.AddFile("/test/InfQuests.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+
+            // Act
+            _service.ImportQuestDataInternal("/test/mhfinf.bin", "/test/InfQuests.csv");
+
+            // Assert
+            Assert.True(_logger.ContainsMessage("Aborting"));
+        }
+
+        [Fact]
+        public void ImportQuestDataInternal_LogsReadOnlyNote()
+        {
+            // Arrange - need to create exactly the right number of quest entries
+            int totalCount = FrontierDataTool.MhfDataOffsets.MhfInf.TotalQuestCount;
+            byte[] mhfinf = new byte[0x200000];
+            string csv = CreateQuestCsv(totalCount);
+
+            _fileSystem.AddFile("/test/mhfinf.bin", mhfinf);
+            _fileSystem.AddFile("/test/InfQuests.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+
+            // Act
+            _service.ImportQuestDataInternal("/test/mhfinf.bin", "/test/InfQuests.csv");
+
+            // Assert
+            Assert.True(_fileSystem.FileExists("output/mhfinf.bin"));
+            Assert.True(_logger.ContainsMessage("read-only"));
+        }
+
+        #endregion
+
+        #region ModShopInternal Tests
+
+        [Fact]
+        public void ModShopInternal_PatchesItemPrices()
+        {
+            // Arrange
+            byte[] mhfdat = CreateMhfdatWithShopData();
+            _fileSystem.AddFile("/test/mhfdat.bin", mhfdat);
+
+            // Act
+            _service.ModShopInternal("/test/mhfdat.bin");
+
+            // Assert
+            Assert.True(_logger.ContainsMessage("Patching prices"));
+        }
+
+        [Fact]
+        public void ModShopInternal_LogsNeedleNotFoundGracefully()
+        {
+            // Arrange - create file without shop needle
+            byte[] mhfdat = CreateMhfdatWithShopData(includeShopNeedle: false);
+            _fileSystem.AddFile("/test/mhfdat.bin", mhfdat);
+
+            // Act
+            _service.ModShopInternal("/test/mhfdat.bin");
+
+            // Assert - should log that needle wasn't found
+            Assert.True(_logger.ContainsMessage("Could not find shop needle"));
+        }
+
+        #endregion
+
+        #region LoadCsv UTF-8 Encoding Tests
+
+        [Fact]
+        public void LoadArmorCsv_DetectsUtf8Encoding()
+        {
+            // Arrange - create CSV with UTF-8 BOM
+            string csv = TestDataFactory.CreateArmorCsv(1);
+            byte[] bom = new byte[] { 0xEF, 0xBB, 0xBF };
+            byte[] csvBytes = Encoding.UTF8.GetBytes(csv);
+            byte[] withBom = new byte[bom.Length + csvBytes.Length];
+            Array.Copy(bom, withBom, bom.Length);
+            Array.Copy(csvBytes, 0, withBom, bom.Length, csvBytes.Length);
+
+            _fileSystem.AddFile("/test/Armor.csv", withBom);
+
+            // Act
+            var entries = _service.LoadArmorCsv("/test/Armor.csv");
+
+            // Assert
+            Assert.NotEmpty(entries);
+        }
+
+        [Fact]
+        public void LoadMeleeCsv_DetectsUtf8Encoding()
+        {
+            // Arrange
+            string csv = CreateMeleeCsv(2);
+            byte[] bom = new byte[] { 0xEF, 0xBB, 0xBF };
+            byte[] csvBytes = Encoding.UTF8.GetBytes(csv);
+            byte[] withBom = new byte[bom.Length + csvBytes.Length];
+            Array.Copy(bom, withBom, bom.Length);
+            Array.Copy(csvBytes, 0, withBom, bom.Length, csvBytes.Length);
+
+            _fileSystem.AddFile("/test/Melee.csv", withBom);
+
+            // Act
+            var entries = _service.LoadMeleeCsv("/test/Melee.csv");
+
+            // Assert
+            Assert.Equal(2, entries.Count);
+        }
+
+        [Fact]
+        public void LoadRangedCsv_DetectsUtf8Encoding()
+        {
+            // Arrange
+            string csv = CreateRangedCsv(2);
+            byte[] bom = new byte[] { 0xEF, 0xBB, 0xBF };
+            byte[] csvBytes = Encoding.UTF8.GetBytes(csv);
+            byte[] withBom = new byte[bom.Length + csvBytes.Length];
+            Array.Copy(bom, withBom, bom.Length);
+            Array.Copy(csvBytes, 0, withBom, bom.Length, csvBytes.Length);
+
+            _fileSystem.AddFile("/test/Ranged.csv", withBom);
+
+            // Act
+            var entries = _service.LoadRangedCsv("/test/Ranged.csv");
+
+            // Assert
+            Assert.Equal(2, entries.Count);
+        }
+
+        [Fact]
+        public void LoadQuestCsv_DetectsUtf8Encoding()
+        {
+            // Arrange
+            string csv = CreateQuestCsv(2);
+            byte[] bom = new byte[] { 0xEF, 0xBB, 0xBF };
+            byte[] csvBytes = Encoding.UTF8.GetBytes(csv);
+            byte[] withBom = new byte[bom.Length + csvBytes.Length];
+            Array.Copy(bom, withBom, bom.Length);
+            Array.Copy(csvBytes, 0, withBom, bom.Length, csvBytes.Length);
+
+            _fileSystem.AddFile("/test/Quests.csv", withBom);
+
+            // Act
+            var entries = _service.LoadQuestCsv("/test/Quests.csv");
+
+            // Assert
+            Assert.Equal(2, entries.Count);
+        }
+
+        #endregion
+
+        #region Helper Methods
+
+        private static byte[] CreateMhfdatWithArmorData(int entriesPerSlot)
+        {
+            const int ARMOR_ENTRY_SIZE = 0x48;
+            using var ms = new MemoryStream();
+            using var bw = new BinaryWriter(ms);
+
+            // Create header area
+            bw.Write(new byte[0x200]);
+
+            // Calculate offsets
+            int dataStart = 0x200;
+            int[] slotStarts = new int[5];
+            int currentOffset = dataStart;
+
+            for (int i = 0; i < 5; i++)
+            {
+                slotStarts[i] = currentOffset;
+                currentOffset += entriesPerSlot * ARMOR_ENTRY_SIZE;
+            }
+            int dataEnd = currentOffset;
+
+            // Write offset pointers
+            ms.Seek(0x50, SeekOrigin.Begin);
+            for (int i = 0; i < 5; i++)
+            {
+                bw.Write(slotStarts[i]);
+            }
+
+            ms.Seek(0xE8, SeekOrigin.Begin);
+            bw.Write(slotStarts[1]); // Head end = Body start
+
+            // Write armor data
+            ms.Seek(dataStart, SeekOrigin.Begin);
+            for (int slot = 0; slot < 5; slot++)
+            {
+                for (int i = 0; i < entriesPerSlot; i++)
+                {
+                    WriteMinimalArmorEntry(bw);
+                }
+            }
+
+            return ms.ToArray();
+        }
+
+        private static byte[] CreateMhfdatForRangedImport(int rangedCount)
+        {
+            const int RANGED_ENTRY_SIZE = 0x3C;
+
+            using var ms = new MemoryStream();
+            using var bw = new BinaryWriter(ms);
+
+            bw.Write(new byte[0x200]);
+
+            // Set ranged data offsets
+            // RangedStart at 0x80 points to start offset pointer
+            // RangedEnd at 0x7C points to end offset pointer
+            int rangedStart = 0x200;
+            int rangedEnd = rangedStart + rangedCount * RANGED_ENTRY_SIZE;
+
+            ms.Seek(0x80, SeekOrigin.Begin);
+            bw.Write(rangedStart);
+
+            // Note: RangedEnd is at 0x7C which would normally hold the melee start
+            // For this test, we set it directly
+            ms.Seek(0x7C, SeekOrigin.Begin);
+            bw.Write(rangedEnd);
+
+            // Write ranged weapon data
+            ms.Seek(rangedStart, SeekOrigin.Begin);
+            for (int i = 0; i < rangedCount; i++)
+            {
+                WriteMinimalRangedEntry(bw);
+            }
+
+            return ms.ToArray();
+        }
+
+        private static byte[] CreateMhfdatWithWeaponData(int meleeCount, int rangedCount)
+        {
+            const int MELEE_ENTRY_SIZE = 0x34;
+            const int RANGED_ENTRY_SIZE = 0x3C;
+
+            using var ms = new MemoryStream();
+            using var bw = new BinaryWriter(ms);
+
+            bw.Write(new byte[0x200]);
+
+            int meleeStart = 0x200;
+            int meleeEnd = meleeStart + meleeCount * MELEE_ENTRY_SIZE;
+            int rangedStart = meleeEnd;
+            int rangedEnd = rangedStart + rangedCount * RANGED_ENTRY_SIZE;
+
+            // Write melee offsets
+            ms.Seek(0x7C, SeekOrigin.Begin);
+            bw.Write(meleeStart);
+            ms.Seek(0x90, SeekOrigin.Begin);
+            bw.Write(meleeEnd);
+
+            // Write ranged offsets
+            ms.Seek(0x80, SeekOrigin.Begin);
+            bw.Write(rangedStart);
+            // RangedEnd at 0x7C overlaps with MeleeStart, handle separately
+
+            // Write weapon data
+            ms.Seek(meleeStart, SeekOrigin.Begin);
+            for (int i = 0; i < meleeCount; i++)
+            {
+                WriteMinimalMeleeEntry(bw);
+            }
+            for (int i = 0; i < rangedCount; i++)
+            {
+                WriteMinimalRangedEntry(bw);
+            }
+
+            return ms.ToArray();
+        }
+
+        private static byte[] CreateMhfdatWithShopData(bool includeShopNeedle = true)
+        {
+            const int ITEM_ENTRY_SIZE = 0x24;
+            const int ARMOR_ENTRY_SIZE = 0x48;
+
+            using var ms = new MemoryStream();
+            using var bw = new BinaryWriter(ms);
+
+            bw.Write(new byte[0x1000]);
+
+            // Item data section
+            int itemStart = 0x1000;
+            int itemEnd = itemStart + 10 * ITEM_ENTRY_SIZE;
+
+            ms.Seek(0xFC, SeekOrigin.Begin);
+            bw.Write(itemStart);
+            ms.Seek(0xA70, SeekOrigin.Begin);
+            bw.Write(itemEnd);
+
+            // Armor data section - use existing helper structure
+            int armorStart = itemEnd;
+            ms.Seek(0x50, SeekOrigin.Begin);
+            for (int i = 0; i < 5; i++)
+            {
+                bw.Write(armorStart + i * 2 * ARMOR_ENTRY_SIZE);
+            }
+            ms.Seek(0xE8, SeekOrigin.Begin);
+            bw.Write(armorStart + 2 * ARMOR_ENTRY_SIZE);
+
+            // Write item data with prices
+            ms.Seek(itemStart, SeekOrigin.Begin);
+            for (int i = 0; i < 10; i++)
+            {
+                bw.Write(new byte[12]); // First 12 bytes
+                bw.Write(5000);         // Buy price at offset 12
+                bw.Write(100);          // Sell price at offset 16
+                bw.Write(new byte[ITEM_ENTRY_SIZE - 20]);
+            }
+
+            // Write minimal armor data
+            for (int slot = 0; slot < 5; slot++)
+            {
+                for (int i = 0; i < 2; i++)
+                {
+                    WriteMinimalArmorEntry(bw);
+                }
+            }
+
+            // Optionally add shop needle for ModShop to find
+            if (includeShopNeedle)
+            {
+                byte[] needle = { 0x0F, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00 };
+                long needleOffset = ms.Position;
+                bw.Write(needle);
+
+                // Write pointer to needle (big-endian)
+                byte[] pointerBytes = BitConverter.GetBytes((int)needleOffset);
+                Array.Reverse(pointerBytes);
+                bw.Write(pointerBytes);
+            }
+
+            return ms.ToArray();
+        }
+
+        private static void WriteMinimalArmorEntry(BinaryWriter bw)
+        {
+            bw.Write((short)1);         // ModelIdMale
+            bw.Write((short)1);         // ModelIdFemale
+            bw.Write((byte)0x03);       // Bitfield
+            bw.Write((byte)5);          // Rarity
+            bw.Write((byte)7);          // MaxLevel
+            bw.Write(new byte[5]);
+            bw.Write(100);              // ZennyCost
+            bw.Write((short)0);
+            bw.Write((short)50);        // BaseDefense
+            bw.Write(new byte[5]);      // Resistances
+            bw.Write((short)0);
+            bw.Write((byte)1);
+            bw.Write((byte)3);
+            bw.Write(new byte[9]);
+            bw.Write((short)0);
+            for (int i = 0; i < 5; i++)
+            {
+                bw.Write((byte)0);
+                bw.Write((sbyte)0);
+            }
+            bw.Write(0);
+            bw.Write(0);
+            bw.Write(new byte[4]);
+            bw.Write(0);
+            bw.Write((short)0);
+            bw.Write((short)0);
+        }
+
+        private static void WriteMinimalMeleeEntry(BinaryWriter bw)
+        {
+            bw.Write((short)1);
+            bw.Write((byte)5);
+            bw.Write((byte)0);          // ClassIdx
+            bw.Write(1000);
+            bw.Write((short)0);
+            bw.Write((short)1000);
+            bw.Write((short)0);
+            bw.Write((sbyte)0);
+            bw.Write((byte)0);
+            bw.Write((byte)0);
+            bw.Write((byte)0);
+            bw.Write((byte)0);
+            bw.Write((byte)2);
+            bw.Write(new byte[3]);
+            bw.Write(new byte[6]);
+            bw.Write(0);
+            bw.Write(0);
+            bw.Write(new byte[4]);
+            bw.Write(new byte[4]);
+            bw.Write(0);
+            bw.Write(0);
+        }
+
+        private static void WriteMinimalRangedEntry(BinaryWriter bw)
+        {
+            bw.Write((short)1000);
+            bw.Write((byte)5);
+            bw.Write((byte)0);
+            bw.Write((byte)1);          // ClassIdx (bowgun)
+            bw.Write((byte)0);
+            bw.Write((byte)0);
+            bw.Write((byte)0);
+            bw.Write(new byte[12]);
+            bw.Write(2000);
+            bw.Write((short)300);
+            bw.Write((short)0);
+            bw.Write((byte)0);
+            bw.Write((byte)2);
+            bw.Write((sbyte)0);
+            bw.Write((byte)0);
+            bw.Write((byte)0);
+            bw.Write((byte)0);
+            bw.Write((byte)0);
+            bw.Write((byte)0);
+            bw.Write(new byte[20]);
+        }
+
+        private static string CreateMeleeCsv(int count)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("Name\tModelId\tModelIdData\tRarity\tClassId\tZennyCost\tSharpnessId\tRawDamage\tDefense\tAffinity\tElementId\tEleDamage\tAilmentId\tAilDamage\tSlots\tUnk3\tUnk4\tUnk5\tUnk6\tUnk7\tUnk8\tUnk9\tUnk10\tUnk11\tUnk12\tUnk13\tUnk14\tUnk15\tUnk16\tUnk17");
+
+            for (int i = 0; i < count; i++)
+            {
+                sb.AppendLine($"TestMelee{i}\t{i}\twe{i:D3}\t5\t大剣\t1000\t100\t1500\t10\t5\t火\t300\t毒\t200\t2\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0");
+            }
+
+            return sb.ToString();
+        }
+
+        private static string CreateRangedCsv(int count)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("Name\tModelId\tModelIdData\tRarity\tMaxSlotsMaybe\tClassId\tUnk2_1\tEqType\tUnk2_3\tUnk3_1\tUnk3_2\tUnk3_3\tUnk3_4\tUnk4_1\tUnk4_2\tUnk4_3\tUnk4_4\tUnk5_1\tUnk5_2\tUnk5_3\tUnk5_4\tZennyCost\tRawDamage\tDefense\tRecoilMaybe\tSlots\tAffinity\tSortOrderMaybe\tUnk6_1\tElementId\tEleDamage\tUnk6_4\tUnk7_1\tUnk7_2\tUnk7_3\tUnk7_4\tUnk8_1\tUnk8_2\tUnk8_3\tUnk8_4\tUnk9_1\tUnk9_2\tUnk9_3\tUnk9_4\tUnk10_1\tUnk10_2\tUnk10_3\tUnk10_4\tUnk11_1\tUnk11_2\tUnk11_3\tUnk11_4\tUnk12_1\tUnk12_2\tUnk12_3\tUnk12_4");
+
+            for (int i = 0; i < count; i++)
+            {
+                sb.AppendLine($"TestRanged{i}\t{i + 1000}\twf{i:D3}\t6\t3\tヘビィボウガン\t0\t5\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t2000\t300\t5\t2\t2\t10\t1\t0\t水\t200\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0");
+            }
+
+            return sb.ToString();
+        }
+
+        private static string CreateQuestCsv(int count)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("Title\tTextMain\tTextSubA\tTextSubB\tUnk1\tUnk2\tUnk3\tUnk4\tLevel\tUnk5\tCourseType\tUnk7\tUnk8\tUnk9\tUnk10\tUnk11\tFee\tZennyMain\tZennyKo\tZennySubA\tZennySubB\tTime\tUnk12\tUnk13\tUnk14\tUnk15\tUnk16\tUnk17\tUnk18\tUnk19\tUnk20\tMainGoalType\tMainGoalTarget\tMainGoalCount\tSubAGoalType\tSubAGoalTarget\tSubAGoalCount\tSubBGoalType\tSubBGoalTarget\tSubBGoalCount\tMainGRP\tSubAGRP\tSubBGRP");
+
+            for (int i = 0; i < count; i++)
+            {
+                sb.AppendLine($"TestQuest{i}\tMainText{i}\tSubA{i}\tSubB{i}\t0\t0\t0\t0\t5\t0\t6\t0\t0\t0\t0\t0\t500\t1000\t500\t200\t200\t3000\t0\t0\t0\t0\t0\t0\t0\t0\t0\tHunt\t{i + 1}\t1\tDelivery\t100\t5\tNone\t0\t0\t100\t50\t50");
+            }
+
+            return sb.ToString();
+        }
+
+        #endregion
     }
 }

@@ -424,6 +424,208 @@ namespace ReFrontier.Tests.DataToolTests
 
         #endregion
 
+        #region ReadQuestEntry and WriteQuestEntry Tests
+
+        [Fact]
+        public void WriteQuestEntry_WritesCorrectSize()
+        {
+            var entry = new QuestData
+            {
+                Level = 5,
+                Fee = 500,
+                ZennyMain = 1000,
+                ZennyKo = 500,
+                ZennySubA = 200,
+                ZennySubB = 200,
+                Time = 3000,
+                MainGoalType = "Hunt",
+                MainGoalTarget = 1,
+                MainGoalCount = 1,
+                SubAGoalType = "Delivery",
+                SubAGoalTarget = 100,
+                SubAGoalCount = 5,
+                SubBGoalType = "None",
+                MainGRP = 100,
+                SubAGRP = 50,
+                SubBGRP = 50
+            };
+
+            using var ms = new MemoryStream();
+            using var bw = new BinaryWriter(ms);
+
+            _service.WriteQuestEntry(bw, entry);
+
+            // WriteQuestEntry writes: 12 + 24 + 4 + 8 + 24 + skips 0x5C + 12 = 84 written bytes
+            // But it also seeks forward 0x5C bytes, so total position = 84 + 0x5C = 176 = 0xB0
+            Assert.Equal(0xB0, ms.Position);
+        }
+
+        [Fact]
+        public void ReadQuestEntry_ParsesBasicFields()
+        {
+            byte[] data = CreateQuestEntryBytes(
+                level: 5,
+                courseType: 6,
+                fee: 500,
+                zennyMain: 1000,
+                time: 3000,
+                mainGoalType: 0x00000001, // Hunt
+                mainGoalTarget: 10,
+                mainGoalCount: 1
+            );
+
+            using var ms = new MemoryStream(data);
+            using var br = new BinaryReader(ms);
+
+            var entry = _service.ReadQuestEntry(br);
+
+            Assert.Equal(5, entry.Level);
+            Assert.Equal(6, entry.CourseType);
+            Assert.Equal(500, entry.Fee);
+            Assert.Equal(1000, entry.ZennyMain);
+            Assert.Equal(3000, entry.Time);
+            Assert.Equal("Hunt", entry.MainGoalType);
+            Assert.Equal(10, entry.MainGoalTarget);
+            Assert.Equal(1, entry.MainGoalCount);
+        }
+
+        [Fact]
+        public void ReadQuestEntry_ParsesAllGoalTypes()
+        {
+            byte[] data = CreateQuestEntryBytes(
+                mainGoalType: 0x00000001,  // Hunt
+                subAGoalType: 0x00000101,  // Capture
+                subBGoalType: 0x00000002   // Delivery
+            );
+
+            using var ms = new MemoryStream(data);
+            using var br = new BinaryReader(ms);
+
+            var entry = _service.ReadQuestEntry(br);
+
+            Assert.Equal("Hunt", entry.MainGoalType);
+            Assert.Equal("Capture", entry.SubAGoalType);
+            Assert.Equal("Delivery", entry.SubBGoalType);
+        }
+
+        [Fact]
+        public void ReadQuestEntry_ParsesUnknownGoalTypeAsHex()
+        {
+            byte[] data = CreateQuestEntryBytes(
+                mainGoalType: 0x12345678  // Unknown type
+            );
+
+            using var ms = new MemoryStream(data);
+            using var br = new BinaryReader(ms);
+
+            var entry = _service.ReadQuestEntry(br);
+
+            Assert.Equal("12345678", entry.MainGoalType);
+        }
+
+        [Fact]
+        public void WriteQuestEntry_RoundTrip_NumericFields()
+        {
+            var originalEntry = new QuestData
+            {
+                Unk1 = 1,
+                Unk2 = 2,
+                Unk3 = 3,
+                Unk4 = 4,
+                Level = 5,
+                Unk5 = 6,
+                CourseType = 7,
+                Unk7 = 8,
+                Unk8 = 9,
+                Unk9 = 10,
+                Unk10 = 11,
+                Unk11 = 12,
+                Fee = 500,
+                ZennyMain = 1000,
+                ZennyKo = 500,
+                ZennySubA = 200,
+                ZennySubB = 200,
+                Time = 3000,
+                Unk12 = 100,
+                Unk13 = 1,
+                Unk14 = 2,
+                Unk15 = 3,
+                Unk16 = 4,
+                Unk17 = 5,
+                Unk18 = 6,
+                Unk19 = 7,
+                Unk20 = 8,
+                MainGoalType = "Hunt",
+                MainGoalTarget = 10,
+                MainGoalCount = 1,
+                SubAGoalType = "Capture",
+                SubAGoalTarget = 20,
+                SubAGoalCount = 2,
+                SubBGoalType = "Delivery",
+                SubBGoalTarget = 100,
+                SubBGoalCount = 5,
+                MainGRP = 150,
+                SubAGRP = 75,
+                SubBGRP = 50
+            };
+
+            // Create a buffer large enough for the full quest entry structure
+            byte[] buffer = new byte[0x200];
+
+            // Write the entry
+            using (var ms = new MemoryStream(buffer))
+            using (var bw = new BinaryWriter(ms))
+            {
+                _service.WriteQuestEntry(bw, originalEntry);
+            }
+
+            // Add string pointers at the expected position for reading
+            // The read expects 4 string pointers starting at offset 0xB0 (after 0x5C skip + GRP + 0x90 skip)
+            // Actually looking at ReadQuestEntry: after goals (offset 0x38), skip 0x5C to 0x94, read GRP (12 bytes) to 0xA0
+            // Then skip 0x90 to 0x130, then read 4 pointers
+            int stringPointerOffset = 0x38 + 0x5C + 12 + 0x90; // = 0x130
+            using (var ms = new MemoryStream(buffer))
+            using (var bw = new BinaryWriter(ms))
+            {
+                ms.Seek(stringPointerOffset, SeekOrigin.Begin);
+                // Write 4 string pointers pointing to dummy strings at end of buffer
+                int stringStart = stringPointerOffset + 16 + 0x10; // After pointers + 0x10 skip
+                for (int i = 0; i < 4; i++)
+                {
+                    bw.Write(stringStart + i * 2);
+                }
+                // Skip 0x10 bytes
+                ms.Seek(0x10, SeekOrigin.Current);
+                // Write dummy strings
+                for (int i = 0; i < 4; i++)
+                {
+                    bw.Write((byte)'A');
+                    bw.Write((byte)0);
+                }
+            }
+
+            // Read back
+            using var readMs = new MemoryStream(buffer);
+            using var br = new BinaryReader(readMs);
+            var readEntry = _service.ReadQuestEntry(br);
+
+            // Assert numeric fields match
+            Assert.Equal(originalEntry.Unk1, readEntry.Unk1);
+            Assert.Equal(originalEntry.Level, readEntry.Level);
+            Assert.Equal(originalEntry.CourseType, readEntry.CourseType);
+            Assert.Equal(originalEntry.Fee, readEntry.Fee);
+            Assert.Equal(originalEntry.ZennyMain, readEntry.ZennyMain);
+            Assert.Equal(originalEntry.Time, readEntry.Time);
+            Assert.Equal(originalEntry.MainGoalType, readEntry.MainGoalType);
+            Assert.Equal(originalEntry.MainGoalTarget, readEntry.MainGoalTarget);
+            Assert.Equal(originalEntry.MainGoalCount, readEntry.MainGoalCount);
+            Assert.Equal(originalEntry.MainGRP, readEntry.MainGRP);
+            Assert.Equal(originalEntry.SubAGRP, readEntry.SubAGRP);
+            Assert.Equal(originalEntry.SubBGRP, readEntry.SubBGRP);
+        }
+
+        #endregion
+
         #region StringFromPointer Tests
 
         [Fact]
@@ -651,6 +853,108 @@ namespace ReFrontier.Tests.DataToolTests
             bw.Write((byte)0);          // 0x39: Byte (Unk12_2)
             bw.Write((byte)0);          // 0x3A: Byte (Unk12_3)
             bw.Write((byte)0);          // 0x3B: Byte (Unk12_4)
+
+            return ms.ToArray();
+        }
+
+        private static byte[] CreateQuestEntryBytes(
+            byte level = 1,
+            byte courseType = 6,
+            int fee = 100,
+            int zennyMain = 500,
+            int time = 3000,
+            int mainGoalType = 0,
+            short mainGoalTarget = 0,
+            short mainGoalCount = 0,
+            int subAGoalType = 0,
+            short subAGoalTarget = 0,
+            short subAGoalCount = 0,
+            int subBGoalType = 0,
+            short subBGoalTarget = 0,
+            short subBGoalCount = 0,
+            int mainGRP = 0,
+            int subAGRP = 0,
+            int subBGRP = 0)
+        {
+            // Quest entry structure for ReadQuestEntry:
+            // - 12 bytes header (Unk1-4, Level, Unk5, CourseType, Unk7-11)
+            // - 24 bytes monetary (Fee, ZennyMain, ZennyKo, ZennySubA, ZennySubB, Time)
+            // - 4 bytes Unk12
+            // - 8 bytes Unk13-20
+            // - 24 bytes goals (3 goals × 8 bytes each: type(4) + target(2) + count(2))
+            // - 0x5C skip
+            // - 12 bytes GRP
+            // - 0x90 skip
+            // - 16 bytes string pointers (4 × 4)
+            // - 0x10 skip
+
+            using var ms = new MemoryStream();
+            using var bw = new BinaryWriter(ms);
+
+            // Header (12 bytes)
+            bw.Write((byte)0);      // Unk1
+            bw.Write((byte)0);      // Unk2
+            bw.Write((byte)0);      // Unk3
+            bw.Write((byte)0);      // Unk4
+            bw.Write(level);        // Level
+            bw.Write((byte)0);      // Unk5
+            bw.Write(courseType);   // CourseType
+            bw.Write((byte)0);      // Unk7
+            bw.Write((byte)0);      // Unk8
+            bw.Write((byte)0);      // Unk9
+            bw.Write((byte)0);      // Unk10
+            bw.Write((byte)0);      // Unk11
+
+            // Monetary (24 bytes)
+            bw.Write(fee);
+            bw.Write(zennyMain);
+            bw.Write(0);            // ZennyKo
+            bw.Write(0);            // ZennySubA
+            bw.Write(0);            // ZennySubB
+            bw.Write(time);
+
+            // Unk12 (4 bytes) + Unk13-20 (8 bytes)
+            bw.Write(0);            // Unk12
+            bw.Write(new byte[8]);  // Unk13-20
+
+            // Goals (24 bytes)
+            bw.Write(mainGoalType);
+            bw.Write(mainGoalTarget);
+            bw.Write(mainGoalCount);
+            bw.Write(subAGoalType);
+            bw.Write(subAGoalTarget);
+            bw.Write(subAGoalCount);
+            bw.Write(subBGoalType);
+            bw.Write(subBGoalTarget);
+            bw.Write(subBGoalCount);
+
+            // Skip 0x5C bytes
+            bw.Write(new byte[0x5C]);
+
+            // GRP (12 bytes)
+            bw.Write(mainGRP);
+            bw.Write(subAGRP);
+            bw.Write(subBGRP);
+
+            // Skip 0x90 bytes
+            bw.Write(new byte[0x90]);
+
+            // String pointers - point to dummy strings after the skip
+            int stringDataStart = (int)ms.Position + 16 + 0x10;
+            for (int i = 0; i < 4; i++)
+            {
+                bw.Write(stringDataStart + i * 2);
+            }
+
+            // Skip 0x10 bytes
+            bw.Write(new byte[0x10]);
+
+            // Write dummy strings
+            for (int i = 0; i < 4; i++)
+            {
+                bw.Write((byte)'A');
+                bw.Write((byte)0);
+            }
 
             return ms.ToArray();
         }
