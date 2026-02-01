@@ -4,6 +4,9 @@ on:
   release:
     types: [created]
 
+permissions:
+  contents: write
+
 jobs:
   build:
     strategy: 
@@ -45,7 +48,7 @@ jobs:
       with:
         files: release-${{ matrix.os }}.zip
       env:
-        GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Delete publish folder
       run: rm -r publish
