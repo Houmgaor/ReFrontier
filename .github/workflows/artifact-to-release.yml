@@ -33,7 +33,7 @@ jobs:
     
     # Build in "publish" folder
     - name: Publish
-      run: dotnet publish -c Release -o publish
+      run: dotnet publish ReFrontier/ReFrontier.csproj -c Release -o publish
     
     - name: Zip artifact
       shell: bash
