@@ -153,17 +153,16 @@ namespace ReFrontier.Orchestration
                     .AutoClear(false)
                     .HideCompleted(false)
                     .Columns(
-                        new TaskDescriptionColumn(),
+                        new SpinnerColumn(),
                         new ProgressBarColumn(),
-                        new PercentageColumn(),
-                        new ElapsedTimeColumn(),
-                        new RemainingTimeColumn(),
-                        new SpinnerColumn()
+                        new TaskDescriptionColumn(),  // Shows "42/100  00:15/01:30  filename.bin"
+                        new PercentageColumn()
                     )
                     .Start(ctx =>
                     {
-                        var task = ctx.AddTask("[green]Scanning...[/]", maxValue: 100);
+                        var task = ctx.AddTask("[dim]Scanning...[/]", maxValue: 100);
                         task.IsIndeterminate = true;
+                        var startTime = DateTime.Now;
 
                         stats = _program.StartProcessingDirectory(directoryPath, processingArgs, (current, total, currentFile) =>
                         {
@@ -171,20 +170,32 @@ namespace ReFrontier.Orchestration
                             {
                                 task.IsIndeterminate = false;
                                 task.MaxValue = total;
-                                task.Value = current;
+                                task.Value = Math.Min(current, total);  // Clamp to avoid overflow
 
-                                // Update description with count and current file (truncate if too long)
+                                // Calculate elapsed and remaining time
+                                var elapsed = DateTime.Now - startTime;
+                                var avgPerFile = current > 0 ? elapsed.TotalSeconds / current : 0;
+                                int remainingFiles = Math.Max(0, total - current);  // Ensure non-negative
+                                var remaining = TimeSpan.FromSeconds(avgPerFile * remainingFiles);
+
+                                // Format times as mm:ss
+                                string elapsedStr = $"{(int)elapsed.TotalMinutes:D2}:{elapsed.Seconds:D2}";
+                                string remainingStr = $"{(int)remaining.TotalMinutes:D2}:{remaining.Seconds:D2}";
+
+                                // Truncate filename if too long
                                 string fileName = Path.GetFileName(currentFile);
                                 if (fileName.Length > 25)
                                     fileName = fileName[..22] + "...";
-                                task.Description = $"[grey]{current}/{total}[/] [green]{fileName}[/]";
+
+                                task.Description = $"[blue]{current}/{total}[/]  [dim]{elapsedStr}/{remainingStr}[/]  [green]{fileName}[/]";
                             }
                         });
 
+                        // Final state
+                        var totalElapsed = DateTime.Now - startTime;
+                        string finalElapsed = $"{(int)totalElapsed.TotalMinutes:D2}:{totalElapsed.Seconds:D2}";
                         if (stats != null)
-                            task.Description = $"[grey]{stats.HandledFiles}/{stats.TotalFiles}[/] [green]Done[/]";
-                        else
-                            task.Description = "[green]Done[/]";
+                            task.Description = $"[blue]{stats.HandledFiles}/{stats.TotalFiles}[/]  [dim]{finalElapsed}[/]  [green]Done[/]";
                         task.Value = task.MaxValue;
                     });
             }

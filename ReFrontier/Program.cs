@@ -397,8 +397,9 @@ namespace ReFrontier
             // Use a concurrent queue to manage files/directories to process
             ConcurrentQueue<string> filesToProcess = new(filePathes);
 
-            // Track files already processed or queued to prevent duplicates
-            HashSet<string> processedFiles = new(filePathes, StringComparer.OrdinalIgnoreCase);
+            // Track files already processed, queued, or created as output to prevent duplicates
+            // This includes both input files and output files generated during processing
+            HashSet<string> processedOrOutputFiles = new(filePathes, StringComparer.OrdinalIgnoreCase);
             object processedFilesLock = new();
 
             // Consume (process) input files
@@ -416,6 +417,9 @@ namespace ReFrontier
                 // We defer AddNewFiles calls until after all files in the batch are processed
                 // to avoid race conditions where files are scanned while still being written
                 ConcurrentBag<string> outputDirectories = new();
+
+                // Collect output files to mark them as processed (prevents re-processing .jkr.bin files)
+                ConcurrentBag<string> outputFiles = new();
 
                 // Use Interlocked to safely disable stage processing after first file
                 int stageContainerFlag = inputArguments.stageContainer ? 1 : 0;
@@ -439,11 +443,20 @@ namespace ReFrontier
                         // Report progress
                         progressCallback?.Invoke(stats.HandledFiles, stats.TotalFiles, inputFile);
 
-                        // Collect output directories for deferred processing
-                        // This prevents race conditions where files are scanned while being written
-                        if (inputArguments.recursive && result.OutputPath != null && _fileSystem.DirectoryExists(result.OutputPath))
+                        // Track output for deferred processing
+                        if (result.OutputPath != null)
                         {
-                            outputDirectories.Add(result.OutputPath);
+                            if (inputArguments.recursive && _fileSystem.DirectoryExists(result.OutputPath))
+                            {
+                                // Output is a directory - scan it later for new files
+                                outputDirectories.Add(result.OutputPath);
+                            }
+                            else if (_fileSystem.FileExists(result.OutputPath))
+                            {
+                                // Output is a file - mark it as processed to prevent re-queuing
+                                // This prevents .jkr.bin files from being picked up by *.bin pattern
+                                outputFiles.Add(result.OutputPath);
+                            }
                         }
                     }
                     catch (ReFrontierException ex)
@@ -455,13 +468,32 @@ namespace ReFrontier
                         if (inputArguments.verbose)
                             _logger.WriteLine($"Skipping {inputFile}: {ex.Message}");
                     }
+                    catch (IOException ex)
+                    {
+                        stats.IncrementError();
+                        progressCallback?.Invoke(stats.HandledFiles, stats.TotalFiles, inputFile);
+
+                        // Log file access errors (e.g., file locked by another process)
+                        if (inputArguments.verbose)
+                            _logger.WriteLine($"Skipping {inputFile}: {ex.Message}");
+                    }
                 });
+
+                // Mark all output files as processed to prevent them from being re-queued
+                // This is critical for preventing .jkr.bin files from being picked up by *.bin pattern
+                lock (processedFilesLock)
+                {
+                    foreach (var outputFile in outputFiles)
+                    {
+                        processedOrOutputFiles.Add(outputFile);
+                    }
+                }
 
                 // After all files in batch are processed, scan output directories for new files
                 // This ensures all files are fully written before being added to the queue
                 foreach (var outputDir in outputDirectories)
                 {
-                    int newFileCount = AddNewFilesWithDedup(outputDir, filesToProcess, processedFiles, processedFilesLock);
+                    int newFileCount = AddNewFilesWithDedup(outputDir, filesToProcess, processedOrOutputFiles, processedFilesLock);
                     stats.AddGeneratedFiles(newFileCount);
                 }
             }

@@ -76,11 +76,12 @@ namespace ReFrontier.Services
         }
 
         /// <summary>
-        /// Add to generated files count.
+        /// Add to generated files count and update total.
         /// </summary>
         public void AddGeneratedFiles(int count)
         {
             Interlocked.Add(ref _generatedFiles, count);
+            Interlocked.Add(ref _totalFiles, count);
         }
     }
 }
