@@ -218,7 +218,7 @@ namespace ReFrontier.Tests.Services
             string result = _service.PackFTXT("/test/file.ftxt.txt", "/test/file.ftxt.meta", false);
 
             // Assert
-            Assert.Equal("/test/file.ftxt", result);
+            Assert.Equal("/test/file.ftxt", result.Replace('\\', '/'));
             Assert.True(_fileSystem.FileExists("/test/file.ftxt"));
         }
 
