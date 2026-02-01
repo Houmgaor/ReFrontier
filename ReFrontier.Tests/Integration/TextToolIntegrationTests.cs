@@ -48,7 +48,7 @@ namespace ReFrontier.Tests.Integration
             // Set translations to same as original (no change)
             foreach (var entry in extracted)
             {
-                entry.EString = entry.JString;
+                entry.Translation = entry.Original;
             }
 
             // Insert strings back
@@ -58,7 +58,7 @@ namespace ReFrontier.Tests.Integration
                 stringDb[i] = new StringDatabase
                 {
                     Offset = extracted[i].Offset,
-                    EString = extracted[i].JString
+                    Translation = extracted[i].Original
                 };
             }
 
@@ -87,7 +87,7 @@ namespace ReFrontier.Tests.Integration
             // Translate
             var stringDb = new StringDatabase[]
             {
-                new() { Offset = extracted[0].Offset, EString = "English" }
+                new() { Offset = extracted[0].Offset, Translation = "English" }
             };
 
             byte[] resultData = insertionService.UpdateBinaryStrings(stringDb, originalData, false, false);
@@ -123,7 +123,7 @@ namespace ReFrontier.Tests.Integration
             // Read back from CSV
             var loaded = insertionService.LoadCsvToStringDatabase("input.csv");
 
-            // Assert - LoadCsvToStringDatabase loads Offset, Hash, EString (not JString)
+            // Assert - LoadCsvToStringDatabase loads Offset, Hash, Translation (not Original)
             Assert.Equal(extracted.Count, loaded.Length);
             Assert.Equal(extracted[0].Offset, loaded[0].Offset);
             Assert.Equal(extracted[0].Hash, loaded[0].Hash);
@@ -142,12 +142,12 @@ namespace ReFrontier.Tests.Integration
             var mergeService = new CsvMergeService(_fileSystem, _logger);
 
             // Old CSV has translations
-            string oldCsv = "Offset,Hash,JString,EString\n" +
+            string oldCsv = "Offset,Hash,Original,Translation\n" +
                            "0,12345,Original,Translated\n";
             _fileSystem.AddFile("/test/old.csv", Encoding.GetEncoding("shift-jis").GetBytes(oldCsv));
 
             // New CSV with same hash but different offset (simulating file update)
-            string newCsv = "Offset,Hash,JString,EString\n" +
+            string newCsv = "Offset,Hash,Original,Translation\n" +
                            "100,12345,Original,\n";
             _fileSystem.AddFile("/test/new.csv", Encoding.GetEncoding("shift-jis").GetBytes(newCsv));
 
@@ -181,18 +181,18 @@ namespace ReFrontier.Tests.Integration
                 "test.bin", originalData, br, 0, 0, false, false);
 
             // Assert - Special characters are preserved (RFC 4180 quotes them in CSV output)
-            Assert.Equal("Tab\tTest", extracted[0].JString);
-            Assert.Equal("Line1\nLine2", extracted[1].JString);
+            Assert.Equal("Tab\tTest", extracted[0].Original);
+            Assert.Equal("Line1\nLine2", extracted[1].Original);
 
             // Create string database with translations using RFC 4180 quoting for special characters
-            var csv = "Offset,Hash,JString,EString\n" +
+            var csv = "Offset,Hash,Original,Translation\n" +
                       "0,123,\"Tab\tTest\",\"New\tValue\"\n";
             _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
 
             // Load and verify
             var loaded = insertionService.LoadCsvToStringDatabase("/test/strings.csv");
 
-            Assert.Equal("New\tValue", loaded[0].EString); // RFC 4180 handles quoted tabs
+            Assert.Equal("New\tValue", loaded[0].Translation); // RFC 4180 handles quoted tabs
         }
 
         [Fact]
@@ -211,7 +211,7 @@ namespace ReFrontier.Tests.Integration
                 "test.bin", originalData, br, 0, 0, false, false);
 
             // Assert - CRLF is preserved (RFC 4180 will quote it in CSV output)
-            Assert.Equal("Line1\r\nLine2", extracted[0].JString);
+            Assert.Equal("Line1\r\nLine2", extracted[0].Original);
         }
 
         #endregion
@@ -236,12 +236,12 @@ namespace ReFrontier.Tests.Integration
                 "test.bin", originalData, br, 0, 0, false, false);
 
             // Assert - Mixed content preserved
-            Assert.Equal(mixedString, extracted[0].JString);
+            Assert.Equal(mixedString, extracted[0].Original);
 
             // Insert translation
             var stringDb = new StringDatabase[]
             {
-                new() { Offset = 0, EString = "Item: Item123 (Description)" }
+                new() { Offset = 0, Translation = "Item: Item123 (Description)" }
             };
 
             byte[] resultData = insertionService.UpdateBinaryStrings(stringDb, originalData, false, false);

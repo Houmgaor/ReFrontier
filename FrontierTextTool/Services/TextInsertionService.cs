@@ -58,12 +58,12 @@ namespace FrontierTextTool.Services
             csv.ReadHeader();
             while (csv.Read())
             {
-                string eString = csv.GetField("EString") ?? string.Empty;
+                string translation = csv.GetField("Translation") ?? string.Empty;
 
                 // Validate Shift-JIS compatibility for non-empty strings
-                if (!string.IsNullOrEmpty(eString) && !TextFileConfiguration.ValidateShiftJisCompatibility(eString))
+                if (!string.IsNullOrEmpty(translation) && !TextFileConfiguration.ValidateShiftJisCompatibility(translation))
                 {
-                    var incompatible = TextFileConfiguration.GetIncompatibleCharacters(eString);
+                    var incompatible = TextFileConfiguration.GetIncompatibleCharacters(translation);
                     _logger.Error($"Warning: String at offset {csv.GetField<uint>("Offset")} contains characters that cannot be encoded to Shift-JIS: {string.Join(", ", incompatible.Select(c => $"'{c}' (U+{(int)c:X4})"))}");
                 }
 
@@ -71,7 +71,7 @@ namespace FrontierTextTool.Services
                 {
                     Offset = csv.GetField<uint>("Offset"),
                     Hash = csv.GetField<uint>("Hash"),
-                    EString = eString
+                    Translation = translation
                 };
                 stringDatabase.Add(record);
             }
@@ -91,44 +91,44 @@ namespace FrontierTextTool.Services
             StringDatabase[] stringDatabase, byte[] fileBytes, bool verbose, bool trueOffsets)
         {
             // Get info for translation array and get all offsets that need to be remapped
-            var eStringsOffsets = new List<uint>();
-            var eStringLengths = new List<int>();
+            var translationOffsets = new List<uint>();
+            var translationLengths = new List<int>();
 
             foreach (var obj in stringDatabase)
             {
-                if (!string.IsNullOrEmpty(obj.EString))
+                if (!string.IsNullOrEmpty(obj.Translation))
                 {
-                    eStringsOffsets.Add(obj.Offset);
-                    eStringLengths.Add(GetNullterminatedStringLength(obj.EString));
+                    translationOffsets.Add(obj.Offset);
+                    translationLengths.Add(GetNullterminatedStringLength(obj.Translation));
                 }
             }
 
-            int eStringsLength = eStringLengths.Sum();
-            int eStringsCount = eStringLengths.Count;
+            int totalTranslationLength = translationLengths.Sum();
+            int translationCount = translationLengths.Count;
 
             // Create dictionary with offset replacements
             var offsetDict = new Dictionary<int, int>();
-            for (int i = 0; i < eStringsCount; i++)
+            for (int i = 0; i < translationCount; i++)
             {
                 offsetDict.Add(
-                    (int)eStringsOffsets[i],
-                    fileBytes.Length + eStringLengths.Take(i).Sum()
+                    (int)translationOffsets[i],
+                    fileBytes.Length + translationLengths.Take(i).Sum()
                 );
             }
 
             if (verbose)
-                _logger.WriteLine($"Filling array of size {eStringsLength:X8}...");
+                _logger.WriteLine($"Filling array of size {totalTranslationLength:X8}...");
 
-            byte[] eStringsArray = new byte[eStringsLength];
+            byte[] translationsArray = new byte[totalTranslationLength];
             for (int i = 0, j = 0; i < stringDatabase.Length; i++)
             {
-                if (!string.IsNullOrEmpty(stringDatabase[i].EString))
+                if (!string.IsNullOrEmpty(stringDatabase[i].Translation))
                 {
                     if (verbose)
-                        _logger.WriteLine($"String: '{stringDatabase[i].EString}', Length: {eStringLengths[j] - 1}");
+                        _logger.WriteLine($"String: '{stringDatabase[i].Translation}', Length: {translationLengths[j] - 1}");
 
-                    byte[] eStringArray = Encoding.GetEncoding("shift-jis").GetBytes(stringDatabase[i].EString!);
-                    Array.Copy(eStringArray, 0, eStringsArray, eStringLengths.Take(j).Sum(), eStringLengths[j] - 1);
+                    byte[] translationBytes = Encoding.GetEncoding("shift-jis").GetBytes(stringDatabase[i].Translation!);
+                    Array.Copy(translationBytes, 0, translationsArray, translationLengths.Take(j).Sum(), translationLengths[j] - 1);
                     j++;
                 }
             }
@@ -162,9 +162,9 @@ namespace FrontierTextTool.Services
             }
 
             // Combine arrays
-            byte[] updatedBytes = new byte[fileBytes.Length + eStringsLength];
+            byte[] updatedBytes = new byte[fileBytes.Length + totalTranslationLength];
             Array.Copy(fileBytes, updatedBytes, fileBytes.Length);
-            Array.Copy(eStringsArray, 0, updatedBytes, fileBytes.Length, eStringsArray.Length);
+            Array.Copy(translationsArray, 0, updatedBytes, fileBytes.Length, translationsArray.Length);
 
             return updatedBytes;
         }

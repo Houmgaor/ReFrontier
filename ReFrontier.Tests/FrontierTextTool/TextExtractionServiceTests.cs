@@ -43,9 +43,9 @@ namespace ReFrontier.Tests.TextToolTests
 
             // Assert
             Assert.Equal(3, result.Count);
-            Assert.Equal("Hello", result[0].JString);
-            Assert.Equal("World", result[1].JString);
-            Assert.Equal("Test", result[2].JString);
+            Assert.Equal("Hello", result[0].Original);
+            Assert.Equal("World", result[1].Original);
+            Assert.Equal("Test", result[2].Original);
         }
 
         [Fact]
@@ -80,7 +80,7 @@ namespace ReFrontier.Tests.TextToolTests
 
             // Assert
             Assert.Single(result);
-            Assert.Equal("Hello\tWorld", result[0].JString);
+            Assert.Equal("Hello\tWorld", result[0].Original);
         }
 
         [Fact]
@@ -97,7 +97,7 @@ namespace ReFrontier.Tests.TextToolTests
 
             // Assert
             Assert.Single(result);
-            Assert.Equal("Line1\nLine2", result[0].JString);
+            Assert.Equal("Line1\nLine2", result[0].Original);
         }
 
         [Fact]
@@ -114,7 +114,7 @@ namespace ReFrontier.Tests.TextToolTests
 
             // Assert
             Assert.Single(result);
-            Assert.Equal("Line1\r\nLine2", result[0].JString);
+            Assert.Equal("Line1\r\nLine2", result[0].Original);
         }
 
         [Fact]
@@ -136,8 +136,8 @@ namespace ReFrontier.Tests.TextToolTests
 
             // Assert
             Assert.Equal(2, result.Count);
-            Assert.Equal("Second", result[0].JString);
-            Assert.Equal("Third", result[1].JString);
+            Assert.Equal("Second", result[0].Original);
+            Assert.Equal("Third", result[1].Original);
         }
 
         [Fact]
@@ -159,8 +159,8 @@ namespace ReFrontier.Tests.TextToolTests
 
             // Assert
             Assert.Equal(2, result.Count);
-            Assert.Equal("Hello", result[0].JString);
-            Assert.Equal("World", result[1].JString);
+            Assert.Equal("Hello", result[0].Original);
+            Assert.Equal("World", result[1].Original);
         }
 
         [Fact]
@@ -177,8 +177,8 @@ namespace ReFrontier.Tests.TextToolTests
 
             // Assert
             Assert.Equal(2, result.Count);
-            Assert.Equal("こんにちは", result[0].JString);
-            Assert.Equal("世界", result[1].JString);
+            Assert.Equal("こんにちは", result[0].Original);
+            Assert.Equal("世界", result[1].Original);
         }
 
         #endregion
@@ -191,8 +191,8 @@ namespace ReFrontier.Tests.TextToolTests
             // Arrange
             var stringsDb = new List<StringDatabase>
             {
-                new() { Offset = 0, Hash = 123, JString = "Test1", EString = "Trans1" },
-                new() { Offset = 10, Hash = 456, JString = "Test2", EString = "" }
+                new() { Offset = 0, Hash = 123, Original = "Test1", Translation = "Trans1" },
+                new() { Offset = 10, Hash = 456, Original = "Test2", Translation = "" }
             };
 
             // Act
@@ -209,7 +209,7 @@ namespace ReFrontier.Tests.TextToolTests
             _fileSystem.AddFile("existing.csv", "old content");
             var stringsDb = new List<StringDatabase>
             {
-                new() { Offset = 0, Hash = 123, JString = "New", EString = "" }
+                new() { Offset = 0, Hash = 123, Original = "New", Translation = "" }
             };
 
             // Act
@@ -272,7 +272,7 @@ namespace ReFrontier.Tests.TextToolTests
 
             // Assert
             Assert.Single(result);
-            Assert.Equal("Path\\File", result[0].JString);
+            Assert.Equal("Path\\File", result[0].Original);
         }
 
         [Fact]
@@ -295,7 +295,7 @@ namespace ReFrontier.Tests.TextToolTests
 
             // Assert - only one string extracted (the valid pointer)
             Assert.Single(result);
-            Assert.Equal("Valid", result[0].JString);
+            Assert.Equal("Valid", result[0].Original);
         }
 
         [Fact]
@@ -318,7 +318,7 @@ namespace ReFrontier.Tests.TextToolTests
 
             // Assert - only valid pointer extracted
             Assert.Single(result);
-            Assert.Equal("Valid", result[0].JString);
+            Assert.Equal("Valid", result[0].Original);
         }
 
         [Fact]
@@ -370,7 +370,7 @@ namespace ReFrontier.Tests.TextToolTests
 
             // Assert
             Assert.Single(result);
-            Assert.Equal("Valid", result[0].JString);
+            Assert.Equal("Valid", result[0].Original);
         }
 
         [Fact]
@@ -387,9 +387,9 @@ namespace ReFrontier.Tests.TextToolTests
 
             // Assert
             Assert.Equal(3, result.Count);
-            Assert.Equal("Short", result[0].JString);
-            Assert.Equal("LongerString", result[1].JString);
-            Assert.Equal("Med", result[2].JString);
+            Assert.Equal("Short", result[0].Original);
+            Assert.Equal("LongerString", result[1].Original);
+            Assert.Equal("Med", result[2].Original);
         }
 
         [Fact]
@@ -422,7 +422,7 @@ namespace ReFrontier.Tests.TextToolTests
 
             // Assert
             Assert.Single(result);
-            Assert.Equal("Test", result[0].JString);
+            Assert.Equal("Test", result[0].Original);
         }
 
         #endregion
@@ -438,7 +438,7 @@ namespace ReFrontier.Tests.TextToolTests
 
             var stringsDb = new List<StringDatabase>
             {
-                new() { Offset = 0, Hash = 123, JString = "日本語", EString = "" }
+                new() { Offset = 0, Hash = 123, Original = "日本語", Translation = "" }
             };
 
             // Act

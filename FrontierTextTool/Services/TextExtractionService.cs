@@ -123,7 +123,7 @@ namespace FrontierTextTool.Services
                 {
                     Offset = (uint)offset,
                     Hash = Crypto.GetCrc32(TextFileConfiguration.ShiftJisEncoding.GetBytes(str)),
-                    JString = str
+                    Original = str
                 });
 
                 if (trueOffsets)
@@ -176,13 +176,13 @@ namespace FrontierTextTool.Services
         public uint Hash { get; set; }
 
         /// <summary>
-        /// Japanese version of the string.
+        /// Original text extracted from the game files.
         /// </summary>
-        public string? JString { get; set; }
+        public string? Original { get; set; }
 
         /// <summary>
-        /// English translation.
+        /// Translated text to be inserted into the game.
         /// </summary>
-        public string? EString { get; set; }
+        public string? Translation { get; set; }
     }
 }

@@ -118,13 +118,13 @@ namespace ReFrontier.Tests.TextToolTests
         {
             // Arrange
             // Old CSV has translations
-            string oldCsv = "Offset,Hash,JString,EString\n" +
+            string oldCsv = "Offset,Hash,Original,Translation\n" +
                            "0,12345,Original1,Translated1\n" +
                            "10,67890,Original2,\n"; // No translation
             _fileSystem.AddFile("/test/old.csv", Encoding.GetEncoding("shift-jis").GetBytes(oldCsv));
 
             // New CSV has different offsets but same hashes
-            string newCsv = "Offset,Hash,JString,EString\n" +
+            string newCsv = "Offset,Hash,Original,Translation\n" +
                            "100,12345,Original1,\n" +
                            "200,67890,Original2,\n";
             _fileSystem.AddFile("/test/new.csv", Encoding.GetEncoding("shift-jis").GetBytes(newCsv));
@@ -142,8 +142,8 @@ namespace ReFrontier.Tests.TextToolTests
         public void Merge_DeletesNewCsvAfterMerge()
         {
             // Arrange
-            string oldCsv = "Offset,Hash,JString,EString\n0,123,Test,Trans\n";
-            string newCsv = "Offset,Hash,JString,EString\n0,123,Test,\n";
+            string oldCsv = "Offset,Hash,Original,Translation\n0,123,Test,Trans\n";
+            string newCsv = "Offset,Hash,Original,Translation\n0,123,Test,\n";
             _fileSystem.AddFile("/test/old.csv", Encoding.GetEncoding("shift-jis").GetBytes(oldCsv));
             _fileSystem.AddFile("/test/new.csv", Encoding.GetEncoding("shift-jis").GetBytes(newCsv));
 
@@ -158,8 +158,8 @@ namespace ReFrontier.Tests.TextToolTests
         public void Merge_LogsProgress()
         {
             // Arrange
-            string oldCsv = "Offset,Hash,JString,EString\n0,123,Test,\n";
-            string newCsv = "Offset,Hash,JString,EString\n0,123,Test,\n";
+            string oldCsv = "Offset,Hash,Original,Translation\n0,123,Test,\n";
+            string newCsv = "Offset,Hash,Original,Translation\n0,123,Test,\n";
             _fileSystem.AddFile("/test/old.csv", Encoding.GetEncoding("shift-jis").GetBytes(oldCsv));
             _fileSystem.AddFile("/test/new.csv", Encoding.GetEncoding("shift-jis").GetBytes(newCsv));
 
@@ -183,7 +183,7 @@ namespace ReFrontier.Tests.TextToolTests
             _fileSystem.AddFile("/test/cat.txt", Encoding.UTF8.GetBytes(catContent));
 
             // CSV file
-            string csvContent = "Offset,Hash,JString,EString\n" +
+            string csvContent = "Offset,Hash,Original,Translation\n" +
                                "0,123,Original1,\n" +
                                "10,456,Original2,\n";
             _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csvContent));
@@ -205,7 +205,7 @@ namespace ReFrontier.Tests.TextToolTests
             string catContent = "Translation\n";
             _fileSystem.AddFile("/test/cat.txt", Encoding.UTF8.GetBytes(catContent));
 
-            string csvContent = "Offset,Hash,JString,EString\n0,123,Original,\n";
+            string csvContent = "Offset,Hash,Original,Translation\n0,123,Original,\n";
             _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csvContent));
 
             // Act
@@ -225,7 +225,7 @@ namespace ReFrontier.Tests.TextToolTests
             _fileSystem.AddFile("/test/cat.txt", Encoding.UTF8.GetBytes(catContent));
 
             // CSV with existing translation
-            string csvContent = "Offset,Hash,JString,EString\n0,123,Original1,ExistingTrans\n";
+            string csvContent = "Offset,Hash,Original,Translation\n0,123,Original1,ExistingTrans\n";
             _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csvContent));
 
             // Act
@@ -233,7 +233,7 @@ namespace ReFrontier.Tests.TextToolTests
 
             // Assert
             string result = _fileSystem.ReadAllText("csv/strings.csv", Encoding.GetEncoding("shift-jis"));
-            // EString should be cleared (empty) because CAT = JString
+            // Translation should be cleared (empty) because CAT = Original
             Assert.DoesNotContain("ExistingTrans", result);
         }
 
@@ -311,7 +311,7 @@ namespace ReFrontier.Tests.TextToolTests
         public void Merge_HandlesUtf8BomEncoding()
         {
             // Arrange - UTF-8 with BOM
-            string oldCsv = "Offset,Hash,JString,EString\n0,123,Test,Trans\n";
+            string oldCsv = "Offset,Hash,Original,Translation\n0,123,Test,Trans\n";
             byte[] utf8Bom = new byte[] { 0xEF, 0xBB, 0xBF };
             byte[] content = Encoding.UTF8.GetBytes(oldCsv);
             byte[] withBom = new byte[utf8Bom.Length + content.Length];
@@ -319,7 +319,7 @@ namespace ReFrontier.Tests.TextToolTests
             content.CopyTo(withBom, utf8Bom.Length);
             _fileSystem.AddFile("/test/old.csv", withBom);
 
-            string newCsv = "Offset,Hash,JString,EString\n0,123,Test,\n";
+            string newCsv = "Offset,Hash,Original,Translation\n0,123,Test,\n";
             _fileSystem.AddFile("/test/new.csv", Encoding.GetEncoding("shift-jis").GetBytes(newCsv));
 
             // Act
@@ -335,8 +335,8 @@ namespace ReFrontier.Tests.TextToolTests
             // Arrange
             _fileSystem.AddFile("csv/old.csv", "old content");
 
-            string oldCsv = "Offset,Hash,JString,EString\n0,123,Test,Trans\n";
-            string newCsv = "Offset,Hash,JString,EString\n0,123,Test,\n";
+            string oldCsv = "Offset,Hash,Original,Translation\n0,123,Test,Trans\n";
+            string newCsv = "Offset,Hash,Original,Translation\n0,123,Test,\n";
             _fileSystem.AddFile("/test/old.csv", Encoding.GetEncoding("shift-jis").GetBytes(oldCsv));
             _fileSystem.AddFile("/test/new.csv", Encoding.GetEncoding("shift-jis").GetBytes(newCsv));
 
@@ -353,10 +353,10 @@ namespace ReFrontier.Tests.TextToolTests
         public void Merge_MatchesMultipleEntriesWithSameHash()
         {
             // Arrange - multiple entries with same hash should all get the translation
-            string oldCsv = "Offset,Hash,JString,EString\n0,12345,Text,Translated\n";
+            string oldCsv = "Offset,Hash,Original,Translation\n0,12345,Text,Translated\n";
             _fileSystem.AddFile("/test/old.csv", Encoding.GetEncoding("shift-jis").GetBytes(oldCsv));
 
-            string newCsv = "Offset,Hash,JString,EString\n" +
+            string newCsv = "Offset,Hash,Original,Translation\n" +
                            "100,12345,Text,\n" +
                            "200,12345,Text,\n";
             _fileSystem.AddFile("/test/new.csv", Encoding.GetEncoding("shift-jis").GetBytes(newCsv));
@@ -382,7 +382,7 @@ namespace ReFrontier.Tests.TextToolTests
             string catContent = "Translation\n";
             _fileSystem.AddFile("/test/cat.txt", Encoding.UTF8.GetBytes(catContent));
 
-            string csvContent = "Offset,Hash,JString,EString\n0,123,Original,\n";
+            string csvContent = "Offset,Hash,Original,Translation\n0,123,Original,\n";
             _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csvContent));
 
             // Act
@@ -401,7 +401,7 @@ namespace ReFrontier.Tests.TextToolTests
             string catContent = "NewTrans\n";
             _fileSystem.AddFile("/test/cat.txt", Encoding.UTF8.GetBytes(catContent));
 
-            string csvContent = "Offset,Hash,JString,EString\n0,123,Original,\n";
+            string csvContent = "Offset,Hash,Original,Translation\n0,123,Original,\n";
             _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csvContent));
 
             // Act
@@ -419,7 +419,7 @@ namespace ReFrontier.Tests.TextToolTests
             string catContent = "Translation\n";
             _fileSystem.AddFile("/test/cat.txt", Encoding.UTF8.GetBytes(catContent));
 
-            string csvContent = "Offset,Hash,JString,EString\n0,123,Original,\n";
+            string csvContent = "Offset,Hash,Original,Translation\n0,123,Original,\n";
             byte[] utf8Bom = new byte[] { 0xEF, 0xBB, 0xBF };
             byte[] content = Encoding.UTF8.GetBytes(csvContent);
             byte[] withBom = new byte[utf8Bom.Length + content.Length];
@@ -441,8 +441,8 @@ namespace ReFrontier.Tests.TextToolTests
             string catContent = "DifferentText\n";
             _fileSystem.AddFile("/test/cat.txt", Encoding.UTF8.GetBytes(catContent));
 
-            // CSV where JString != CAT text, so translation should be updated
-            string csvContent = "Offset,Hash,JString,EString\n0,123,Original,\n";
+            // CSV where Original != CAT text, so translation should be updated
+            string csvContent = "Offset,Hash,Original,Translation\n0,123,Original,\n";
             _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csvContent));
 
             // Act

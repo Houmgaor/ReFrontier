@@ -154,7 +154,7 @@ namespace ReFrontier.Tests
         public static string CreateStringDatabaseCsv(params (uint offset, string jString, string eString)[] entries)
         {
             var sb = new StringBuilder();
-            sb.AppendLine("Offset,Hash,JString,EString");
+            sb.AppendLine("Offset,Hash,Original,Translation");
 
             foreach (var (offset, jString, eString) in entries)
             {

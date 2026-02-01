@@ -70,7 +70,7 @@ namespace FrontierTextTool.Services
                     var record = new StringDatabase
                     {
                         Hash = csv.GetField<uint>("Hash"),
-                        EString = csv.GetField("EString")
+                        Translation = csv.GetField("Translation")
                     };
                     stringDbOld.Add(record);
                 }
@@ -91,22 +91,22 @@ namespace FrontierTextTool.Services
                     {
                         Offset = csv.GetField<uint>("Offset"),
                         Hash = csv.GetField<uint>("Hash"),
-                        EString = csv.GetField("EString"),
-                        JString = csv.GetField("JString")
+                        Translation = csv.GetField("Translation"),
+                        Original = csv.GetField("Original")
                     };
                     stringDbNew.Add(record);
                 }
             }
 
-            // Copy EStrings to new db by matching hash
+            // Copy translations to new db by matching hash
             for (int i = 0; i < stringDbOld.Count; i++)
             {
                 _logger.Write($"\rUpdating entry {i + 1}/{stringDbOld.Count}");
-                if (!string.IsNullOrEmpty(stringDbOld[i].EString))
+                if (!string.IsNullOrEmpty(stringDbOld[i].Translation))
                 {
                     var matchedNewObjs = stringDbNew.Where(x => x.Hash.Equals(stringDbOld[i].Hash));
                     foreach (var obj in matchedNewObjs)
-                        obj.EString = stringDbOld[i].EString;
+                        obj.Translation = stringDbOld[i].Translation;
                 }
             }
             _logger.WriteLine("");
@@ -159,8 +159,8 @@ namespace FrontierTextTool.Services
                     {
                         Offset = csv.GetField<uint>("Offset"),
                         Hash = csv.GetField<uint>("Hash"),
-                        EString = csv.GetField("EString"),
-                        JString = csv.GetField("JString")
+                        Translation = csv.GetField("Translation"),
+                        Original = csv.GetField("Original")
                     };
                     stringDb.Add(record);
                 }
@@ -170,10 +170,10 @@ namespace FrontierTextTool.Services
             for (int i = 0; i < stringDb.Count; i++)
             {
                 _logger.Write($"\rUpdating entry {i + 1}/{stringDb.Count}");
-                if (stringDb[i].JString != catStrings[i])
-                    stringDb[i].EString = catStrings[i];
-                else if (stringDb[i].JString == catStrings[i] && !string.IsNullOrEmpty(stringDb[i].EString))
-                    stringDb[i].EString = "";
+                if (stringDb[i].Original != catStrings[i])
+                    stringDb[i].Translation = catStrings[i];
+                else if (stringDb[i].Original == catStrings[i] && !string.IsNullOrEmpty(stringDb[i].Translation))
+                    stringDb[i].Translation = "";
             }
             _logger.WriteLine("");
 

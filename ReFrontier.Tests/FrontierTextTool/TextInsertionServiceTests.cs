@@ -45,16 +45,16 @@ namespace ReFrontier.Tests.TextToolTests
             // Assert
             Assert.Equal(2, result.Length);
             Assert.Equal((uint)0, result[0].Offset);
-            Assert.Equal("English1", result[0].EString);
+            Assert.Equal("English1", result[0].Translation);
             Assert.Equal((uint)10, result[1].Offset);
-            Assert.Equal("English2", result[1].EString);
+            Assert.Equal("English2", result[1].Translation);
         }
 
         [Fact]
         public void LoadCsvToStringDatabase_HandlesTabInQuotedField()
         {
             // Arrange - RFC 4180 CSV with tab character in quoted field
-            string csv = "Offset,Hash,JString,EString\n0,123,Test,\"Hello\tWorld\"\n";
+            string csv = "Offset,Hash,Original,Translation\n0,123,Test,\"Hello\tWorld\"\n";
             _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
 
             // Act
@@ -62,14 +62,14 @@ namespace ReFrontier.Tests.TextToolTests
 
             // Assert
             Assert.Single(result);
-            Assert.Equal("Hello\tWorld", result[0].EString);
+            Assert.Equal("Hello\tWorld", result[0].Translation);
         }
 
         [Fact]
         public void LoadCsvToStringDatabase_HandlesNewlineInQuotedField()
         {
             // Arrange - RFC 4180 CSV with newline in quoted field
-            string csv = "Offset,Hash,JString,EString\n0,123,Test,\"Line1\nLine2\"\n";
+            string csv = "Offset,Hash,Original,Translation\n0,123,Test,\"Line1\nLine2\"\n";
             _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
 
             // Act
@@ -77,14 +77,14 @@ namespace ReFrontier.Tests.TextToolTests
 
             // Assert
             Assert.Single(result);
-            Assert.Equal("Line1\nLine2", result[0].EString);
+            Assert.Equal("Line1\nLine2", result[0].Translation);
         }
 
         [Fact]
         public void LoadCsvToStringDatabase_HandlesCarriageReturnInQuotedField()
         {
             // Arrange - RFC 4180 CSV with CRLF in quoted field
-            string csv = "Offset,Hash,JString,EString\n0,123,Test,\"Line1\r\nLine2\"\n";
+            string csv = "Offset,Hash,Original,Translation\n0,123,Test,\"Line1\r\nLine2\"\n";
             _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
 
             // Act
@@ -92,7 +92,7 @@ namespace ReFrontier.Tests.TextToolTests
 
             // Assert
             Assert.Single(result);
-            Assert.Equal("Line1\r\nLine2", result[0].EString);
+            Assert.Equal("Line1\r\nLine2", result[0].Translation);
         }
 
         #endregion
@@ -106,8 +106,8 @@ namespace ReFrontier.Tests.TextToolTests
             byte[] originalData = new byte[100];
             var stringDb = new StringDatabase[]
             {
-                new() { Offset = 0, EString = "Hello" },
-                new() { Offset = 10, EString = "World" }
+                new() { Offset = 0, Translation = "Hello" },
+                new() { Offset = 10, Translation = "World" }
             };
 
             // Act
@@ -134,8 +134,8 @@ namespace ReFrontier.Tests.TextToolTests
             byte[] originalData = new byte[100];
             var stringDb = new StringDatabase[]
             {
-                new() { Offset = 0, EString = "" },         // Empty - skip
-                new() { Offset = 10, EString = "Translated" }
+                new() { Offset = 0, Translation = "" },         // Empty - skip
+                new() { Offset = 10, Translation = "Translated" }
             };
 
             // Act
@@ -153,7 +153,7 @@ namespace ReFrontier.Tests.TextToolTests
             byte[] originalData = new byte[100];
             var stringDb = new StringDatabase[]
             {
-                new() { Offset = 0, EString = "Test" }
+                new() { Offset = 0, Translation = "Test" }
             };
 
             // Act
@@ -171,7 +171,7 @@ namespace ReFrontier.Tests.TextToolTests
             byte[] originalData = new byte[100];
             var stringDb = new StringDatabase[]
             {
-                new() { Offset = 0, EString = "日本語テスト" }
+                new() { Offset = 0, Translation = "日本語テスト" }
             };
 
             // Act
@@ -195,7 +195,7 @@ namespace ReFrontier.Tests.TextToolTests
             byte[] originalData = new byte[100];
             var stringDb = new StringDatabase[]
             {
-                new() { Offset = 0, EString = "Test" }
+                new() { Offset = 0, Translation = "Test" }
             };
 
             // Act
@@ -275,7 +275,7 @@ namespace ReFrontier.Tests.TextToolTests
         public void LoadCsvToStringDatabase_HandlesBackslash()
         {
             // Arrange - backslash is just regular text in RFC 4180
-            string csv = "Offset,Hash,JString,EString\n0,123,Test,Path\\File\n";
+            string csv = "Offset,Hash,Original,Translation\n0,123,Test,Path\\File\n";
             _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
 
             // Act
@@ -283,14 +283,14 @@ namespace ReFrontier.Tests.TextToolTests
 
             // Assert
             Assert.Single(result);
-            Assert.Equal("Path\\File", result[0].EString);
+            Assert.Equal("Path\\File", result[0].Translation);
         }
 
         [Fact]
         public void LoadCsvToStringDatabase_HandlesUtf8BomEncoding()
         {
             // Arrange - UTF-8 with BOM
-            string csv = "Offset,Hash,JString,EString\n0,123,Test,English\n";
+            string csv = "Offset,Hash,Original,Translation\n0,123,Test,English\n";
             byte[] utf8Bom = new byte[] { 0xEF, 0xBB, 0xBF };
             byte[] content = Encoding.UTF8.GetBytes(csv);
             byte[] withBom = new byte[utf8Bom.Length + content.Length];
@@ -303,14 +303,14 @@ namespace ReFrontier.Tests.TextToolTests
 
             // Assert
             Assert.Single(result);
-            Assert.Equal("English", result[0].EString);
+            Assert.Equal("English", result[0].Translation);
         }
 
         [Fact]
-        public void LoadCsvToStringDatabase_WithEmptyEString_ReturnsEmptyString()
+        public void LoadCsvToStringDatabase_WithEmptyTranslation_ReturnsEmptyString()
         {
             // Arrange
-            string csv = "Offset,Hash,JString,EString\n0,123,Test,\n";
+            string csv = "Offset,Hash,Original,Translation\n0,123,Test,\n";
             _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
 
             // Act
@@ -318,14 +318,14 @@ namespace ReFrontier.Tests.TextToolTests
 
             // Assert
             Assert.Single(result);
-            Assert.Equal("", result[0].EString);
+            Assert.Equal("", result[0].Translation);
         }
 
         [Fact]
         public void LoadCsvToStringDatabase_ParsesHashCorrectly()
         {
             // Arrange
-            string csv = "Offset,Hash,JString,EString\n0,4294967295,Test,English\n";
+            string csv = "Offset,Hash,Original,Translation\n0,4294967295,Test,English\n";
             _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
 
             // Act
@@ -351,7 +351,7 @@ namespace ReFrontier.Tests.TextToolTests
 
             var stringDb = new StringDatabase[]
             {
-                new() { Offset = 0, EString = "Test" }
+                new() { Offset = 0, Translation = "Test" }
             };
 
             // Act
@@ -372,7 +372,7 @@ namespace ReFrontier.Tests.TextToolTests
 
             var stringDb = new StringDatabase[]
             {
-                new() { Offset = 0, EString = "Test" }
+                new() { Offset = 0, Translation = "Test" }
             };
 
             // Act
@@ -390,9 +390,9 @@ namespace ReFrontier.Tests.TextToolTests
             byte[] originalData = new byte[100];
             var stringDb = new StringDatabase[]
             {
-                new() { Offset = 0, EString = "First" },
-                new() { Offset = 10, EString = "Second" },
-                new() { Offset = 20, EString = "Third" }
+                new() { Offset = 0, Translation = "First" },
+                new() { Offset = 10, Translation = "Second" },
+                new() { Offset = 20, Translation = "Third" }
             };
 
             // Act
@@ -419,9 +419,9 @@ namespace ReFrontier.Tests.TextToolTests
             byte[] originalData = new byte[100];
             var stringDb = new StringDatabase[]
             {
-                new() { Offset = 0, EString = "First" },
-                new() { Offset = 10, EString = null },     // null - skip
-                new() { Offset = 20, EString = "Third" }
+                new() { Offset = 0, Translation = "First" },
+                new() { Offset = 10, Translation = null },     // null - skip
+                new() { Offset = 20, Translation = "Third" }
             };
 
             // Act
