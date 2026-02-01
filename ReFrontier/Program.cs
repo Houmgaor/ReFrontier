@@ -217,12 +217,12 @@ namespace ReFrontier
         /// </summary>
         /// <param name="directoryPath">Directory path.</param>
         /// <param name="inputArguments">Configuration arguments from CLI.</param>
-        /// <param name="progressCallback">Optional callback for progress updates (current, total).</param>
+        /// <param name="progressCallback">Optional callback for progress updates (current, total, currentFileName).</param>
         /// <returns>Processing statistics.</returns>
         public ProcessingStatistics StartProcessingDirectory(
             string directoryPath,
             InputArguments inputArguments,
-            Action<int, int>? progressCallback = null)
+            Action<int, int, string>? progressCallback = null)
         {
             if (inputArguments.repack)
             {
@@ -374,12 +374,12 @@ namespace ReFrontier
         /// </summary>
         /// <param name="filePathes">Files to process.</param>
         /// <param name="inputArguments">Configuration arguments from CLI.</param>
-        /// <param name="progressCallback">Optional callback for progress updates (current, total).</param>
+        /// <param name="progressCallback">Optional callback for progress updates (current, total, currentFileName).</param>
         /// <returns>Processing statistics.</returns>
         public ProcessingStatistics ProcessMultipleLevels(
             string[] filePathes,
             InputArguments inputArguments,
-            Action<int, int>? progressCallback = null)
+            Action<int, int, string>? progressCallback = null)
         {
             var stats = new ProcessingStatistics();
             stats.SetTotalFiles(filePathes.Length);
@@ -397,6 +397,10 @@ namespace ReFrontier
             // Use a concurrent queue to manage files/directories to process
             ConcurrentQueue<string> filesToProcess = new(filePathes);
 
+            // Track files already processed or queued to prevent duplicates
+            HashSet<string> processedFiles = new(filePathes, StringComparer.OrdinalIgnoreCase);
+            object processedFilesLock = new();
+
             // Consume (process) input files
             while (!filesToProcess.IsEmpty)
             {
@@ -407,6 +411,11 @@ namespace ReFrontier
                     if (tempInputFile != null)
                         currentBatch.Add(tempInputFile);
                 }
+
+                // Collect output directories during parallel processing
+                // We defer AddNewFiles calls until after all files in the batch are processed
+                // to avoid race conditions where files are scanned while still being written
+                ConcurrentBag<string> outputDirectories = new();
 
                 // Use Interlocked to safely disable stage processing after first file
                 int stageContainerFlag = inputArguments.stageContainer ? 1 : 0;
@@ -428,28 +437,78 @@ namespace ReFrontier
                             stats.IncrementSkipped();
 
                         // Report progress
-                        progressCallback?.Invoke(stats.HandledFiles, stats.TotalFiles);
+                        progressCallback?.Invoke(stats.HandledFiles, stats.TotalFiles, inputFile);
 
-                        // Check if a new directory was created
+                        // Collect output directories for deferred processing
+                        // This prevents race conditions where files are scanned while being written
                         if (inputArguments.recursive && result.OutputPath != null && _fileSystem.DirectoryExists(result.OutputPath))
                         {
-                            int newFileCount = AddNewFiles(result.OutputPath, filesToProcess);
-                            stats.AddGeneratedFiles(newFileCount);
+                            outputDirectories.Add(result.OutputPath);
                         }
                     }
                     catch (ReFrontierException ex)
                     {
                         stats.IncrementError();
-                        progressCallback?.Invoke(stats.HandledFiles, stats.TotalFiles);
+                        progressCallback?.Invoke(stats.HandledFiles, stats.TotalFiles, inputFile);
 
                         // Log the error and continue processing other files
                         if (inputArguments.verbose)
                             _logger.WriteLine($"Skipping {inputFile}: {ex.Message}");
                     }
                 });
+
+                // After all files in batch are processed, scan output directories for new files
+                // This ensures all files are fully written before being added to the queue
+                foreach (var outputDir in outputDirectories)
+                {
+                    int newFileCount = AddNewFilesWithDedup(outputDir, filesToProcess, processedFiles, processedFilesLock);
+                    stats.AddGeneratedFiles(newFileCount);
+                }
             }
 
             return stats;
+        }
+
+        /// <summary>
+        /// Add new files in the directory to filesQueue, with deduplication.
+        ///
+        /// This is a task producer in Task Parallel Library paradigm.
+        /// Files that have already been processed or queued are skipped.
+        /// </summary>
+        /// <param name="directoryPath">Directory to search into.</param>
+        /// <param name="filesQueue">Thread-safe queue where to add files to.</param>
+        /// <param name="processedFiles">Set of files already processed or queued.</param>
+        /// <param name="lockObj">Lock object for thread-safe access to processedFiles.</param>
+        /// <returns>Number of files added to the queue.</returns>
+        private int AddNewFilesWithDedup(
+            string directoryPath,
+            ConcurrentQueue<string> filesQueue,
+            HashSet<string> processedFiles,
+            object lockObj)
+        {
+            // Limit file search to these patterns
+            string[] patterns = ["*.bin", "*.jkr", "*.ftxt", "*.snd"];
+
+            var fileOperations = new FileOperations(_fileSystem, _logger);
+            var nextFiles = fileOperations.GetFilesInstance(directoryPath, patterns, SearchOption.TopDirectoryOnly);
+
+            int count = 0;
+            foreach (var nextFile in nextFiles)
+            {
+                // Skip files that have already been processed or queued
+                bool shouldAdd;
+                lock (lockObj)
+                {
+                    shouldAdd = processedFiles.Add(nextFile);
+                }
+
+                if (shouldAdd)
+                {
+                    filesQueue.Enqueue(nextFile);
+                    count++;
+                }
+            }
+            return count;
         }
 
         /// <summary>

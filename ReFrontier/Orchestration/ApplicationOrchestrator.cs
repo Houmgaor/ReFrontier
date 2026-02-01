@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 
 using LibReFrontier.Abstractions;
 
@@ -155,23 +156,35 @@ namespace ReFrontier.Orchestration
                         new TaskDescriptionColumn(),
                         new ProgressBarColumn(),
                         new PercentageColumn(),
+                        new ElapsedTimeColumn(),
+                        new RemainingTimeColumn(),
                         new SpinnerColumn()
                     )
                     .Start(ctx =>
                     {
-                        var task = ctx.AddTask("[green]Processing files[/]", maxValue: 100);
+                        var task = ctx.AddTask("[green]Scanning...[/]", maxValue: 100);
                         task.IsIndeterminate = true;
 
-                        stats = _program.StartProcessingDirectory(directoryPath, processingArgs, (current, total) =>
+                        stats = _program.StartProcessingDirectory(directoryPath, processingArgs, (current, total, currentFile) =>
                         {
                             if (total > 0)
                             {
                                 task.IsIndeterminate = false;
                                 task.MaxValue = total;
                                 task.Value = current;
+
+                                // Update description with count and current file (truncate if too long)
+                                string fileName = Path.GetFileName(currentFile);
+                                if (fileName.Length > 25)
+                                    fileName = fileName[..22] + "...";
+                                task.Description = $"[grey]{current}/{total}[/] [green]{fileName}[/]";
                             }
                         });
 
+                        if (stats != null)
+                            task.Description = $"[grey]{stats.HandledFiles}/{stats.TotalFiles}[/] [green]Done[/]";
+                        else
+                            task.Description = "[green]Done[/]";
                         task.Value = task.MaxValue;
                     });
             }
