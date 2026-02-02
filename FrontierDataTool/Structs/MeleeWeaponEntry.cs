@@ -62,9 +62,29 @@ namespace FrontierDataTool.Structs
         /// </summary>
         public short VisualEffects { get; set; }
 
+        /// <summary>
+        /// Weapon-specific data bits.
+        /// Hunting Horn: music/note pattern. Gunlance: shell bits.
+        /// Based on Wii U symbols: get_ex_g_weapon_shell_bit, get_ex_g_weapon_music.
+        /// </summary>
         public short Unk11 { get; set; }
+
+        /// <summary>
+        /// Weapon-specific parameter 1.
+        /// Hunting Horn: Note 1 color. Gunlance: Shell type.
+        /// </summary>
         public byte Unk12 { get; set; }
+
+        /// <summary>
+        /// Weapon-specific parameter 2.
+        /// Hunting Horn: Note 2 color. Gunlance: Shell level.
+        /// </summary>
         public byte Unk13 { get; set; }
+
+        /// <summary>
+        /// Weapon-specific parameter 3.
+        /// Hunting Horn: Note 3 color.
+        /// </summary>
         public byte Unk14 { get; set; }
 
         /// <summary>
@@ -72,6 +92,9 @@ namespace FrontierDataTool.Structs
         /// </summary>
         public byte ZeroF { get; set; }
 
+        /// <summary>
+        /// Evolution/upgrade related data (based on evo_* symbols).
+        /// </summary>
         public int Unk16 { get; set; }
 
         /// <summary>

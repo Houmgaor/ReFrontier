@@ -17,6 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `Unk19-20` → `QuestId` (quest identifier)
 - **FrontierDataTool**: Added missing QuestTypes enum values: `SlayAll`, `SlayTotal`, `BreakPart`, `SlayOrDamage`, `EsotericAction`
 - **FrontierDataTool**: Fixed typos in QuestTypes enum: `Kill` → `Slay`, `Damging` → `Damaging`
+- **FrontierDataTool**: Added documentation for weapon unknown fields (based on Wii U symbol analysis):
+  - MeleeWeaponEntry: `Unk11-14` likely weapon-specific (HH notes, GL shells), `Unk16` evolution-related
+  - RangedWeaponEntry: `Unk10` bullet level data, `Unk23` gun type/level, various ammo configuration blocks
+- **FrontierDataTool**: Renamed armor fields based on Wii U symbol analysis:
+  - `Unk10` → `EqType` (equipment type: General/SP/Gou/Evolution/HC/Ravi)
+  - `Unk40` → `ArmorType` (armor tier: zenith/prayer/g-rank/exotic/gou)
+- **FrontierDataTool**: Added documentation for remaining armor unknown fields
 
 ## [2.0.0] - 2026-02-01
 

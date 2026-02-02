@@ -20,15 +20,38 @@ namespace FrontierDataTool.Structs
         public byte Rarity { get; set; }
         public byte MaxLevel { get; set; }
 
+        /// <summary>
+        /// Unknown - possibly armor grade (based on grade__5ArmorCFv symbol).
+        /// </summary>
         public byte Unk07 { get; set; }
+
+        /// <summary>
+        /// Unknown - possibly upgrade cost multiplier or material index.
+        /// </summary>
         public byte Unk08 { get; set; }
+
+        /// <summary>
+        /// Unknown - possibly upgrade-related parameter.
+        /// </summary>
         public byte Unk09 { get; set; }
+
+        /// <summary>
+        /// Unknown - possibly upgrade-related parameter.
+        /// </summary>
         public byte Unk0A { get; set; }
+
+        /// <summary>
+        /// Unknown - possibly upgrade-related parameter.
+        /// </summary>
         public byte Unk0B { get; set; }
 
         public int ZennyCost { get; set; }
 
-        public short Unk10 { get; set; }
+        /// <summary>
+        /// Equipment type flags (0=General, 1=SP, 2=Gou, 4=Evolution, 8=HC, 0x24=Ravi).
+        /// Based on Gousyu armor symbols: getFXGousyuArmorCount, getFGousyuArmorCount.
+        /// </summary>
+        public short EqType { get; set; }
 
         public short BaseDefense { get; set; }
         public sbyte FireRes { get; set; }
@@ -37,25 +60,46 @@ namespace FrontierDataTool.Structs
         public sbyte DragonRes { get; set; }
         public sbyte IceRes { get; set; }
 
+        /// <summary>
+        /// Unknown - possibly additional resistance or status flags.
+        /// </summary>
         public byte Unk19 { get; set; }
+
+        /// <summary>
+        /// Unknown - possibly additional resistance or status flags.
+        /// </summary>
         public byte Unk1A { get; set; }
 
         public byte BaseSlots { get; set; }
         public byte MaxSlots { get; set; }
         public byte SthEventCrown { get; set; }
 
+        /// <summary>
+        /// Unknown - possibly upgrade tree reference or sort order.
+        /// </summary>
         public short Unk1E { get; set; }
 
+        /// <summary>
+        /// Unknown 4-byte block - possibly armor type flags (Gousyu/evolution/zenith).
+        /// Based on symbols: getFXGousyuArmorCount, getFGousyuArmorCount.
+        /// </summary>
         public byte Unk20_1 { get; set; }
         public byte Unk20_2 { get; set; }
         public byte Unk20_3 { get; set; }
         public byte Unk20_4 { get; set; }
 
+        /// <summary>
+        /// Unknown 4-byte block - possibly visual effect or model variant data.
+        /// </summary>
         public byte Unk24_1 { get; set; }
         public byte Unk24_2 { get; set; }
         public byte Unk24_3 { get; set; }
         public byte Unk24_4 { get; set; }
 
+        /// <summary>
+        /// Unknown - possibly skill activation threshold or decoration-related.
+        /// Based on symbol: get_armor_deco_no.
+        /// </summary>
         public short Unk28 { get; set; }
 
         public string? SkillId1 { get; set; }
@@ -69,17 +113,34 @@ namespace FrontierDataTool.Structs
         public string? SkillId5 { get; set; }
         public sbyte SkillPts5 { get; set; }
 
+        /// <summary>
+        /// Hiden (秘伝) skill related data.
+        /// Based on symbols: hasHidenEquips, isHidenDualArmorSkill.
+        /// </summary>
         public int SthHiden { get; set; }
 
+        /// <summary>
+        /// Unknown - possibly additional Hiden data or G-Rank parameters.
+        /// </summary>
         public int Unk38 { get; set; }
 
+        /// <summary>
+        /// Unknown - possibly visual effect or particle parameters.
+        /// </summary>
         public byte Unk3C { get; set; }
         public byte Unk3D { get; set; }
         public byte Unk3E { get; set; }
         public byte Unk3F { get; set; }
 
-        public int Unk40 { get; set; }
+        /// <summary>
+        /// Armor tier/type classification (zenith, prayer, g-rank, exotic, gou, etc.).
+        /// Same as weapon WeaponType field.
+        /// </summary>
+        public int ArmorType { get; set; }
 
+        /// <summary>
+        /// Unknown - possibly Zenith-related activation parameter.
+        /// </summary>
         public short Unk44 { get; set; }
 
         /// <summary>

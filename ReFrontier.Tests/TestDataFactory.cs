@@ -131,7 +131,7 @@ namespace ReFrontier.Tests
         public static string CreateArmorCsv(int count)
         {
             var sb = new StringBuilder();
-            sb.AppendLine("EquipClass,Name,ModelIdMale,ModelIdFemale,IsMaleEquip,IsFemaleEquip,IsBladeEquip,IsGunnerEquip,Bool1,IsSPEquip,Bool3,Bool4,Rarity,MaxLevel,Unk07,Unk08,Unk09,Unk0A,Unk0B,ZennyCost,Unk10,BaseDefense,FireRes,WaterRes,ThunderRes,DragonRes,IceRes,Unk19,Unk1A,BaseSlots,MaxSlots,SthEventCrown,Unk1E,Unk20_1,Unk20_2,Unk20_3,Unk20_4,Unk24_1,Unk24_2,Unk24_3,Unk24_4,Unk28,SkillId1,SkillPts1,SkillId2,SkillPts2,SkillId3,SkillPts3,SkillId4,SkillPts4,SkillId5,SkillPts5,SthHiden,Unk38,Unk3C,Unk3D,Unk3E,Unk3F,Unk40,Unk44,ZenithSkill");
+            sb.AppendLine("EquipClass,Name,ModelIdMale,ModelIdFemale,IsMaleEquip,IsFemaleEquip,IsBladeEquip,IsGunnerEquip,Bool1,IsSPEquip,Bool3,Bool4,Rarity,MaxLevel,Unk07,Unk08,Unk09,Unk0A,Unk0B,ZennyCost,EqType,BaseDefense,FireRes,WaterRes,ThunderRes,DragonRes,IceRes,Unk19,Unk1A,BaseSlots,MaxSlots,SthEventCrown,Unk1E,Unk20_1,Unk20_2,Unk20_3,Unk20_4,Unk24_1,Unk24_2,Unk24_3,Unk24_4,Unk28,SkillId1,SkillPts1,SkillId2,SkillPts2,SkillId3,SkillPts3,SkillId4,SkillPts4,SkillId5,SkillPts5,SthHiden,Unk38,Unk3C,Unk3D,Unk3E,Unk3F,ArmorType,Unk44,ZenithSkill");
 
             string[] classes = ["頭", "胴", "腕", "腰", "脚"];
 

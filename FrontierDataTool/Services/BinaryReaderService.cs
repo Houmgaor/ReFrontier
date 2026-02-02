@@ -64,7 +64,7 @@ namespace FrontierDataTool.Services
             entry.Unk0A = br.ReadByte();
             entry.Unk0B = br.ReadByte();
             entry.ZennyCost = br.ReadInt32();
-            entry.Unk10 = br.ReadInt16();
+            entry.EqType = br.ReadInt16();
             entry.BaseDefense = br.ReadInt16();
             entry.FireRes = br.ReadSByte();
             entry.WaterRes = br.ReadSByte();
@@ -114,7 +114,7 @@ namespace FrontierDataTool.Services
             entry.Unk3D = br.ReadByte();
             entry.Unk3E = br.ReadByte();
             entry.Unk3F = br.ReadByte();
-            entry.Unk40 = br.ReadInt32();
+            entry.ArmorType = br.ReadInt32();
             entry.Unk44 = br.ReadInt16();
             entry.ZenithSkill = br.ReadInt16();
 
@@ -388,7 +388,7 @@ namespace FrontierDataTool.Services
             bw.Write(entry.Unk0A);
             bw.Write(entry.Unk0B);
             bw.Write(entry.ZennyCost);
-            bw.Write(entry.Unk10);
+            bw.Write(entry.EqType);
             bw.Write(entry.BaseDefense);
             bw.Write(entry.FireRes);
             bw.Write(entry.WaterRes);
@@ -428,7 +428,7 @@ namespace FrontierDataTool.Services
             bw.Write(entry.Unk3D);
             bw.Write(entry.Unk3E);
             bw.Write(entry.Unk3F);
-            bw.Write(entry.Unk40);
+            bw.Write(entry.ArmorType);
             bw.Write(entry.Unk44);
             bw.Write(entry.ZenithSkill);
         }
