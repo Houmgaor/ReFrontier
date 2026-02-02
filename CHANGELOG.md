@@ -5,6 +5,19 @@ All notable changes to ReFrontier will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **FrontierDataTool**: Identified QuestData fields from mhfinf.bin (based on ImHex patterns):
+  - `Unk11` → `MaxPlayers` (max player count)
+  - `Unk12` → `MapId` (map/location ID)
+  - `Unk13-16` → `QuestStringPtr` (pointer to quest text)
+  - `Unk17-18` → `QuestRestrictions` (quest restriction flags)
+  - `Unk19-20` → `QuestId` (quest identifier)
+- **FrontierDataTool**: Added missing QuestTypes enum values: `SlayAll`, `SlayTotal`, `BreakPart`, `SlayOrDamage`, `EsotericAction`
+- **FrontierDataTool**: Fixed typos in QuestTypes enum: `Kill` → `Slay`, `Damging` → `Damaging`
+
 ## [2.0.0] - 2026-02-01
 
 ### Added

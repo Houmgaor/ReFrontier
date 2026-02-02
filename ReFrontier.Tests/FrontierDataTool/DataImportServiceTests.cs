@@ -699,11 +699,11 @@ namespace ReFrontier.Tests.DataToolTests
         private static string CreateQuestCsv(int count)
         {
             var sb = new StringBuilder();
-            sb.AppendLine("Title,TextMain,TextSubA,TextSubB,Unk1,Unk2,Unk3,Unk4,Level,Unk5,CourseType,Unk7,Unk8,Unk9,Unk10,Unk11,Fee,ZennyMain,ZennyKo,ZennySubA,ZennySubB,Time,Unk12,Unk13,Unk14,Unk15,Unk16,Unk17,Unk18,Unk19,Unk20,MainGoalType,MainGoalTarget,MainGoalCount,SubAGoalType,SubAGoalTarget,SubAGoalCount,SubBGoalType,SubBGoalTarget,SubBGoalCount,MainGRP,SubAGRP,SubBGRP");
+            sb.AppendLine("Title,TextMain,TextSubA,TextSubB,Unk1,Unk2,Unk3,Unk4,Level,Unk5,CourseType,Unk7,Unk8,Unk9,Unk10,MaxPlayers,Fee,ZennyMain,ZennyKo,ZennySubA,ZennySubB,Time,MapId,QuestStringPtr,QuestRestrictions,QuestId,MainGoalType,MainGoalTarget,MainGoalCount,SubAGoalType,SubAGoalTarget,SubAGoalCount,SubBGoalType,SubBGoalTarget,SubBGoalCount,MainGRP,SubAGRP,SubBGRP");
 
             for (int i = 0; i < count; i++)
             {
-                sb.AppendLine($"TestQuest{i},MainText{i},SubA{i},SubB{i},0,0,0,0,5,0,6,0,0,0,0,0,500,1000,500,200,200,3000,0,0,0,0,0,0,0,0,0,Hunt,{i + 1},1,Delivery,100,5,None,0,0,100,50,50");
+                sb.AppendLine($"TestQuest{i},MainText{i},SubA{i},SubB{i},0,0,0,0,5,0,6,0,0,0,0,4,500,1000,500,200,200,3000,1,0,0,{i + 1},Hunt,{i + 1},1,Delivery,100,5,None,0,0,100,50,50");
             }
 
             return sb.ToString();

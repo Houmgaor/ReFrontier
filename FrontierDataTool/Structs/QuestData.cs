@@ -1,7 +1,7 @@
 namespace FrontierDataTool.Structs
 {
     /// <summary>
-    /// All quest data.
+    /// Quest data from mhfinf.bin.
     /// </summary>
     public class QuestData
     {
@@ -10,33 +10,61 @@ namespace FrontierDataTool.Structs
         public string? TextSubA { get; set; }
         public string? TextSubB { get; set; }
 
+        // First 11 bytes - partially identified
         public byte Unk1 { get; set; }
         public byte Unk2 { get; set; }
         public byte Unk3 { get; set; }
         public byte Unk4 { get; set; }
+
+        /// <summary>
+        /// Quest difficulty level (stars).
+        /// </summary>
         public byte Level { get; set; }
+
         public byte Unk5 { get; set; }
-        public byte CourseType { get; set; }    // 6 = Premium, 18 = Free?, 19 = HLC?, 20 = Extra
+
+        /// <summary>
+        /// Course requirement type (6 = Premium, 18 = Free?, 19 = HLC?, 20 = Extra).
+        /// </summary>
+        public byte CourseType { get; set; }
+
         public byte Unk7 { get; set; }
         public byte Unk8 { get; set; }
         public byte Unk9 { get; set; }
         public byte Unk10 { get; set; }
-        public byte Unk11 { get; set; }
+
+        /// <summary>
+        /// Maximum number of players for this quest.
+        /// </summary>
+        public byte MaxPlayers { get; set; }
+
         public int Fee { get; set; }
         public int ZennyMain { get; set; }
         public int ZennyKo { get; set; }
         public int ZennySubA { get; set; }
         public int ZennySubB { get; set; }
         public int Time { get; set; }
-        public int Unk12 { get; set; }
-        public byte Unk13 { get; set; }
-        public byte Unk14 { get; set; }
-        public byte Unk15 { get; set; }
-        public byte Unk16 { get; set; }
-        public byte Unk17 { get; set; }
-        public byte Unk18 { get; set; }
-        public byte Unk19 { get; set; }
-        public byte Unk20 { get; set; }
+
+        /// <summary>
+        /// Map/location ID for the quest.
+        /// </summary>
+        public int MapId { get; set; }
+
+        /// <summary>
+        /// Pointer to quest text strings.
+        /// </summary>
+        public int QuestStringPtr { get; set; }
+
+        /// <summary>
+        /// Quest restriction flags.
+        /// </summary>
+        public short QuestRestrictions { get; set; }
+
+        /// <summary>
+        /// Quest identifier.
+        /// </summary>
+        public short QuestId { get; set; }
+
         public string? MainGoalType { get; set; }
         public short MainGoalTarget { get; set; }
         public short MainGoalCount { get; set; }
@@ -53,17 +81,21 @@ namespace FrontierDataTool.Structs
     }
 
     /// <summary>
-    /// Types of quests. 
+    /// Types of quest objectives.
     /// </summary>
     public enum QuestTypes
     {
         None = 0,
         Hunt = 0x00000001,
         Capture = 0x00000101,
-        Kill = 0x00000201,
+        Slay = 0x00000201,
         Delivery = 0x00000002,
         GuildFlag = 0x00001002,
-        Damging = 0x00008004
-
+        Damaging = 0x00008004,
+        SlayOrDamage = 0x00018004,
+        SlayTotal = 0x00020000,
+        SlayAll = 0x00040000,
+        BreakPart = 0x00004004,
+        EsotericAction = 0x00000010
     }
 }

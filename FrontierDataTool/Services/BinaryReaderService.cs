@@ -267,22 +267,17 @@ namespace FrontierDataTool.Services
                 Unk8 = br.ReadByte(),
                 Unk9 = br.ReadByte(),
                 Unk10 = br.ReadByte(),
-                Unk11 = br.ReadByte(),
+                MaxPlayers = br.ReadByte(),
                 Fee = br.ReadInt32(),
                 ZennyMain = br.ReadInt32(),
                 ZennyKo = br.ReadInt32(),
                 ZennySubA = br.ReadInt32(),
                 ZennySubB = br.ReadInt32(),
                 Time = br.ReadInt32(),
-                Unk12 = br.ReadInt32(),
-                Unk13 = br.ReadByte(),
-                Unk14 = br.ReadByte(),
-                Unk15 = br.ReadByte(),
-                Unk16 = br.ReadByte(),
-                Unk17 = br.ReadByte(),
-                Unk18 = br.ReadByte(),
-                Unk19 = br.ReadByte(),
-                Unk20 = br.ReadByte()
+                MapId = br.ReadInt32(),
+                QuestStringPtr = br.ReadInt32(),
+                QuestRestrictions = br.ReadInt16(),
+                QuestId = br.ReadInt16()
             };
 
             int questType = br.ReadInt32();
@@ -559,7 +554,7 @@ namespace FrontierDataTool.Services
             bw.Write(entry.Unk8);
             bw.Write(entry.Unk9);
             bw.Write(entry.Unk10);
-            bw.Write(entry.Unk11);
+            bw.Write(entry.MaxPlayers);
 
             // Write monetary values (24 bytes)
             bw.Write(entry.Fee);
@@ -569,16 +564,11 @@ namespace FrontierDataTool.Services
             bw.Write(entry.ZennySubB);
             bw.Write(entry.Time);
 
-            // Write Unk12 (4 bytes) and Unk13-20 (8 bytes)
-            bw.Write(entry.Unk12);
-            bw.Write(entry.Unk13);
-            bw.Write(entry.Unk14);
-            bw.Write(entry.Unk15);
-            bw.Write(entry.Unk16);
-            bw.Write(entry.Unk17);
-            bw.Write(entry.Unk18);
-            bw.Write(entry.Unk19);
-            bw.Write(entry.Unk20);
+            // Write MapId (4 bytes), QuestStringPtr (4 bytes), QuestRestrictions (2 bytes), QuestId (2 bytes)
+            bw.Write(entry.MapId);
+            bw.Write(entry.QuestStringPtr);
+            bw.Write(entry.QuestRestrictions);
+            bw.Write(entry.QuestId);
 
             // Write goal data (24 bytes - 3 goals × 8 bytes each)
             bw.Write(LookupQuestType(entry.MainGoalType));

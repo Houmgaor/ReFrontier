@@ -539,22 +539,17 @@ namespace ReFrontier.Tests.DataToolTests
                 Unk8 = 9,
                 Unk9 = 10,
                 Unk10 = 11,
-                Unk11 = 12,
+                MaxPlayers = 12,
                 Fee = 500,
                 ZennyMain = 1000,
                 ZennyKo = 500,
                 ZennySubA = 200,
                 ZennySubB = 200,
                 Time = 3000,
-                Unk12 = 100,
-                Unk13 = 1,
-                Unk14 = 2,
-                Unk15 = 3,
-                Unk16 = 4,
-                Unk17 = 5,
-                Unk18 = 6,
-                Unk19 = 7,
-                Unk20 = 8,
+                MapId = 100,
+                QuestStringPtr = 0x01020304,
+                QuestRestrictions = 0x0506,
+                QuestId = 0x0708,
                 MainGoalType = "Hunt",
                 MainGoalTarget = 10,
                 MainGoalCount = 1,
@@ -877,10 +872,12 @@ namespace ReFrontier.Tests.DataToolTests
             int subBGRP = 0)
         {
             // Quest entry structure for ReadQuestEntry:
-            // - 12 bytes header (Unk1-4, Level, Unk5, CourseType, Unk7-11)
+            // - 12 bytes header (Unk1-4, Level, Unk5, CourseType, Unk7-10, MaxPlayers)
             // - 24 bytes monetary (Fee, ZennyMain, ZennyKo, ZennySubA, ZennySubB, Time)
-            // - 4 bytes Unk12
-            // - 8 bytes Unk13-20
+            // - 4 bytes MapId
+            // - 4 bytes QuestStringPtr
+            // - 2 bytes QuestRestrictions
+            // - 2 bytes QuestId
             // - 24 bytes goals (3 goals × 8 bytes each: type(4) + target(2) + count(2))
             // - 0x5C skip
             // - 12 bytes GRP
@@ -903,7 +900,7 @@ namespace ReFrontier.Tests.DataToolTests
             bw.Write((byte)0);      // Unk8
             bw.Write((byte)0);      // Unk9
             bw.Write((byte)0);      // Unk10
-            bw.Write((byte)0);      // Unk11
+            bw.Write((byte)0);      // MaxPlayers
 
             // Monetary (24 bytes)
             bw.Write(fee);
@@ -913,9 +910,11 @@ namespace ReFrontier.Tests.DataToolTests
             bw.Write(0);            // ZennySubB
             bw.Write(time);
 
-            // Unk12 (4 bytes) + Unk13-20 (8 bytes)
-            bw.Write(0);            // Unk12
-            bw.Write(new byte[8]);  // Unk13-20
+            // MapId (4 bytes) + QuestStringPtr (4 bytes) + QuestRestrictions (2 bytes) + QuestId (2 bytes)
+            bw.Write(0);            // MapId
+            bw.Write(0);            // QuestStringPtr
+            bw.Write((short)0);     // QuestRestrictions
+            bw.Write((short)0);     // QuestId
 
             // Goals (24 bytes)
             bw.Write(mainGoalType);
