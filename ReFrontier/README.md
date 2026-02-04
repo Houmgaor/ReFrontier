@@ -47,6 +47,9 @@ See [ARCHIVE_FORMATS.md](../docs/ARCHIVE_FORMATS.md#compression-types) for algor
 
 | Option | Description |
 |--------|-------------|
+| `--parallelism <n>` | Number of parallel threads (0 = auto-detect, default: 0) |
+| `--quiet` | Suppress progress bar during processing |
+| `--verbose` | Show per-file processing messages |
 | `--cleanUp` | Delete intermediate/original files |
 | `--help` | Show help message |
 | `--version` | Show version |

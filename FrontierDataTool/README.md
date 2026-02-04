@@ -5,7 +5,7 @@ Extract and modify game data structures (armor, weapons, quests, shop prices).
 ## Features
 
 - Automatically handles encrypted (ECD/EXF) and compressed (JPK) files
-- Exports to tab-separated CSV in UTF-8 with BOM (easy editing in Excel/text editors)
+- Exports to CSV in UTF-8 with BOM (easy editing in Excel/text editors)
 - Auto-detects CSV encoding when importing (supports both UTF-8 and Shift-JIS)
 - Supports importing modified data back into game files
 

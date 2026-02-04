@@ -147,7 +147,7 @@ Key options:
 - `--quiet` - Suppress the progress bar during processing
 - `--verbose` - Show per-file processing messages (off by default for cleaner output)
 - `--saveMeta` - Save metadata files (recommended for repacking/re-encryption)
-- `--recursive`/`--nonRecursive` - Control recursive unpacking
+- `--nonRecursive` - Disable recursive unpacking (recursive is the default)
 - `--compress <type>` - Compression type: `rw`, `hfirw`, `lz`, `hfi` (or `0`, `2`, `3`, `4`)
 - `--level <n>` - Compression level (1-100, diminishing returns above ~80)
 - `--encrypt` - Encrypt output (uses `.meta` file if available, otherwise default key index 4)

@@ -63,10 +63,10 @@ The CLI now uses System.CommandLine for argument parsing.
 
 ```bash
 # 1.x syntax
-./ReFrontier mhfdat.bin --log --recursive
+./ReFrontier mhfdat.bin --log
 
 # 2.0 syntax (--log renamed to --saveMeta)
-./ReFrontier mhfdat.bin --saveMeta --recursive
+./ReFrontier mhfdat.bin --saveMeta
 ```
 
 Most CLI arguments remain compatible. Key options:
@@ -74,7 +74,7 @@ Most CLI arguments remain compatible. Key options:
 | Option | Description |
 |--------|-------------|
 | `--saveMeta` | Save metadata files for repacking/re-encryption (was `--log`) |
-| `--recursive` / `--nonRecursive` | Control recursive unpacking |
+| `--nonRecursive` | Disable recursive unpacking (recursive is the default) |
 | `--compress=<type>,<level>` | Compress with specified type (0-4) and level |
 | `--encrypt` | Encrypt output file |
 | `--pack` | Repack directory |

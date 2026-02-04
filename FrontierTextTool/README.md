@@ -7,7 +7,7 @@ Extract, edit, and reinsert game text using CSV format.
 ## Features
 
 - Automatically handles encrypted (ECD/EXF) and compressed (JPK) files
-- Exports to tab-separated CSV in UTF-8 with BOM (easy editing in Excel/text editors)
+- Exports to CSV in UTF-8 with BOM (easy editing in Excel/text editors)
 - Auto-detects CSV encoding when reading (supports both UTF-8 and Shift-JIS)
 - Validates Shift-JIS compatibility when inserting text into game files
 - Preserves metadata for re-encryption
