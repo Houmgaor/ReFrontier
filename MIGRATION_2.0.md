@@ -83,21 +83,21 @@ Most CLI arguments remain compatible. Key options:
 ### FrontierTextTool CLI
 
 ```bash
-# Extract text to CSV
-./FrontierTextTool extract mhfdat.bin --output texts.csv
+# Extract text to CSV (outputs to mhfdat.csv)
+./FrontierTextTool mhfdat.bin --fulldump --trueOffsets --nullStrings
 
-# Insert text from CSV
-./FrontierTextTool insert mhfdat.bin --input texts.csv --output mhfdat_new.bin
+# Insert text from CSV (outputs to output/mhfdat.bin)
+./FrontierTextTool mhfdat.bin --insert --csv mhfdat.csv
 ```
 
 ### FrontierDataTool CLI
 
 ```bash
 # Extract data structures
-./FrontierDataTool extract mhfdat.bin MeleeWeapons --output weapons.csv
+./FrontierDataTool --dump --suffix demo --mhfpac mhfpac.bin --mhfdat mhfdat.bin --mhfinf mhfinf.bin
 
-# Import data from CSV
-./FrontierDataTool import mhfdat.bin MeleeWeapons --input weapons.csv --output mhfdat_new.bin
+# Import data from CSV (outputs to output/)
+./FrontierDataTool --import --csv Melee.csv --mhfdat mhfdat.bin
 ```
 
 ## Auto-Preprocessing
@@ -107,10 +107,10 @@ FrontierTextTool and FrontierDataTool now automatically handle encrypted (ECD/EX
 ```bash
 # 1.x workflow (manual preprocessing required)
 ./ReFrontier mhfdat.bin --log           # Decrypt/decompress first
-./FrontierTextTool extract output/mhfdat.bin.decd --output texts.csv
+./FrontierTextTool output/mhfdat.bin.decd --fulldump --trueOffsets --nullStrings
 
 # 2.0 workflow (automatic preprocessing)
-./FrontierTextTool extract mhfdat.bin --output texts.csv
+./FrontierTextTool mhfdat.bin --fulldump --trueOffsets --nullStrings
 ```
 
 ## CLI Option Changes
