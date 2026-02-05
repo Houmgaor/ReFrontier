@@ -425,6 +425,64 @@ namespace ReFrontier.Tests.TextToolTests
             Assert.Equal("Test", result[0].Original);
         }
 
+        [Fact]
+        public void DumpAndHashInternal_HandleEmptyFile()
+        {
+            // Arrange
+            byte[] data = [];
+
+            using var ms = new MemoryStream(data);
+            using var br = new BinaryReader(ms);
+
+            // Act
+            var result = _service.DumpAndHashInternal("test.bin", data, br, 0, 0, false, false);
+
+            // Assert
+            Assert.Empty(result);
+        }
+
+        [Fact]
+        public void DumpAndHashInternal_WithTrueOffsets_AndCheckNullPredecessor_NonNullByteAtMinus1()
+        {
+            // Arrange - string position -1 is not null, should skip
+            byte[] data = new byte[50];
+            // Write pointer to offset 22
+            BitConverter.GetBytes(22).CopyTo(data, 0);
+            // Set up: strPos-2 != 0 (passes first part), but strPos-1 != 0 (fails second part)
+            data[20] = 0x41; // strPos-2 = 'A' (non-zero, passes first check)
+            data[21] = 0x42; // strPos-1 = 'B' (non-zero, fails second check - should skip)
+            // Write string at offset 22
+            Encoding.GetEncoding("shift-jis").GetBytes("Test").CopyTo(data, 22);
+
+            using var ms = new MemoryStream(data);
+            using var br = new BinaryReader(ms);
+
+            // Act
+            var result = _service.DumpAndHashInternal("test.bin", data, br, 0, 4, true, true);
+
+            // Assert - should skip because strPos-1 != 0
+            Assert.Empty(result);
+        }
+
+        [Fact]
+        public void DumpAndHashInternal_WithEmptyStringInSequence_ContinuesReading()
+        {
+            // Arrange - includes empty strings (just null bytes)
+            byte[] data = TestDataFactory.CreateBinaryWithStrings("First", "", "Third");
+
+            using var ms = new MemoryStream(data);
+            using var br = new BinaryReader(ms);
+
+            // Act
+            var result = _service.DumpAndHashInternal("test.bin", data, br, 0, 0, false, false);
+
+            // Assert - should have all three entries including empty
+            Assert.Equal(3, result.Count);
+            Assert.Equal("First", result[0].Original);
+            Assert.Equal("", result[1].Original);
+            Assert.Equal("Third", result[2].Original);
+        }
+
         #endregion
 
         #region WriteCsv Encoding Tests

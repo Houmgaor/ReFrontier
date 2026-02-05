@@ -134,5 +134,20 @@ namespace ReFrontier.Tests.Mocks
             _lines.Clear();
             _messages.Clear();
         }
+
+        /// <summary>
+        /// Check if any error message contains the specified text.
+        /// </summary>
+        /// <param name="text">Text to search for.</param>
+        /// <returns>true if found in any error message.</returns>
+        public bool ContainsError(string text)
+        {
+            foreach (var line in _lines)
+            {
+                if (line.StartsWith("[ERROR]") && line.Contains(text))
+                    return true;
+            }
+            return false;
+        }
     }
 }

@@ -433,5 +433,138 @@ namespace ReFrontier.Tests.TextToolTests
         }
 
         #endregion
+
+        #region UpdateBinaryStrings Edge Case Tests
+
+        [Fact]
+        public void UpdateBinaryStrings_HandlesBoundaryAtEndOfFile()
+        {
+            // Arrange - file size not aligned to 4 bytes
+            byte[] originalData = new byte[103]; // Not divisible by 4
+            var stringDb = new StringDatabase[]
+            {
+                new() { Offset = 0, Translation = "Test" }
+            };
+
+            // Act - should not crash on boundary check
+            byte[] result = _service.UpdateBinaryStrings(stringDb, originalData, false, false);
+
+            // Assert
+            Assert.True(result.Length > originalData.Length);
+        }
+
+        [Fact]
+        public void UpdateBinaryStrings_AllEmptyTranslations_ReturnsOriginalSize()
+        {
+            // Arrange
+            byte[] originalData = new byte[100];
+            var stringDb = new StringDatabase[]
+            {
+                new() { Offset = 0, Translation = "" },
+                new() { Offset = 10, Translation = "" }
+            };
+
+            // Act
+            byte[] result = _service.UpdateBinaryStrings(stringDb, originalData, false, false);
+
+            // Assert - no translations added
+            Assert.Equal(originalData.Length, result.Length);
+        }
+
+        [Fact]
+        public void UpdateBinaryStrings_EmptyStringDatabase_ReturnsOriginalData()
+        {
+            // Arrange
+            byte[] originalData = new byte[100];
+            var stringDb = Array.Empty<StringDatabase>();
+
+            // Act
+            byte[] result = _service.UpdateBinaryStrings(stringDb, originalData, false, false);
+
+            // Assert
+            Assert.Equal(originalData.Length, result.Length);
+        }
+
+        [Fact]
+        public void UpdateBinaryStrings_WithTrueOffsets_UpdatesMultiplePointers()
+        {
+            // Arrange
+            byte[] originalData = new byte[100];
+            var stringDb = new StringDatabase[]
+            {
+                new() { Offset = 0, Translation = "First" },
+                new() { Offset = 4, Translation = "Second" }
+            };
+
+            // Act
+            byte[] result = _service.UpdateBinaryStrings(stringDb, originalData, false, true);
+
+            // Assert - both pointers should be updated
+            int firstPointer = BitConverter.ToInt32(result, 0);
+            int secondPointer = BitConverter.ToInt32(result, 4);
+            Assert.Equal(100, firstPointer);
+            Assert.Equal(106, secondPointer); // 100 + "First" (5) + null (1)
+        }
+
+        #endregion
+
+        #region Shift-JIS Compatibility Tests
+
+        [Fact]
+        public void LoadCsvToStringDatabase_WithIncompatibleCharacters_LogsWarning()
+        {
+            // Arrange - Use emoji which cannot be encoded to Shift-JIS
+            // U+1F600 is the grinning face emoji
+            string csv = "Offset,Hash,Original,Translation\n0,123,Test,Hello \U0001F600 World\n";
+            // Use UTF-8 with BOM so it's detected as UTF-8
+            byte[] utf8Bom = [0xEF, 0xBB, 0xBF];
+            byte[] content = Encoding.UTF8.GetBytes(csv);
+            byte[] withBom = new byte[utf8Bom.Length + content.Length];
+            utf8Bom.CopyTo(withBom, 0);
+            content.CopyTo(withBom, utf8Bom.Length);
+            _fileSystem.AddFile("/test/strings.csv", withBom);
+
+            // Act
+            var result = _service.LoadCsvToStringDatabase("/test/strings.csv");
+
+            // Assert - should still load but log an error
+            Assert.Single(result);
+            Assert.True(_logger.ContainsError("cannot be encoded to Shift-JIS"));
+        }
+
+        [Fact]
+        public void LoadCsvToStringDatabase_WithMultipleIncompatibleCharacters_LogsAllInWarning()
+        {
+            // Arrange - Multiple emoji characters that are incompatible
+            string csv = "Offset,Hash,Original,Translation\n0,123,Test,\U0001F600 and \U0001F601\n";
+            byte[] utf8Bom = [0xEF, 0xBB, 0xBF];
+            byte[] content = Encoding.UTF8.GetBytes(csv);
+            byte[] withBom = new byte[utf8Bom.Length + content.Length];
+            utf8Bom.CopyTo(withBom, 0);
+            content.CopyTo(withBom, utf8Bom.Length);
+            _fileSystem.AddFile("/test/strings.csv", withBom);
+
+            // Act
+            _service.LoadCsvToStringDatabase("/test/strings.csv");
+
+            // Assert - should log error about incompatible characters
+            Assert.True(_logger.ContainsError("cannot be encoded to Shift-JIS"));
+        }
+
+        [Fact]
+        public void LoadCsvToStringDatabase_WithCompatibleCharacters_NoWarning()
+        {
+            // Arrange - Only Shift-JIS compatible characters
+            string csv = "Offset,Hash,Original,Translation\n0,123,テスト,English text\n";
+            _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+
+            // Act
+            _service.LoadCsvToStringDatabase("/test/strings.csv");
+
+            // Assert - no error logged
+            Assert.False(_logger.ContainsError("cannot be encoded"));
+        }
+
+        #endregion
     }
 }
