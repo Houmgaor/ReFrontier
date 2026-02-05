@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **ReFrontier**: Wait for keypress before closing when launched via drag-and-drop on Windows (allows viewing output before window closes)
+
 ### Changed
 
 - **FrontierDataTool**: Identified QuestData fields from mhfinf.bin (based on ImHex patterns):

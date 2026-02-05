@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -207,8 +208,36 @@ namespace ReFrontier
                 return exitCode;
             });
 
-            return rootCommand.Parse(args).Invoke();
+            int result = rootCommand.Parse(args).Invoke();
+
+            if (ShouldWaitForInput())
+            {
+                Console.WriteLine("Press any key to exit...");
+                Console.ReadKey(intercept: true);
+            }
+
+            return result;
         }
+
+        /// <summary>
+        /// Determines if the application should wait for user input before exiting.
+        /// Returns true only on Windows when the console was created by this process
+        /// (e.g., drag-and-drop onto exe), not when running from an existing terminal.
+        /// </summary>
+        private static bool ShouldWaitForInput()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return false;
+
+            // If only 1 process is attached to the console, we created it (drag-and-drop)
+            // If more than 1, we're running from an existing terminal (cmd, PowerShell, etc.)
+            var processList = new uint[2];
+            uint count = GetConsoleProcessList(processList, 2);
+            return count == 1;
+        }
+
+        [DllImport("kernel32.dll")]
+        private static extern uint GetConsoleProcessList(uint[] processList, uint processCount);
 
         /// <summary>
         /// Launches a directory processing.
