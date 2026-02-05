@@ -63,16 +63,41 @@ Combine an old CSV with a new one:
 
 ### Clean Trados Artifacts
 
-Fix encoding issues from CAT tools:
+Fix encoding issues from CAT (Computer-Assisted Translation) tools like SDL Trados:
 ```shell
-./FrontierTextTool file.txt --cleanTrados
+./FrontierTextTool file.csv --cleanTrados
 ```
 
 ### Insert CAT File
 
+Import translations from a CAT tool export file into your CSV:
 ```shell
 ./FrontierTextTool catfile.txt --insertCAT --csv target.csv
 ```
+
+## About CAT Tools and Trados
+
+**CAT** (Computer-Assisted Translation) tools help professional translators work more efficiently by providing translation memory, terminology databases, and text segmentation. **SDL Trados Studio** is one of the most widely used CAT tools in the industry.
+
+When translating Monster Hunter Frontier text, the typical workflow is:
+1. Extract game text to CSV using `--fulldump`
+2. Import the CSV into a CAT tool for translation
+3. Export the translated text from the CAT tool
+4. Use `--insertCAT` to merge translations back into the CSV
+5. Use `--insert` to inject the translated CSV into the game file
+
+**Why `--cleanTrados`?** CAT tools often insert extra spaces after punctuation when segmenting text. This breaks Japanese text formatting since Japanese doesn't use spaces between words. The `--cleanTrados` command removes erroneous spaces after Japanese punctuation marks like `。！？：．」「）（`.
+
+## Command Reference
+
+```shell
+./FrontierTextTool <file> [options]
+```
+
+The `<file>` argument type depends on the action:
+- **Binary file** for `--fulldump`, `--dump`, `--insert` (e.g., `mhfdat.bin`)
+- **CSV file** for `--merge`, `--cleanTrados` (e.g., `old.csv`)
+- **CAT export file** for `--insertCAT` (e.g., `translations.txt`)
 
 ## Options
 

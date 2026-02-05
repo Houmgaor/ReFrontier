@@ -10,6 +10,7 @@ namespace ReFrontier.CLI
     public class CliSchema
     {
         private readonly Argument<string> _fileArgument;
+        private readonly Option<string?> _fileOption;
         private readonly Option<bool> _logOption;
         private readonly Option<bool> _stageContainerOption;
         private readonly Option<bool> _autoStageOption;
@@ -32,9 +33,16 @@ namespace ReFrontier.CLI
         public CliSchema()
         {
             // Arguments
-            _fileArgument = new Argument<string>("file")
+            _fileArgument = new Argument<string>("inputPath")
             {
-                Description = "Input file or directory to process"
+                Description = "Input file or directory to process",
+                Arity = ArgumentArity.ZeroOrOne
+            };
+
+            // Deprecated alias for backward compatibility
+            _fileOption = new Option<string?>("--file")
+            {
+                Description = "[Deprecated] Use positional argument instead. Input file or directory to process."
             };
 
             // Unpacking options
@@ -129,6 +137,7 @@ namespace ReFrontier.CLI
             var rootCommand = new RootCommand($"{productName} - {description}, by MHVuze, additions by Houmgaor")
             {
                 _fileArgument,
+                _fileOption,
                 _logOption,
                 _stageContainerOption,
                 _autoStageOption,
@@ -156,7 +165,28 @@ namespace ReFrontier.CLI
         /// <returns>CliArguments containing all parsed values.</returns>
         public CliArguments ExtractArguments(ParseResult parseResult)
         {
-            var file = parseResult.GetValue(_fileArgument)!;
+            var fileArg = parseResult.GetValue(_fileArgument);
+            var fileOpt = parseResult.GetValue(_fileOption);
+
+            // --file option takes precedence for backward compatibility
+            string? file;
+            if (!string.IsNullOrEmpty(fileOpt))
+            {
+                System.Console.Error.WriteLine("Warning: --file is deprecated. Use positional argument instead: ReFrontier <inputPath>");
+                file = fileOpt;
+            }
+            else
+            {
+                file = fileArg;
+            }
+
+            if (string.IsNullOrEmpty(file))
+            {
+                throw new System.InvalidOperationException(
+                    "Error: No input file or directory specified. Usage: ReFrontier <inputPath> [options]"
+                );
+            }
+
             var log = parseResult.GetValue(_logOption);
             var stageContainer = parseResult.GetValue(_stageContainerOption);
             var autoStage = parseResult.GetValue(_autoStageOption);

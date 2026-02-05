@@ -7,8 +7,10 @@ For installation and quick start, see the [main README](../README.md).
 ## Command Reference
 
 ```shell
-./ReFrontier <file|folder> [options]
+./ReFrontier <inputPath> [options]
 ```
+
+Where `<inputPath>` is a file or directory to process.
 
 ### Decryption Options
 
@@ -53,6 +55,12 @@ See [ARCHIVE_FORMATS.md](../docs/ARCHIVE_FORMATS.md#compression-types) for algor
 | `--cleanUp` | Delete intermediate/original files |
 | `--help` | Show help message |
 | `--version` | Show version |
+
+### Deprecated Options
+
+| Option | Description |
+|--------|-------------|
+| `--file <path>` | [Deprecated] Use positional argument `<inputPath>` instead |
 
 ## Examples
 

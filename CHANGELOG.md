@@ -10,9 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **ReFrontier**: Wait for keypress before closing when launched via drag-and-drop on Windows (allows viewing output before window closes)
+- **ReFrontier**: Added deprecated `--file` option for backward compatibility with scripts using the old argument style
 
 ### Changed
 
+- **ReFrontier**: Renamed positional argument from `file` to `inputPath` for clarity (accepts both files and directories)
+- **FrontierTextTool**: Improved file argument description to clarify context-dependent behavior (binary file for dump/insert, CSV for merge/cleanTrados, CAT file for insertCAT)
+
+### Documentation
+
+- **FrontierTextTool**: Added "About CAT Tools and Trados" section explaining Computer-Assisted Translation tools and the translation workflow
+- **ReFrontier**: Updated command reference to use `<inputPath>` and added deprecated options section
 - **FrontierDataTool**: Identified QuestData fields from mhfinf.bin (based on ImHex patterns):
   - `Unk11` → `MaxPlayers` (max player count)
   - `Unk12` → `MapId` (map/location ID)

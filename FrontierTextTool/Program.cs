@@ -72,7 +72,7 @@ namespace FrontierTextTool
             // Primary file argument
             Argument<string> fileArgument = new("file")
             {
-                Description = "Input file to process"
+                Description = "Input file: binary file for dump/insert, CSV for merge/cleanTrados, CAT file for insertCAT"
             };
 
             // Action options (mutually exclusive actions)
