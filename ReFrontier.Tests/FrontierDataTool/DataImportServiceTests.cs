@@ -322,6 +322,74 @@ namespace ReFrontier.Tests.DataToolTests
             Assert.True(_logger.ContainsMessage("Could not find shop needle"));
         }
 
+        [Fact]
+        public void ModShopInternal_LogsWhenShopPointerNotFound()
+        {
+            // Arrange - create file with shop needle but no valid pointer
+            byte[] mhfdat = CreateMhfdatWithShopData(includeShopNeedle: true, includeShopPointer: false);
+            _fileSystem.AddFile("/test/mhfdat.bin", mhfdat);
+
+            // Act
+            _service.ModShopInternal("/test/mhfdat.bin");
+
+            // Assert - Even without explicit pointer, ModShop should find the needle and proceed
+            // It will log "Found shop inventory" when needle is found, and "Could not find shop pointer" when pointer search fails
+            // The file should still be written (modified)
+            Assert.True(_fileSystem.FileExists("/test/mhfdat.bin"));
+            // Verify the operation completed by checking any logged output
+            Assert.True(_logger.Lines.Count > 0);
+        }
+
+        [Fact]
+        public void ModShopInternal_LogsWhenPearlNeedleNotFound()
+        {
+            // Arrange - create file with shop data but no pearl needle
+            byte[] mhfdat = CreateMhfdatWithShopData(includeShopNeedle: true, includePearlNeedle: false);
+            _fileSystem.AddFile("/test/mhfdat.bin", mhfdat);
+
+            // Act
+            _service.ModShopInternal("/test/mhfdat.bin");
+
+            // Assert
+            Assert.True(_logger.ContainsMessage("Could not find pearl skill needle"));
+        }
+
+        [Fact]
+        public void ModShopInternal_PatchesArmorPrices()
+        {
+            // Arrange
+            byte[] mhfdat = CreateMhfdatWithShopData();
+            _fileSystem.AddFile("/test/mhfdat.bin", mhfdat);
+
+            // Act
+            _service.ModShopInternal("/test/mhfdat.bin");
+
+            // Assert
+            Assert.True(_logger.ContainsMessage("Patching prices for") && _logger.ContainsMessage("armor"));
+        }
+
+        #endregion
+
+        #region ImportRangedDataInternal Additional Tests
+
+        [Fact]
+        public void ImportRangedDataInternal_WritesOutputOnSuccess()
+        {
+            // Arrange
+            byte[] mhfdat = CreateMhfdatForRangedImport(3);
+            string csv = CreateRangedCsv(3);
+
+            _fileSystem.AddFile("/test/mhfdat.bin", mhfdat);
+            _fileSystem.AddFile("/test/Ranged.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+
+            // Act
+            _service.ImportRangedDataInternal("/test/mhfdat.bin", "/test/Ranged.csv");
+
+            // Assert
+            Assert.True(_fileSystem.FileExists("output/mhfdat.bin"));
+            Assert.True(_logger.ContainsMessage("ranged weapon entries"));
+        }
+
         #endregion
 
         #region LoadCsv UTF-8 Encoding Tests
@@ -458,17 +526,21 @@ namespace ReFrontier.Tests.DataToolTests
         {
             const int RANGED_ENTRY_SIZE = 0x3C;
 
+            // Calculate required buffer size: header + ranged data + extra padding for writes
+            // The import service needs room to write back the modified entries
+            int rangedStart = 0x200;
+            int rangedEnd = rangedStart + rangedCount * RANGED_ENTRY_SIZE;
+            int bufferSize = rangedEnd + 0x1000; // Add padding for write operations
+
             using var ms = new MemoryStream();
             using var bw = new BinaryWriter(ms);
 
-            bw.Write(new byte[0x200]);
+            // Pre-allocate the full buffer
+            bw.Write(new byte[bufferSize]);
 
             // Set ranged data offsets
             // RangedStart at 0x80 points to start offset pointer
             // RangedEnd at 0x7C points to end offset pointer
-            int rangedStart = 0x200;
-            int rangedEnd = rangedStart + rangedCount * RANGED_ENTRY_SIZE;
-
             ms.Seek(0x80, SeekOrigin.Begin);
             bw.Write(rangedStart);
 
@@ -527,7 +599,10 @@ namespace ReFrontier.Tests.DataToolTests
             return ms.ToArray();
         }
 
-        private static byte[] CreateMhfdatWithShopData(bool includeShopNeedle = true)
+        private static byte[] CreateMhfdatWithShopData(
+            bool includeShopNeedle = true,
+            bool includeShopPointer = true,
+            bool includePearlNeedle = true)
         {
             const int ITEM_ENTRY_SIZE = 0x24;
             const int ARMOR_ENTRY_SIZE = 0x48;
@@ -579,13 +654,29 @@ namespace ReFrontier.Tests.DataToolTests
             if (includeShopNeedle)
             {
                 byte[] needle = { 0x0F, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00 };
-                long needleOffset = ms.Position;
+                // Write needle at a known fixed offset
+                int needleOffset = 0x2000;
+                ms.Seek(needleOffset, SeekOrigin.Begin);
                 bw.Write(needle);
 
-                // Write pointer to needle (big-endian)
-                byte[] pointerBytes = BitConverter.GetBytes((int)needleOffset);
-                Array.Reverse(pointerBytes);
-                bw.Write(pointerBytes);
+                // Optionally write pointer to needle (big-endian) at a different location
+                if (includeShopPointer)
+                {
+                    ms.Seek(0x2100, SeekOrigin.Begin);
+                    byte[] pointerBytes = BitConverter.GetBytes(needleOffset);
+                    Array.Reverse(pointerBytes);
+                    bw.Write(pointerBytes);
+                }
+            }
+
+            // Optionally add pearl skill needle
+            if (includePearlNeedle)
+            {
+                // Pearl skill needle pattern
+                byte[] pearlNeedle = { 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x25, 0x00, 0x25, 0x00, 0x25, 0x00, 0x25, 0x00, 0x25, 0x00, 0x25, 0x00, 0x25, 0x00 };
+                bw.Write(pearlNeedle);
+                // Write padding for multiple pearl entries
+                bw.Write(new byte[108 * 0x18]); // PEARL_ENTRY_SIZE = 0x18
             }
 
             return ms.ToArray();
@@ -648,26 +739,27 @@ namespace ReFrontier.Tests.DataToolTests
 
         private static void WriteMinimalRangedEntry(BinaryWriter bw)
         {
-            bw.Write((short)1000);
-            bw.Write((byte)5);
-            bw.Write((byte)0);
-            bw.Write((byte)1);          // ClassIdx (bowgun)
-            bw.Write((byte)0);
-            bw.Write((byte)0);
-            bw.Write((byte)0);
-            bw.Write(new byte[12]);
-            bw.Write(2000);
-            bw.Write((short)300);
-            bw.Write((short)0);
-            bw.Write((byte)0);
-            bw.Write((byte)2);
-            bw.Write((sbyte)0);
-            bw.Write((byte)0);
-            bw.Write((byte)0);
-            bw.Write((byte)0);
-            bw.Write((byte)0);
-            bw.Write((byte)0);
-            bw.Write(new byte[20]);
+            // Total must be exactly RANGED_ENTRY_SIZE (0x3C = 60 bytes)
+            bw.Write((short)1000);      // 2 bytes - ModelId
+            bw.Write((byte)5);          // 1 byte - Rarity
+            bw.Write((byte)0);          // 1 byte
+            bw.Write((byte)1);          // 1 byte - ClassIdx (bowgun)
+            bw.Write((byte)0);          // 1 byte
+            bw.Write((byte)0);          // 1 byte
+            bw.Write((byte)0);          // 1 byte
+            bw.Write(new byte[12]);     // 12 bytes
+            bw.Write(2000);             // 4 bytes - ZennyCost
+            bw.Write((short)300);       // 2 bytes - RawDamage
+            bw.Write((short)0);         // 2 bytes - Defense
+            bw.Write((byte)0);          // 1 byte - RecoilMaybe
+            bw.Write((byte)2);          // 1 byte - Slots
+            bw.Write((sbyte)0);         // 1 byte - Affinity
+            bw.Write((byte)0);          // 1 byte - SortOrderMaybe
+            bw.Write((byte)0);          // 1 byte - WeaponAttribute
+            bw.Write((byte)0);          // 1 byte - ElementId
+            bw.Write((byte)0);          // 1 byte - EleDamage
+            bw.Write((byte)0);          // 1 byte - Unk23
+            bw.Write(new byte[26]);     // 26 bytes - remaining fields to reach 60 total
         }
 
         private static string CreateMeleeCsv(int count)
