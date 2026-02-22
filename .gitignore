@@ -250,5 +250,8 @@ backup/
 csv/
 output/
 
+## Code coverage reports
+coverage/
+
 ## Testing configuration
 ReFrontier.Tests/TestFiles/*
