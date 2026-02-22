@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-02-22
+
 ### Added
 
 - **ReFrontier**: Wait for keypress before closing when launched via drag-and-drop on Windows (allows viewing output before window closes)
@@ -193,6 +195,7 @@ This is the first release of the Houmgaor fork, modernizing the original mhvuze/
 - FrontierTextTool for text extraction
 - FrontierDataTool for data structure extraction
 
+[2.1.0]: https://github.com/Houmgaor/ReFrontier/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/Houmgaor/ReFrontier/compare/v1.2.0...v2.0.0
 [1.2.0]: https://github.com/Houmgaor/ReFrontier/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/Houmgaor/ReFrontier/compare/v1.0.1...v1.1.0
