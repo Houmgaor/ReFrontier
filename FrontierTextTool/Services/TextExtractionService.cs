@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 
 using CsvHelper;
@@ -119,20 +120,20 @@ namespace FrontierTextTool.Services
 
                 string str = FileOperations.ReadNullterminatedString(brInput, TextFileConfiguration.ShiftJisEncoding);
 
+                if (trueOffsets)
+                {
+                    brInput.BaseStream.Seek(tmpPos, SeekOrigin.Begin);
+                }
+
+                if (string.IsNullOrEmpty(str) || !IsLikelyText(str))
+                    continue;
+
                 stringsDatabase.Add(new StringDatabase
                 {
                     Offset = (uint)offset,
                     Hash = Crypto.GetCrc32(TextFileConfiguration.ShiftJisEncoding.GetBytes(str)),
                     Original = str
                 });
-
-                if (trueOffsets)
-                {
-                    brInput.BaseStream.Seek(tmpPos, SeekOrigin.Begin);
-                }
-
-                if (string.IsNullOrEmpty(str))
-                    continue;
             }
 
             return stringsDatabase;
@@ -157,6 +158,39 @@ namespace FrontierTextTool.Services
             csvOutput.WriteHeader<StringDatabase>();
             csvOutput.NextRecord();
             csvOutput.WriteRecords(stringsDatabase);
+        }
+
+        /// <summary>
+        /// Determine whether a decoded string is likely real text rather than binary garbage.
+        /// Returns false for strings containing disallowed control characters, or strings
+        /// composed entirely of private-use, control, and space characters.
+        /// </summary>
+        internal static bool IsLikelyText(string str)
+        {
+            if (string.IsNullOrEmpty(str))
+                return false;
+
+            bool hasTextContent = false;
+
+            foreach (char c in str)
+            {
+                var category = char.GetUnicodeCategory(c);
+
+                // Reject any control character that isn't \n, \r, or \t
+                if (category == UnicodeCategory.Control && c != '\n' && c != '\r' && c != '\t')
+                    return false;
+
+                // Track whether the string has any actual text content
+                // (i.e. something other than private-use, control, or space chars)
+                if (category != UnicodeCategory.PrivateUse &&
+                    category != UnicodeCategory.Control &&
+                    category != UnicodeCategory.SpaceSeparator)
+                {
+                    hasTextContent = true;
+                }
+            }
+
+            return hasTextContent;
         }
     }
 

@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ReFrontier**: Wait for keypress before closing when launched via drag-and-drop on Windows (allows viewing output before window closes)
 - **ReFrontier**: Added deprecated `--file` option for backward compatibility with scripts using the old argument style
 
+### Fixed
+
+- **FrontierTextTool**: `--fulldump` now filters out garbage strings (empty strings, binary data decoded as control characters or private-use Unicode), reducing output by ~89% on typical game files
+
 ### Changed
 
 - **ReFrontier**: Renamed positional argument from `file` to `inputPath` for clarity (accepts both files and directories)

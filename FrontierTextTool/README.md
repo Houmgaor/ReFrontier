@@ -32,7 +32,7 @@ Output is automatically compressed and encrypted to `output/mhfdat.bin`.
 
 ### Extract Text
 
-**Full dump** (finds all text, may include some garbage):
+**Full dump** (finds all text, automatically filters garbage from binary data):
 ```shell
 ./FrontierTextTool mhfdat.bin --fulldump --trueOffsets --nullStrings
 ```

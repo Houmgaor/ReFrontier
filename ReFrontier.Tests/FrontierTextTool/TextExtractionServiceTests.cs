@@ -465,7 +465,7 @@ namespace ReFrontier.Tests.TextToolTests
         }
 
         [Fact]
-        public void DumpAndHashInternal_WithEmptyStringInSequence_ContinuesReading()
+        public void DumpAndHashInternal_WithEmptyStringInSequence_FiltersEmptyAndContinuesReading()
         {
             // Arrange - includes empty strings (just null bytes)
             byte[] data = TestDataFactory.CreateBinaryWithStrings("First", "", "Third");
@@ -476,11 +476,94 @@ namespace ReFrontier.Tests.TextToolTests
             // Act
             var result = _service.DumpAndHashInternal("test.bin", data, br, 0, 0, false, false);
 
-            // Assert - should have all three entries including empty
-            Assert.Equal(3, result.Count);
+            // Assert - empty strings are filtered out
+            Assert.Equal(2, result.Count);
             Assert.Equal("First", result[0].Original);
-            Assert.Equal("", result[1].Original);
-            Assert.Equal("Third", result[2].Original);
+            Assert.Equal("Third", result[1].Original);
+        }
+
+        [Fact]
+        public void DumpAndHashInternal_FiltersGarbageBinaryData()
+        {
+            // Arrange - mix of real text and garbage binary data separated by nulls
+            var shiftJis = Encoding.GetEncoding("shift-jis");
+            using var ms = new MemoryStream();
+
+            // Real text
+            ms.Write(shiftJis.GetBytes("こんにちは"));
+            ms.WriteByte(0);
+
+            // Garbage: control character \x08
+            ms.WriteByte(0x08);
+            ms.WriteByte(0);
+
+            // Real text
+            ms.Write(shiftJis.GetBytes("Hello"));
+            ms.WriteByte(0);
+
+            // Garbage: string ending with control char \x06
+            ms.Write(shiftJis.GetBytes("A"));
+            ms.WriteByte(0x06);
+            ms.WriteByte(0);
+
+            byte[] data = ms.ToArray();
+            using var readMs = new MemoryStream(data);
+            using var br = new BinaryReader(readMs);
+
+            // Act
+            var result = _service.DumpAndHashInternal("test.bin", data, br, 0, 0, false, false);
+
+            // Assert - only real text is extracted
+            Assert.Equal(2, result.Count);
+            Assert.Equal("こんにちは", result[0].Original);
+            Assert.Equal("Hello", result[1].Original);
+        }
+
+        #endregion
+
+        #region IsLikelyText Tests
+
+        [Theory]
+        [InlineData("こんにちは", true)]
+        [InlineData("Hello World", true)]
+        [InlineData("Line1\nLine2", true)]
+        [InlineData("Col1\tCol2", true)]
+        [InlineData("Line1\r\nLine2", true)]
+        [InlineData("", false)]
+        [InlineData("\x08", false)]
+        [InlineData("\x06", false)]
+        [InlineData("\x01", false)]
+        [InlineData("\x03", false)]
+        public void IsLikelyText_ClassifiesCorrectly(string input, bool expected)
+        {
+            Assert.Equal(expected, TextExtractionService.IsLikelyText(input));
+        }
+
+        [Fact]
+        public void IsLikelyText_RejectsStringEndingWithControlChar()
+        {
+            // "ｹ\x06" - half-width katakana followed by control char
+            Assert.False(TextExtractionService.IsLikelyText("ｹ\x06"));
+        }
+
+        [Fact]
+        public void IsLikelyText_RejectsPrivateUseOnly()
+        {
+            // U+F8F0 is in the private use area (from undefined Shift-JIS bytes)
+            Assert.False(TextExtractionService.IsLikelyText("\uF8F0"));
+        }
+
+        [Fact]
+        public void IsLikelyText_RejectsPrivateUseAndSpaceOnly()
+        {
+            Assert.False(TextExtractionService.IsLikelyText("\uF8F0 \uF8F1"));
+        }
+
+        [Fact]
+        public void IsLikelyText_AcceptsPrivateUseWithRealText()
+        {
+            // Private use char mixed with real text should pass
+            Assert.True(TextExtractionService.IsLikelyText("\uF8F0Hello"));
         }
 
         #endregion
