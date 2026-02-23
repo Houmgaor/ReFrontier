@@ -3,6 +3,8 @@ using System.IO;
 
 using LibReFrontier.Abstractions;
 
+using System.Collections.Generic;
+
 using ReFrontier.CLI;
 using ReFrontier.Jpk;
 using ReFrontier.Services;
@@ -88,6 +90,12 @@ namespace ReFrontier.Orchestration
                 return 1;
             }
 
+            // Validation mode: check integrity without extracting
+            if (args.Validate)
+            {
+                return ExecuteValidation(args);
+            }
+
             // Resolve parallelism value (0 = auto-detect)
             int effectiveParallelism = args.Parallelism == 0
                 ? Environment.ProcessorCount
@@ -136,6 +144,32 @@ namespace ReFrontier.Orchestration
 
             // Print summary
             PrintSummary(stats);
+            return 0;
+        }
+
+        /// <summary>
+        /// Execute validation mode for a file or directory.
+        /// </summary>
+        private int ExecuteValidation(CliArguments args)
+        {
+            var validationService = new FileValidationService(_logger, new DefaultCodecFactory());
+
+            if (_fileSystem.DirectoryExists(args.FilePath))
+            {
+                var files = Directory.GetFiles(args.FilePath);
+                var results = new List<Services.ValidationResult>();
+                foreach (var file in files)
+                {
+                    results.Add(validationService.Validate(file));
+                }
+                validationService.PrintSummary(results);
+            }
+            else
+            {
+                var result = validationService.Validate(args.FilePath);
+                validationService.PrintResult(result);
+            }
+
             return 0;
         }
 

@@ -29,5 +29,10 @@ namespace ReFrontier.CLI
         /// Whether to show per-file processing messages.
         /// </summary>
         public bool Verbose { get; init; }
+
+        /// <summary>
+        /// Whether to validate file integrity without extracting.
+        /// </summary>
+        public bool Validate { get; init; }
     }
 }
