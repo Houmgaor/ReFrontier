@@ -34,5 +34,10 @@ namespace ReFrontier.CLI
         /// Whether to validate file integrity without extracting.
         /// </summary>
         public bool Validate { get; init; }
+
+        /// <summary>
+        /// Path to a second file for structural diff comparison.
+        /// </summary>
+        public string? DiffPath { get; init; }
     }
 }

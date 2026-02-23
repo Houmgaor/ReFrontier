@@ -90,6 +90,12 @@ namespace ReFrontier.Orchestration
                 return 1;
             }
 
+            // Diff mode: compare two files structurally
+            if (args.DiffPath != null)
+            {
+                return ExecuteDiff(args);
+            }
+
             // Validation mode: check integrity without extracting
             if (args.Validate)
             {
@@ -145,6 +151,23 @@ namespace ReFrontier.Orchestration
             // Print summary
             PrintSummary(stats);
             return 0;
+        }
+
+        /// <summary>
+        /// Execute diff mode: compare two files structurally.
+        /// </summary>
+        private int ExecuteDiff(CliArguments args)
+        {
+            if (!_fileSystem.FileExists(args.DiffPath!))
+            {
+                _logger.WriteLine($"Error: '{args.DiffPath}' does not exist.");
+                return 1;
+            }
+
+            var diffService = new Services.FileDiffService(_logger, new DefaultCodecFactory());
+            var result = diffService.Compare(args.FilePath, args.DiffPath!);
+            diffService.PrintResult(result);
+            return result.AreIdentical ? 0 : 1;
         }
 
         /// <summary>

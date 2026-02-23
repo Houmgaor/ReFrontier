@@ -27,6 +27,7 @@ namespace ReFrontier.CLI
         private readonly Option<bool> _quietOption;
         private readonly Option<bool> _verboseOption;
         private readonly Option<bool> _validateOption;
+        private readonly Option<string?> _diffOption;
 
         /// <summary>
         /// Creates a new CliSchema instance and initializes all CLI options.
@@ -129,6 +130,11 @@ namespace ReFrontier.CLI
             {
                 Description = "Validate file integrity without extracting (checks CRC32, structure, bounds)"
             };
+
+            _diffOption = new Option<string?>("--diff")
+            {
+                Description = "Compare structurally against another file"
+            };
         }
 
         /// <summary>
@@ -159,7 +165,8 @@ namespace ReFrontier.CLI
                 _parallelismOption,
                 _quietOption,
                 _verboseOption,
-                _validateOption
+                _validateOption,
+                _diffOption
             };
 
             return rootCommand;
@@ -210,6 +217,7 @@ namespace ReFrontier.CLI
             var quiet = parseResult.GetValue(_quietOption);
             var verbose = parseResult.GetValue(_verboseOption);
             var validate = parseResult.GetValue(_validateOption);
+            var diffPath = parseResult.GetValue(_diffOption);
 
             // Parse compression if specified
             Compression compression = new();
@@ -247,7 +255,8 @@ namespace ReFrontier.CLI
                 Parallelism = parallelism,
                 Quiet = quiet,
                 Verbose = verbose,
-                Validate = validate
+                Validate = validate,
+                DiffPath = diffPath
             };
         }
     }
