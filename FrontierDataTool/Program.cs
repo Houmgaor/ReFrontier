@@ -105,6 +105,11 @@ namespace FrontierDataTool
                 Description = "Output CSV files in Shift-JIS encoding (default: UTF-8 with BOM)"
             };
 
+            Option<bool> jsonOption = new("--json")
+            {
+                Description = "Output JSON files instead of CSV"
+            };
+
             // Root command
             RootCommand rootCommand = new("FrontierDataTool - Extract and edit Monster Hunter Frontier game data")
             {
@@ -117,7 +122,8 @@ namespace FrontierDataTool
                 mhfinfOption,
                 csvOption,
                 closeOption,
-                shiftJisOption
+                shiftJisOption,
+                jsonOption
             };
 
             // Set handler
@@ -133,9 +139,12 @@ namespace FrontierDataTool
                 var csv = parseResult.GetValue(csvOption);
                 var close = parseResult.GetValue(closeOption);
                 var shiftJis = parseResult.GetValue(shiftJisOption);
+                var json = parseResult.GetValue(jsonOption);
 
                 // Configure encoding options
                 var encodingOptions = shiftJis ? CsvEncodingOptions.ShiftJis : CsvEncodingOptions.Default;
+                if (json)
+                    encodingOptions.Format = LibReFrontier.OutputFormat.Json;
                 program.UpdateExtractionServiceWithEncoding(encodingOptions);
 
                 // Count how many actions are specified

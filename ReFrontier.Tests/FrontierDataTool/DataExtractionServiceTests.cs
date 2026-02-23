@@ -283,6 +283,83 @@ namespace ReFrontier.Tests.DataToolTests
 
         #endregion
 
+        #region JSON Output Tests
+
+        [Fact]
+        public void DumpWeaponData_Json_CreatesJsonFiles()
+        {
+            // Arrange
+            var jsonOptions = new LibReFrontier.CsvEncodingOptions { Format = LibReFrontier.OutputFormat.Json };
+            var jsonService = new DataExtractionService(_fileSystem, _logger, jsonOptions);
+            byte[] mhfdat = CreateMhfdatWithWeaponData(meleeCount: 2, rangedCount: 2);
+            _fileSystem.AddFile("/test/mhfdat.bin", mhfdat);
+
+            // Act
+            jsonService.DumpWeaponData("/test/mhfdat.bin");
+
+            // Assert
+            Assert.True(_fileSystem.FileExists("Melee.json"));
+            Assert.True(_fileSystem.FileExists("Ranged.json"));
+            Assert.False(_fileSystem.FileExists("Melee.csv"));
+            Assert.False(_fileSystem.FileExists("Ranged.csv"));
+        }
+
+        [Fact]
+        public void DumpQuestData_Json_CreatesJsonFile()
+        {
+            // Arrange
+            var jsonOptions = new LibReFrontier.CsvEncodingOptions { Format = LibReFrontier.OutputFormat.Json };
+            var jsonService = new DataExtractionService(_fileSystem, _logger, jsonOptions);
+            byte[] mhfinf = CreateMhfinfWithQuestData();
+            _fileSystem.AddFile("/test/mhfinf.bin", mhfinf);
+
+            // Act
+            jsonService.DumpQuestData("/test/mhfinf.bin");
+
+            // Assert
+            Assert.True(_fileSystem.FileExists("InfQuests.json"));
+            Assert.False(_fileSystem.FileExists("InfQuests.csv"));
+        }
+
+        [Fact]
+        public void DumpEquipmentData_Json_CreatesJsonFile()
+        {
+            // Arrange
+            var jsonOptions = new LibReFrontier.CsvEncodingOptions { Format = LibReFrontier.OutputFormat.Json };
+            var jsonService = new DataExtractionService(_fileSystem, _logger, jsonOptions);
+            byte[] mhfdat = CreateMhfdatWithArmorData(2);
+            var skillId = new List<KeyValuePair<int, string>>();
+            _fileSystem.AddFile("/test/mhfdat.bin", mhfdat);
+
+            // Act
+            jsonService.DumpEquipmentData("/test/mhfdat.bin", "test", skillId);
+
+            // Assert
+            Assert.True(_fileSystem.FileExists("Armor.json"));
+            Assert.False(_fileSystem.FileExists("Armor.csv"));
+        }
+
+        [Fact]
+        public void DumpWeaponData_Json_OutputContainsValidJson()
+        {
+            // Arrange
+            var jsonOptions = new LibReFrontier.CsvEncodingOptions { Format = LibReFrontier.OutputFormat.Json };
+            var jsonService = new DataExtractionService(_fileSystem, _logger, jsonOptions);
+            byte[] mhfdat = CreateMhfdatWithWeaponData(meleeCount: 2, rangedCount: 1);
+            _fileSystem.AddFile("/test/mhfdat.bin", mhfdat);
+
+            // Act
+            jsonService.DumpWeaponData("/test/mhfdat.bin");
+
+            // Assert - verify output is valid JSON
+            string jsonContent = Encoding.UTF8.GetString(_fileSystem.ReadAllBytes("Melee.json"));
+            var doc = System.Text.Json.JsonDocument.Parse(jsonContent);
+            Assert.Equal(System.Text.Json.JsonValueKind.Array, doc.RootElement.ValueKind);
+            Assert.Equal(2, doc.RootElement.GetArrayLength());
+        }
+
+        #endregion
+
         #region DumpEquipmentData Tests
 
         [Fact]

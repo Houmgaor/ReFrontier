@@ -19,6 +19,10 @@ namespace FrontierDataTool.Services
     /// </summary>
     public class DataImportService
     {
+        /// <summary>
+        /// Size of each quest entry in the binary file.
+        /// </summary>
+        internal const int QUEST_ENTRY_SIZE = 0x128;
         private readonly IFileSystem _fileSystem;
         private readonly ILogger _logger;
         private readonly BinaryReaderService _binaryReader;
@@ -292,8 +296,8 @@ namespace FrontierDataTool.Services
 
         /// <summary>
         /// Import quest data from CSV back into mhfinf.bin.
-        /// Note: Quest string fields (Title, TextMain, TextSubA, TextSubB) are READ-ONLY
-        /// and cannot be modified - they live in a separate string table.
+        /// Quest string fields (Title, TextMain, TextSubA, TextSubB) are reimported when
+        /// pointer offset fields are present in the CSV (from a recent export).
         /// </summary>
         /// <param name="mhfinf">Path to mhfinf.bin.</param>
         /// <param name="csvPath">Path to InfQuests.csv.</param>
@@ -332,9 +336,10 @@ namespace FrontierDataTool.Services
                 return;
             }
 
-            // Load mhfinf.bin
+            // Load mhfinf.bin into a resizable stream
             byte[] mhfinfData = _fileSystem.ReadAllBytes(mhfinf);
-            using var ms = new MemoryStream(mhfinfData);
+            using var ms = new MemoryStream();
+            ms.Write(mhfinfData, 0, mhfinfData.Length);
             using var bw = new BinaryWriter(ms);
 
             int currentEntry = 0;
@@ -352,17 +357,74 @@ namespace FrontierDataTool.Services
                     currentEntry++;
 
                     // Skip to next entry (0x128 bytes per entry based on read structure)
-                    // The read advances: header + monetary + unknowns + goals + 0x5C skip + GRP + 0x90 skip + 4 pointers + 0x10 skip
-                    // Total read: 12 + 24 + 4 + 8 + 24 + 0x5C + 12 + 0x90 + 16 + 0x10 = 0x128
-                    bw.BaseStream.Seek(entryStart + 0x128, SeekOrigin.Begin);
+                    bw.BaseStream.Seek(entryStart + QUEST_ENTRY_SIZE, SeekOrigin.Begin);
                 }
+            }
+
+            // Build and append string table for quest text
+            bool hasPointerOffsets = questEntries.Exists(e => e.TitlePtrFileOffset != 0);
+
+            if (hasPointerOffsets)
+            {
+                // Append new string table at end of file
+                int stringTableBase = (int)ms.Length;
+                ms.Seek(0, SeekOrigin.End);
+
+                var stringOffsets = new List<(long ptrFileOffset, int stringFileOffset)>();
+
+                foreach (var entry in questEntries)
+                {
+                    if (entry.TitlePtrFileOffset != 0)
+                    {
+                        byte[] encoded = BinaryReaderService.EncodeStringToShiftJis(entry.Title);
+                        int offset = (int)ms.Position;
+                        bw.Write(encoded);
+                        stringOffsets.Add((entry.TitlePtrFileOffset, offset));
+                    }
+
+                    if (entry.TextMainPtrFileOffset != 0)
+                    {
+                        byte[] encoded = BinaryReaderService.EncodeStringToShiftJis(entry.TextMain);
+                        int offset = (int)ms.Position;
+                        bw.Write(encoded);
+                        stringOffsets.Add((entry.TextMainPtrFileOffset, offset));
+                    }
+
+                    if (entry.TextSubAPtrFileOffset != 0)
+                    {
+                        byte[] encoded = BinaryReaderService.EncodeStringToShiftJis(entry.TextSubA);
+                        int offset = (int)ms.Position;
+                        bw.Write(encoded);
+                        stringOffsets.Add((entry.TextSubAPtrFileOffset, offset));
+                    }
+
+                    if (entry.TextSubBPtrFileOffset != 0)
+                    {
+                        byte[] encoded = BinaryReaderService.EncodeStringToShiftJis(entry.TextSubB);
+                        int offset = (int)ms.Position;
+                        bw.Write(encoded);
+                        stringOffsets.Add((entry.TextSubBPtrFileOffset, offset));
+                    }
+                }
+
+                // Update pointer fields to point to new strings
+                foreach (var (ptrFileOffset, stringFileOffset) in stringOffsets)
+                {
+                    ms.Seek(ptrFileOffset, SeekOrigin.Begin);
+                    bw.Write(stringFileOffset);
+                }
+
+                _logger.WriteLine($"Appended string table at 0x{stringTableBase:X8} ({stringOffsets.Count} strings, {ms.Length - stringTableBase} bytes).");
+            }
+            else
+            {
+                _logger.WriteLine("No pointer offsets found in CSV; quest text was not modified (use a recent export to include pointer offsets).");
             }
 
             _fileSystem.CreateDirectory("output");
             string outputPath = Path.Combine("output", "mhfinf.bin");
-            _fileSystem.WriteAllBytes(outputPath, mhfinfData);
+            _fileSystem.WriteAllBytes(outputPath, ms.ToArray());
             _logger.WriteLine($"Wrote modified quest data to {outputPath}");
-            _logger.WriteLine("Note: Quest string fields (Title, TextMain, TextSubA, TextSubB) are read-only and were not modified.");
         }
 
         /// <summary>

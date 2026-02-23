@@ -959,5 +959,92 @@ namespace ReFrontier.Tests.DataToolTests
         }
 
         #endregion
+
+        #region ReadQuestEntry Pointer Offset Tests
+
+        [Fact]
+        public void ReadQuestEntry_RecordsPointerOffsets()
+        {
+            byte[] data = CreateQuestEntryBytes();
+
+            using var ms = new MemoryStream(data);
+            using var br = new BinaryReader(ms);
+
+            var entry = _service.ReadQuestEntry(br);
+
+            // String pointers start at: 12 + 24 + 4 + 4 + 2 + 2 + 24 + 0x5C + 12 + 0x90 = 0x140
+            int expectedStringPointerStart = 0x140;
+            Assert.Equal(expectedStringPointerStart, entry.TitlePtrFileOffset);
+            Assert.Equal(expectedStringPointerStart + 4, entry.TextMainPtrFileOffset);
+            Assert.Equal(expectedStringPointerStart + 8, entry.TextSubAPtrFileOffset);
+            Assert.Equal(expectedStringPointerStart + 12, entry.TextSubBPtrFileOffset);
+        }
+
+        #endregion
+
+        #region EncodeStringToShiftJis Tests
+
+        [Fact]
+        public void EncodeStringToShiftJis_NullReturnsNullTerminator()
+        {
+            byte[] result = BinaryReaderService.EncodeStringToShiftJis(null);
+            Assert.Single(result);
+            Assert.Equal(0, result[0]);
+        }
+
+        [Fact]
+        public void EncodeStringToShiftJis_EmptyReturnsNullTerminator()
+        {
+            byte[] result = BinaryReaderService.EncodeStringToShiftJis("");
+            Assert.Single(result);
+            Assert.Equal(0, result[0]);
+        }
+
+        [Fact]
+        public void EncodeStringToShiftJis_EncodesJapaneseText()
+        {
+            byte[] result = BinaryReaderService.EncodeStringToShiftJis("テスト");
+            byte[] expected = Encoding.GetEncoding("shift-jis").GetBytes("テスト");
+            Assert.Equal(expected.Length + 1, result.Length);
+            Assert.Equal(0, result[^1]); // Null terminator
+        }
+
+        [Fact]
+        public void EncodeStringToShiftJis_ReversesEscaping()
+        {
+            // StringFromPointer escapes \n to \\n, this should reverse it
+            byte[] result = BinaryReaderService.EncodeStringToShiftJis("Line1\\nLine2");
+            byte[] expected = Encoding.GetEncoding("shift-jis").GetBytes("Line1\nLine2");
+            Assert.Equal(expected.Length + 1, result.Length);
+            for (int i = 0; i < expected.Length; i++)
+                Assert.Equal(expected[i], result[i]);
+        }
+
+        [Fact]
+        public void EncodeStringToShiftJis_RoundTrips()
+        {
+            // Create data with pointer to string
+            string testString = "テスト\\n改行\\tタブ";
+            byte[] stringBytes = Encoding.GetEncoding("shift-jis").GetBytes("テスト\n改行\tタブ");
+
+            using var ms = new MemoryStream();
+            using var bw = new BinaryWriter(ms);
+            bw.Write(4); // Pointer
+            bw.Write(stringBytes);
+            bw.Write((byte)0);
+
+            ms.Position = 0;
+            using var br = new BinaryReader(ms);
+            string read = _service.StringFromPointer(br);
+            Assert.Equal(testString, read);
+
+            // Encode back
+            byte[] encoded = BinaryReaderService.EncodeStringToShiftJis(read);
+            Assert.Equal(stringBytes.Length + 1, encoded.Length);
+            for (int i = 0; i < stringBytes.Length; i++)
+                Assert.Equal(stringBytes[i], encoded[i]);
+        }
+
+        #endregion
     }
 }

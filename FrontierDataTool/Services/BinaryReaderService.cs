@@ -301,9 +301,13 @@ namespace FrontierDataTool.Services
             entry.SubBGRP = br.ReadInt32();
 
             br.BaseStream.Seek(0x90, SeekOrigin.Current);
+            entry.TitlePtrFileOffset = br.BaseStream.Position;
             entry.Title = StringFromPointer(br);
+            entry.TextMainPtrFileOffset = br.BaseStream.Position;
             entry.TextMain = StringFromPointer(br);
+            entry.TextSubAPtrFileOffset = br.BaseStream.Position;
             entry.TextSubA = StringFromPointer(br);
+            entry.TextSubBPtrFileOffset = br.BaseStream.Position;
             entry.TextSubB = StringFromPointer(br);
             br.BaseStream.Seek(0x10, SeekOrigin.Current);
 
@@ -535,8 +539,8 @@ namespace FrontierDataTool.Services
 
         /// <summary>
         /// Write quest entry numeric fields to the binary stream.
-        /// Note: String fields (Title, TextMain, TextSubA, TextSubB) are READ-ONLY
-        /// and cannot be modified - they live in a separate string table.
+        /// String fields (Title, TextMain, TextSubA, TextSubB) are handled separately
+        /// via string table append in DataImportService.
         /// </summary>
         /// <param name="bw">Binary writer positioned at the entry offset.</param>
         /// <param name="entry">Quest entry to write.</param>
@@ -644,6 +648,31 @@ namespace FrontierDataTool.Services
                 return 0;
             int index = Array.IndexOf(WeaponClassIds, name);
             return index >= 0 ? (byte)index : (byte)0;
+        }
+
+        /// <summary>
+        /// Encode a string to Shift-JIS bytes with null terminator.
+        /// Reverses the escaping done by StringFromPointer.
+        /// </summary>
+        /// <param name="str">String to encode (may contain escape sequences).</param>
+        /// <returns>Shift-JIS encoded bytes with null terminator.</returns>
+        public static byte[] EncodeStringToShiftJis(string? str)
+        {
+            if (string.IsNullOrEmpty(str))
+                return new byte[] { 0 };
+
+            // Reverse the escaping from StringFromPointer
+            string unescaped = str
+                .Replace("\\r\\n", "\r\n")
+                .Replace("\\n", "\n")
+                .Replace("\\t", "\t")
+                .Replace("\\\\", "\\");
+
+            byte[] encoded = Encoding.GetEncoding("shift-jis").GetBytes(unescaped);
+            byte[] result = new byte[encoded.Length + 1];
+            Array.Copy(encoded, result, encoded.Length);
+            // Last byte is already 0 from array initialization
+            return result;
         }
 
         /// <summary>

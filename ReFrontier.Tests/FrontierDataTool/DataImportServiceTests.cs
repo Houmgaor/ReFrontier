@@ -272,12 +272,13 @@ namespace ReFrontier.Tests.DataToolTests
         }
 
         [Fact]
-        public void ImportQuestDataInternal_LogsReadOnlyNote()
+        public void ImportQuestDataInternal_LogsNoPointerOffsetsWarning()
         {
             // Arrange - need to create exactly the right number of quest entries
+            // CSV has all pointer offsets = 0 (no pointer data)
             int totalCount = FrontierDataTool.MhfDataOffsets.MhfInf.TotalQuestCount;
             byte[] mhfinf = new byte[0x200000];
-            string csv = CreateQuestCsv(totalCount);
+            string csv = CreateQuestCsv(totalCount, withPointerOffsets: false);
 
             _fileSystem.AddFile("/test/mhfinf.bin", mhfinf);
             _fileSystem.AddFile("/test/InfQuests.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
@@ -287,7 +288,30 @@ namespace ReFrontier.Tests.DataToolTests
 
             // Assert
             Assert.True(_fileSystem.FileExists("output/mhfinf.bin"));
-            Assert.True(_logger.ContainsMessage("read-only"));
+            Assert.True(_logger.ContainsMessage("No pointer offsets found"));
+        }
+
+        [Fact]
+        public void ImportQuestDataInternal_WithPointerOffsets_AppendsStringTable()
+        {
+            // Arrange
+            int totalCount = FrontierDataTool.MhfDataOffsets.MhfInf.TotalQuestCount;
+            byte[] mhfinf = new byte[0x200000];
+            string csv = CreateQuestCsv(totalCount, withPointerOffsets: true);
+
+            _fileSystem.AddFile("/test/mhfinf.bin", mhfinf);
+            _fileSystem.AddFile("/test/InfQuests.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+
+            // Act
+            _service.ImportQuestDataInternal("/test/mhfinf.bin", "/test/InfQuests.csv");
+
+            // Assert
+            Assert.True(_fileSystem.FileExists("output/mhfinf.bin"));
+            Assert.True(_logger.ContainsMessage("Appended string table"));
+
+            // Output should be larger than input (string table appended)
+            byte[] output = _fileSystem.ReadAllBytes("output/mhfinf.bin");
+            Assert.True(output.Length > mhfinf.Length);
         }
 
         #endregion
@@ -788,14 +812,19 @@ namespace ReFrontier.Tests.DataToolTests
             return sb.ToString();
         }
 
-        private static string CreateQuestCsv(int count)
+        private static string CreateQuestCsv(int count, bool withPointerOffsets = false)
         {
             var sb = new StringBuilder();
-            sb.AppendLine("Title,TextMain,TextSubA,TextSubB,Unk1,Unk2,Unk3,Unk4,Level,Unk5,CourseType,Unk7,Unk8,Unk9,Unk10,MaxPlayers,Fee,ZennyMain,ZennyKo,ZennySubA,ZennySubB,Time,MapId,QuestStringPtr,QuestRestrictions,QuestId,MainGoalType,MainGoalTarget,MainGoalCount,SubAGoalType,SubAGoalTarget,SubAGoalCount,SubBGoalType,SubBGoalTarget,SubBGoalCount,MainGRP,SubAGRP,SubBGRP");
+            sb.AppendLine("Title,TextMain,TextSubA,TextSubB,TitlePtrFileOffset,TextMainPtrFileOffset,TextSubAPtrFileOffset,TextSubBPtrFileOffset,Unk1,Unk2,Unk3,Unk4,Level,Unk5,CourseType,Unk7,Unk8,Unk9,Unk10,MaxPlayers,Fee,ZennyMain,ZennyKo,ZennySubA,ZennySubB,Time,MapId,QuestStringPtr,QuestRestrictions,QuestId,MainGoalType,MainGoalTarget,MainGoalCount,SubAGoalType,SubAGoalTarget,SubAGoalCount,SubBGoalType,SubBGoalTarget,SubBGoalCount,MainGRP,SubAGRP,SubBGRP");
 
             for (int i = 0; i < count; i++)
             {
-                sb.AppendLine($"TestQuest{i},MainText{i},SubA{i},SubB{i},0,0,0,0,5,0,6,0,0,0,0,4,500,1000,500,200,200,3000,1,0,0,{i + 1},Hunt,{i + 1},1,Delivery,100,5,None,0,0,100,50,50");
+                // Pointer offsets: use non-zero values when requested (simulates recent export)
+                int titleOff = withPointerOffsets ? 0x100 + i * 0x128 : 0;
+                int mainOff = withPointerOffsets ? 0x104 + i * 0x128 : 0;
+                int subAOff = withPointerOffsets ? 0x108 + i * 0x128 : 0;
+                int subBOff = withPointerOffsets ? 0x10C + i * 0x128 : 0;
+                sb.AppendLine($"TestQuest{i},MainText{i},SubA{i},SubB{i},{titleOff},{mainOff},{subAOff},{subBOff},0,0,0,0,5,0,6,0,0,0,0,4,500,1000,500,200,200,3000,1,0,0,{i + 1},Hunt,{i + 1},1,Delivery,100,5,None,0,0,100,50,50");
             }
 
             return sb.ToString();

@@ -10,6 +10,26 @@ namespace FrontierDataTool.Structs
         public string? TextSubA { get; set; }
         public string? TextSubB { get; set; }
 
+        /// <summary>
+        /// File offset of the Title string pointer (for reimport).
+        /// </summary>
+        public long TitlePtrFileOffset { get; set; }
+
+        /// <summary>
+        /// File offset of the TextMain string pointer (for reimport).
+        /// </summary>
+        public long TextMainPtrFileOffset { get; set; }
+
+        /// <summary>
+        /// File offset of the TextSubA string pointer (for reimport).
+        /// </summary>
+        public long TextSubAPtrFileOffset { get; set; }
+
+        /// <summary>
+        /// File offset of the TextSubB string pointer (for reimport).
+        /// </summary>
+        public long TextSubBPtrFileOffset { get; set; }
+
         // First 11 bytes - partially identified
         public byte Unk1 { get; set; }
         public byte Unk2 { get; set; }

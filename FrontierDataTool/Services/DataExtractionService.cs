@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Text.Json;
 
 using CsvHelper;
 
@@ -89,6 +90,22 @@ namespace FrontierDataTool.Services
             using var file = _fileSystem.CreateStreamWriter(fileName, false, Encoding.UTF8);
             foreach (string entry in strings)
                 file.WriteLine("{0}", entry);
+        }
+
+        private static readonly JsonSerializerOptions s_jsonOptions = new() { WriteIndented = true };
+        private static readonly Encoding s_utf8NoBom = new UTF8Encoding(false);
+
+        /// <summary>
+        /// Write a collection of records as indented JSON.
+        /// </summary>
+        /// <typeparam name="T">Record type.</typeparam>
+        /// <param name="filePath">Output file path.</param>
+        /// <param name="records">Records to serialize.</param>
+        private void WriteJsonFile<T>(string filePath, IEnumerable<T> records)
+        {
+            string json = JsonSerializer.Serialize(records, s_jsonOptions);
+            using var writer = _fileSystem.CreateStreamWriter(filePath, false, s_utf8NoBom);
+            writer.Write(json);
         }
 
         #endregion
@@ -256,9 +273,14 @@ namespace FrontierDataTool.Services
                 currentCount += entryCount;
             }
 
-            // Write armor CSV
-            using (var textWriter = _fileSystem.CreateStreamWriter("Armor.csv", false, _encodingOptions.GetOutputEncoding()))
+            // Write armor data
+            if (_encodingOptions.Format == OutputFormat.Json)
             {
+                WriteJsonFile("Armor.json", armorEntries);
+            }
+            else
+            {
+                using var textWriter = _fileSystem.CreateStreamWriter("Armor.csv", false, _encodingOptions.GetOutputEncoding());
                 var writer = new CsvWriter(textWriter, TextFileConfiguration.CreateJapaneseCsvConfig());
                 writer.WriteRecords(armorEntries);
             }
@@ -303,9 +325,14 @@ namespace FrontierDataTool.Services
                 meleeEntries[j].Name = _binaryReader.StringFromPointer(brInput);
             }
 
-            // Write melee CSV
-            using (var textWriter = _fileSystem.CreateStreamWriter("Melee.csv", false, _encodingOptions.GetOutputEncoding()))
+            // Write melee data
+            if (_encodingOptions.Format == OutputFormat.Json)
             {
+                WriteJsonFile("Melee.json", meleeEntries);
+            }
+            else
+            {
+                using var textWriter = _fileSystem.CreateStreamWriter("Melee.csv", false, _encodingOptions.GetOutputEncoding());
                 var writer = new CsvWriter(textWriter, TextFileConfiguration.CreateJapaneseCsvConfig());
                 writer.WriteRecords(meleeEntries);
             }
@@ -335,9 +362,14 @@ namespace FrontierDataTool.Services
                 rangedEntries[j].Name = _binaryReader.StringFromPointer(brInput);
             }
 
-            // Write ranged CSV
-            using (var textWriter = _fileSystem.CreateStreamWriter("Ranged.csv", false, _encodingOptions.GetOutputEncoding()))
+            // Write ranged data
+            if (_encodingOptions.Format == OutputFormat.Json)
             {
+                WriteJsonFile("Ranged.json", rangedEntries);
+            }
+            else
+            {
+                using var textWriter = _fileSystem.CreateStreamWriter("Ranged.csv", false, _encodingOptions.GetOutputEncoding());
                 var writer = new CsvWriter(textWriter, TextFileConfiguration.CreateJapaneseCsvConfig());
                 writer.WriteRecords(rangedEntries);
             }
@@ -367,10 +399,17 @@ namespace FrontierDataTool.Services
                 currentCount += section.Count;
             }
 
-            // Write CSV
-            using var textWriter = _fileSystem.CreateStreamWriter("InfQuests.csv", false, _encodingOptions.GetOutputEncoding());
-            var writer = new CsvWriter(textWriter, TextFileConfiguration.CreateJapaneseCsvConfig());
-            writer.WriteRecords(quests);
+            // Write output
+            if (_encodingOptions.Format == OutputFormat.Json)
+            {
+                WriteJsonFile("InfQuests.json", quests);
+            }
+            else
+            {
+                using var textWriter = _fileSystem.CreateStreamWriter("InfQuests.csv", false, _encodingOptions.GetOutputEncoding());
+                var writer = new CsvWriter(textWriter, TextFileConfiguration.CreateJapaneseCsvConfig());
+                writer.WriteRecords(quests);
+            }
         }
     }
 }

@@ -3,6 +3,17 @@ using System.Text;
 namespace LibReFrontier;
 
 /// <summary>
+/// Output format for data extraction.
+/// </summary>
+public enum OutputFormat
+{
+    /// <summary>CSV output (default).</summary>
+    Csv,
+    /// <summary>JSON output.</summary>
+    Json
+}
+
+/// <summary>
 /// Options for CSV file encoding.
 /// By default, CSV files are written in UTF-8 with BOM for easier editing.
 /// Game binary files always use Shift-JIS.
@@ -14,6 +25,11 @@ public class CsvEncodingOptions
     /// If false (default), output in UTF-8 with BOM.
     /// </summary>
     public bool UseShiftJisOutput { get; set; } = false;
+
+    /// <summary>
+    /// Output format (CSV or JSON).
+    /// </summary>
+    public OutputFormat Format { get; set; } = OutputFormat.Csv;
 
     /// <summary>
     /// Get the encoding to use for CSV output based on current settings.
