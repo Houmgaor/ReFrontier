@@ -6,8 +6,8 @@
     <AssemblyTitle>LibReFrontier</AssemblyTitle>
     <Product>LibReFrontier</Product>
     <Copyright>Copyright ©  2019</Copyright>
-    <Version>2.1.0</Version>
-    <FileVersion>2.1.0</FileVersion>
+    <Version>2.2.0</Version>
+    <FileVersion>2.2.0</FileVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CsvHelper" Version="33.0.1" />

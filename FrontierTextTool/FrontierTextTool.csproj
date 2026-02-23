@@ -9,8 +9,8 @@
     <Product>FrontierTextTool</Product>
     <Description>Extract and edit Monster Hunter Frontier game texts</Description>
     <Copyright>Copyright ©  2019</Copyright>
-    <Version>2.1.0</Version>
-    <FileVersion>2.1.0</FileVersion>
+    <Version>2.2.0</Version>
+    <FileVersion>2.2.0</FileVersion>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <Authors>Vuze</Authors>
     <RepositoryUrl>https://github.com/Houmgaor/ReFrontier</RepositoryUrl>
