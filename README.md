@@ -24,6 +24,8 @@ Key features:
 - **Reliability**: Fixed duplicate filename issues
 - **Security**: Removed memory-unsafe code and outdated libraries
 - **Text tools**: Improved CSV parsing and cleaner fulldump output
+- **Validation**: Non-destructive integrity checking of game files (`--validate`)
+- **Diff**: Structural comparison of two game files through encryption/compression layers (`--diff`)
 
 ## Installation
 
@@ -67,6 +69,8 @@ For detailed command reference, see [ReFrontier/README.md](./ReFrontier/README.m
 | `--help` | Display CLI help |
 | `--saveMeta` | Save metadata files (required for repacking/re-encryption) |
 | `--cleanUp` | Delete intermediate files |
+| `--validate` | Check file integrity without writing output |
+| `--diff <file>` | Structural comparison with another file |
 
 ### Decryption
 
@@ -146,6 +150,26 @@ FTXT text files can be extracted and repacked:
 # Edit the generated .txt file, then repack
 ./ReFrontier text.ftxt.txt --pack
 ```
+
+### Validation
+
+Check the structural integrity of a game file without writing any output:
+
+```shell
+./ReFrontier mhfdat.bin --validate
+```
+
+Recursively validates encryption, compression, and archive layers (ECD, EXF, JPK, MOMO, MHA, FTXT) with CRC32 verification and bounds checking.
+
+### Diff
+
+Compare two game files structurally, peeling through encryption and compression layers:
+
+```shell
+./ReFrontier original.bin --diff modified.bin
+```
+
+Useful for verifying round-trip correctness (unpack, edit, repack), comparing game versions, or catching regressions. Exit code 0 means identical, 1 means differences found.
 
 ## Build
 
