@@ -376,6 +376,123 @@ namespace FrontierDataTool.Services
         }
 
         /// <summary>
+        /// Dump rengoku (Hunting Road) data from rengoku_data.bin.
+        /// Auto-preprocesses (decrypts + decompresses) the input file.
+        /// Outputs RengokuFloors.csv/.json and RengokuSpawns.csv/.json.
+        /// </summary>
+        /// <param name="rengokuPath">Path to rengoku_data.bin.</param>
+        public void DumpRengokuData(string rengokuPath)
+        {
+            var preprocessor = new FilePreprocessor();
+            var (processedPath, cleanup) = preprocessor.AutoPreprocess(rengokuPath, createMetaFile: true);
+
+            try
+            {
+                DumpRengokuDataInternal(processedPath);
+            }
+            finally
+            {
+                cleanup();
+            }
+        }
+
+        /// <summary>
+        /// Internal implementation of DumpRengokuData that works on a preprocessed file.
+        /// </summary>
+        public void DumpRengokuDataInternal(string rengokuPath)
+        {
+            byte[] data = _fileSystem.ReadAllBytes(rengokuPath);
+            using var ms = new MemoryStream(data);
+            using var br = new BinaryReader(ms);
+
+            _logger.WriteLine($"Rengoku file size: {data.Length} bytes (0x{data.Length:X})");
+
+            var allFloors = new List<RengokuFloorStats>();
+            var allSpawns = new List<RengokuSpawnEntry>();
+
+            string[] modeNames = ["Multi", "Solo"];
+            int[] modeOffsets = [
+                BinaryReaderService.RENGOKU_HEADER_SIZE,
+                BinaryReaderService.RENGOKU_HEADER_SIZE + BinaryReaderService.ROAD_MODE_SIZE
+            ];
+
+            for (int m = 0; m < 2; m++)
+            {
+                string modeName = modeNames[m];
+                br.BaseStream.Seek(modeOffsets[m], SeekOrigin.Begin);
+
+                uint floorStatsCount = br.ReadUInt32();
+                uint spawnCountCount = br.ReadUInt32();
+                uint spawnTablePointersCount = br.ReadUInt32();
+                uint floorStatsPointer = br.ReadUInt32();
+                uint spawnTablePointersPtr = br.ReadUInt32();
+                uint spawnCountPointersPtr = br.ReadUInt32();
+
+                _logger.WriteLine($"{modeName} Road: {floorStatsCount} floors, {spawnTablePointersCount} spawn tables");
+
+                // Read floor stats
+                br.BaseStream.Seek(floorStatsPointer, SeekOrigin.Begin);
+                for (int i = 0; i < floorStatsCount; i++)
+                {
+                    allFloors.Add(_binaryReader.ReadFloorStatsEntry(br, modeName));
+                }
+
+                // Read spawn count array (one count per spawn table)
+                br.BaseStream.Seek(spawnCountPointersPtr, SeekOrigin.Begin);
+                var spawnCounts = new uint[spawnCountCount];
+                for (int i = 0; i < spawnCountCount; i++)
+                {
+                    spawnCounts[i] = br.ReadUInt32();
+                }
+
+                // Read spawn table pointers array
+                br.BaseStream.Seek(spawnTablePointersPtr, SeekOrigin.Begin);
+                var spawnTablePointers = new uint[spawnTablePointersCount];
+                for (int i = 0; i < spawnTablePointersCount; i++)
+                {
+                    spawnTablePointers[i] = br.ReadUInt32();
+                }
+
+                // Read spawn tables
+                for (int t = 0; t < spawnTablePointersCount; t++)
+                {
+                    br.BaseStream.Seek(spawnTablePointers[t], SeekOrigin.Begin);
+                    uint count = t < spawnCounts.Length ? spawnCounts[t] : 0;
+                    for (int e = 0; e < count; e++)
+                    {
+                        allSpawns.Add(_binaryReader.ReadSpawnEntry(br, t, modeName));
+                    }
+                }
+            }
+
+            _logger.WriteLine($"Total floors: {allFloors.Count}, Total spawn entries: {allSpawns.Count}");
+
+            // Write floors output
+            if (_encodingOptions.Format == OutputFormat.Json)
+            {
+                WriteJsonFile("RengokuFloors.json", allFloors);
+            }
+            else
+            {
+                using var textWriter = _fileSystem.CreateStreamWriter("RengokuFloors.csv", false, _encodingOptions.GetOutputEncoding());
+                var writer = new CsvWriter(textWriter, TextFileConfiguration.CreateJapaneseCsvConfig());
+                writer.WriteRecords(allFloors);
+            }
+
+            // Write spawns output
+            if (_encodingOptions.Format == OutputFormat.Json)
+            {
+                WriteJsonFile("RengokuSpawns.json", allSpawns);
+            }
+            else
+            {
+                using var textWriter = _fileSystem.CreateStreamWriter("RengokuSpawns.csv", false, _encodingOptions.GetOutputEncoding());
+                var writer = new CsvWriter(textWriter, TextFileConfiguration.CreateJapaneseCsvConfig());
+                writer.WriteRecords(allSpawns);
+            }
+        }
+
+        /// <summary>
         /// Dump quest data.
         /// </summary>
         public void DumpQuestData(string mhfinf)

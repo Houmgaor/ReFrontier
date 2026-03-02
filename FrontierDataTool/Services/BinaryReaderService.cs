@@ -24,6 +24,10 @@ namespace FrontierDataTool.Services
         public const int ITEM_ENTRY_SIZE = 0x24;
         public const int PEARL_ENTRY_SIZE = 0x30;
         public const int SHOP_ENTRY_SIZE = 8;
+        public const int RENGOKU_HEADER_SIZE = 0x14;
+        public const int ROAD_MODE_SIZE = 0x18;
+        public const int FLOOR_STATS_ENTRY_SIZE = 0x18;
+        public const int SPAWN_TABLE_ENTRY_SIZE = 0x20;
 
         // Lookup tables for weapon/armor data
         private static readonly string[] AilmentIds = ["なし", "毒", "麻痺", "睡眠", "爆破"];
@@ -331,6 +335,82 @@ namespace FrontierDataTool.Services
                 .Replace("\n", "\\n");
             br.BaseStream.Seek(pos, SeekOrigin.Begin);
             return str;
+        }
+
+        /// <summary>
+        /// Read a single rengoku floor stats entry from the binary reader.
+        /// </summary>
+        /// <param name="br">Binary reader positioned at the start of the entry.</param>
+        /// <param name="roadMode">Road mode identifier ("Multi" or "Solo").</param>
+        /// <returns>Parsed floor stats entry.</returns>
+        public RengokuFloorStats ReadFloorStatsEntry(BinaryReader br, string roadMode)
+        {
+            return new RengokuFloorStats
+            {
+                RoadMode = roadMode,
+                FloorNumber = br.ReadUInt32(),
+                SpawnTableUsed = br.ReadUInt32(),
+                Unk0 = br.ReadUInt32(),
+                PointMulti1 = br.ReadSingle(),
+                PointMulti2 = br.ReadSingle(),
+                FinalLoop = br.ReadUInt32()
+            };
+        }
+
+        /// <summary>
+        /// Read a single rengoku spawn table entry from the binary reader.
+        /// </summary>
+        /// <param name="br">Binary reader positioned at the start of the entry.</param>
+        /// <param name="tableIndex">Index of the spawn table this entry belongs to.</param>
+        /// <param name="roadMode">Road mode identifier ("Multi" or "Solo").</param>
+        /// <returns>Parsed spawn entry.</returns>
+        public RengokuSpawnEntry ReadSpawnEntry(BinaryReader br, int tableIndex, string roadMode)
+        {
+            return new RengokuSpawnEntry
+            {
+                RoadMode = roadMode,
+                TableIndex = tableIndex,
+                MonsterID1 = br.ReadUInt32(),
+                MonsterVariant1 = br.ReadUInt32(),
+                MonsterID2 = br.ReadUInt32(),
+                MonsterVariant2 = br.ReadUInt32(),
+                MonsterStatTable = br.ReadUInt32(),
+                MapZoneOverride = br.ReadUInt32(),
+                SpawnWeighting = br.ReadUInt32(),
+                AdditionalFlag = br.ReadUInt32()
+            };
+        }
+
+        /// <summary>
+        /// Write a single rengoku floor stats entry to the binary stream.
+        /// </summary>
+        /// <param name="bw">Binary writer positioned at the entry offset.</param>
+        /// <param name="entry">Floor stats entry to write.</param>
+        public void WriteFloorStatsEntry(BinaryWriter bw, RengokuFloorStats entry)
+        {
+            bw.Write(entry.FloorNumber);
+            bw.Write(entry.SpawnTableUsed);
+            bw.Write(entry.Unk0);
+            bw.Write(entry.PointMulti1);
+            bw.Write(entry.PointMulti2);
+            bw.Write(entry.FinalLoop);
+        }
+
+        /// <summary>
+        /// Write a single rengoku spawn table entry to the binary stream.
+        /// </summary>
+        /// <param name="bw">Binary writer positioned at the entry offset.</param>
+        /// <param name="entry">Spawn entry to write.</param>
+        public void WriteSpawnEntry(BinaryWriter bw, RengokuSpawnEntry entry)
+        {
+            bw.Write(entry.MonsterID1);
+            bw.Write(entry.MonsterVariant1);
+            bw.Write(entry.MonsterID2);
+            bw.Write(entry.MonsterVariant2);
+            bw.Write(entry.MonsterStatTable);
+            bw.Write(entry.MapZoneOverride);
+            bw.Write(entry.SpawnWeighting);
+            bw.Write(entry.AdditionalFlag);
         }
 
         /// <summary>

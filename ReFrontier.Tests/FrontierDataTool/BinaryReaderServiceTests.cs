@@ -1046,5 +1046,152 @@ namespace ReFrontier.Tests.DataToolTests
         }
 
         #endregion
+
+        #region ReadFloorStatsEntry Tests
+
+        [Fact]
+        public void ReadFloorStatsEntry_ParsesCorrectly()
+        {
+            // Arrange: 24-byte floor stats entry
+            using var ms = new MemoryStream();
+            using var bw = new BinaryWriter(ms);
+            bw.Write((uint)5);          // FloorNumber
+            bw.Write((uint)2);          // SpawnTableUsed
+            bw.Write((uint)0);          // Unk0
+            bw.Write(1.5f);             // PointMulti1
+            bw.Write(2.0f);             // PointMulti2
+            bw.Write((uint)1);          // FinalLoop
+
+            ms.Position = 0;
+            using var br = new BinaryReader(ms);
+
+            // Act
+            var entry = _service.ReadFloorStatsEntry(br, "Multi");
+
+            // Assert
+            Assert.Equal("Multi", entry.RoadMode);
+            Assert.Equal(5u, entry.FloorNumber);
+            Assert.Equal(2u, entry.SpawnTableUsed);
+            Assert.Equal(0u, entry.Unk0);
+            Assert.Equal(1.5f, entry.PointMulti1);
+            Assert.Equal(2.0f, entry.PointMulti2);
+            Assert.Equal(1u, entry.FinalLoop);
+            Assert.Equal(BinaryReaderService.FLOOR_STATS_ENTRY_SIZE, ms.Position);
+        }
+
+        [Fact]
+        public void WriteFloorStatsEntry_RoundTrip()
+        {
+            var original = new RengokuFloorStats
+            {
+                RoadMode = "Solo",
+                FloorNumber = 10,
+                SpawnTableUsed = 3,
+                Unk0 = 42,
+                PointMulti1 = 1.25f,
+                PointMulti2 = 3.75f,
+                FinalLoop = 0
+            };
+
+            // Write
+            using var ms = new MemoryStream();
+            using var bw = new BinaryWriter(ms);
+            _service.WriteFloorStatsEntry(bw, original);
+            Assert.Equal(BinaryReaderService.FLOOR_STATS_ENTRY_SIZE, ms.Position);
+
+            // Read back
+            ms.Position = 0;
+            using var br = new BinaryReader(ms);
+            var read = _service.ReadFloorStatsEntry(br, "Solo");
+
+            Assert.Equal(original.FloorNumber, read.FloorNumber);
+            Assert.Equal(original.SpawnTableUsed, read.SpawnTableUsed);
+            Assert.Equal(original.Unk0, read.Unk0);
+            Assert.Equal(original.PointMulti1, read.PointMulti1);
+            Assert.Equal(original.PointMulti2, read.PointMulti2);
+            Assert.Equal(original.FinalLoop, read.FinalLoop);
+            Assert.Equal(original.RoadMode, read.RoadMode);
+        }
+
+        #endregion
+
+        #region ReadSpawnEntry Tests
+
+        [Fact]
+        public void ReadSpawnEntry_ParsesCorrectly()
+        {
+            // Arrange: 32-byte spawn entry
+            using var ms = new MemoryStream();
+            using var bw = new BinaryWriter(ms);
+            bw.Write((uint)44);             // MonsterID1 (em044 = Rathian)
+            bw.Write((uint)1);              // MonsterVariant1
+            bw.Write((uint)1);              // MonsterID2 (em001 = Rathalos)
+            bw.Write((uint)0);              // MonsterVariant2
+            bw.Write((uint)5);              // MonsterStatTable
+            bw.Write(0xFFFFFFFF);           // MapZoneOverride (default)
+            bw.Write((uint)100);            // SpawnWeighting
+            bw.Write((uint)0);              // AdditionalFlag
+
+            ms.Position = 0;
+            using var br = new BinaryReader(ms);
+
+            // Act
+            var entry = _service.ReadSpawnEntry(br, 7, "Multi");
+
+            // Assert
+            Assert.Equal("Multi", entry.RoadMode);
+            Assert.Equal(7, entry.TableIndex);
+            Assert.Equal(44u, entry.MonsterID1);
+            Assert.Equal(1u, entry.MonsterVariant1);
+            Assert.Equal(1u, entry.MonsterID2);
+            Assert.Equal(0u, entry.MonsterVariant2);
+            Assert.Equal(5u, entry.MonsterStatTable);
+            Assert.Equal(0xFFFFFFFF, entry.MapZoneOverride);
+            Assert.Equal(100u, entry.SpawnWeighting);
+            Assert.Equal(0u, entry.AdditionalFlag);
+            Assert.Equal(BinaryReaderService.SPAWN_TABLE_ENTRY_SIZE, ms.Position);
+        }
+
+        [Fact]
+        public void WriteSpawnEntry_RoundTrip()
+        {
+            var original = new RengokuSpawnEntry
+            {
+                RoadMode = "Solo",
+                TableIndex = 3,
+                MonsterID1 = 88,
+                MonsterVariant1 = 2,
+                MonsterID2 = 0,
+                MonsterVariant2 = 0,
+                MonsterStatTable = 12,
+                MapZoneOverride = 0xFFFFFFFF,
+                SpawnWeighting = 50,
+                AdditionalFlag = 1
+            };
+
+            // Write
+            using var ms = new MemoryStream();
+            using var bw = new BinaryWriter(ms);
+            _service.WriteSpawnEntry(bw, original);
+            Assert.Equal(BinaryReaderService.SPAWN_TABLE_ENTRY_SIZE, ms.Position);
+
+            // Read back
+            ms.Position = 0;
+            using var br = new BinaryReader(ms);
+            var read = _service.ReadSpawnEntry(br, 3, "Solo");
+
+            Assert.Equal(original.MonsterID1, read.MonsterID1);
+            Assert.Equal(original.MonsterVariant1, read.MonsterVariant1);
+            Assert.Equal(original.MonsterID2, read.MonsterID2);
+            Assert.Equal(original.MonsterVariant2, read.MonsterVariant2);
+            Assert.Equal(original.MonsterStatTable, read.MonsterStatTable);
+            Assert.Equal(original.MapZoneOverride, read.MapZoneOverride);
+            Assert.Equal(original.SpawnWeighting, read.SpawnWeighting);
+            Assert.Equal(original.AdditionalFlag, read.AdditionalFlag);
+            Assert.Equal(original.RoadMode, read.RoadMode);
+            Assert.Equal(original.TableIndex, read.TableIndex);
+        }
+
+        #endregion
     }
 }

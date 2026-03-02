@@ -90,6 +90,11 @@ namespace FrontierDataTool
                 Description = "Path to mhfinf.bin"
             };
 
+            Option<string?> rengokuOption = new("--rengoku")
+            {
+                Description = "Path to rengoku_data.bin (Hunting Road data)"
+            };
+
             Option<string?> csvOption = new("--csv")
             {
                 Description = "Path to the CSV file to import (e.g., Armor.csv)"
@@ -120,6 +125,7 @@ namespace FrontierDataTool
                 mhfpacOption,
                 mhfdatOption,
                 mhfinfOption,
+                rengokuOption,
                 csvOption,
                 closeOption,
                 shiftJisOption,
@@ -136,6 +142,7 @@ namespace FrontierDataTool
                 var mhfpac = parseResult.GetValue(mhfpacOption);
                 var mhfdat = parseResult.GetValue(mhfdatOption);
                 var mhfinf = parseResult.GetValue(mhfinfOption);
+                var rengoku = parseResult.GetValue(rengokuOption);
                 var csv = parseResult.GetValue(csvOption);
                 var close = parseResult.GetValue(closeOption);
                 var shiftJis = parseResult.GetValue(shiftJisOption);
@@ -168,7 +175,27 @@ namespace FrontierDataTool
                 {
                     if (dump)
                     {
-                        // Validate required parameters
+                        // Rengoku-only dump (doesn't require mhfpac/mhfdat/mhfinf)
+                        if (!string.IsNullOrEmpty(rengoku))
+                        {
+                            if (!File.Exists(rengoku))
+                            {
+                                Console.Error.WriteLine($"Error: File '{rengoku}' does not exist.");
+                                FinishCommand(close);
+                                return 1;
+                            }
+
+                            program._extractionService.DumpRengokuData(rengoku);
+
+                            // If no other files specified, we're done
+                            if (string.IsNullOrEmpty(mhfpac) && string.IsNullOrEmpty(mhfdat) && string.IsNullOrEmpty(mhfinf))
+                            {
+                                FinishCommand(close);
+                                return 0;
+                            }
+                        }
+
+                        // Validate required parameters for full dump
                         if (string.IsNullOrEmpty(suffix))
                         {
                             Console.Error.WriteLine("Error: --dump requires --suffix.");
@@ -337,9 +364,27 @@ namespace FrontierDataTool
 
                             program._importService.ImportQuestData(mhfinf, csv);
                         }
+                        else if (csvFilename.StartsWith("rengoku"))
+                        {
+                            // Rengoku import requires --rengoku
+                            if (string.IsNullOrEmpty(rengoku))
+                            {
+                                Console.Error.WriteLine("Error: Rengoku CSV import requires --rengoku.");
+                                FinishCommand(close);
+                                return 1;
+                            }
+                            if (!File.Exists(rengoku))
+                            {
+                                Console.Error.WriteLine($"Error: File '{rengoku}' does not exist.");
+                                FinishCommand(close);
+                                return 1;
+                            }
+
+                            program._importService.ImportRengokuData(rengoku, csv);
+                        }
                         else
                         {
-                            Console.Error.WriteLine($"Error: Unknown CSV type '{csvFilename}'. Expected Armor.csv, Melee.csv, Ranged.csv, or InfQuests.csv.");
+                            Console.Error.WriteLine($"Error: Unknown CSV type '{csvFilename}'. Expected Armor.csv, Melee.csv, Ranged.csv, InfQuests.csv, RengokuFloors.csv, or RengokuSpawns.csv.");
                             FinishCommand(close);
                             return 1;
                         }

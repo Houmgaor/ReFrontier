@@ -471,6 +471,181 @@ namespace FrontierDataTool.Services
         }
 
         /// <summary>
+        /// Import rengoku floor stats from CSV back into rengoku_data.bin.
+        /// </summary>
+        /// <param name="rengokuPath">Path to rengoku_data.bin.</param>
+        /// <param name="csvPath">Path to RengokuFloors.csv or RengokuSpawns.csv.</param>
+        public void ImportRengokuData(string rengokuPath, string csvPath)
+        {
+            var preprocessor = new FilePreprocessor();
+            var (processedPath, cleanup) = preprocessor.AutoPreprocess(rengokuPath, createMetaFile: true);
+
+            try
+            {
+                string csvFilename = Path.GetFileName(csvPath).ToLowerInvariant();
+                if (csvFilename.StartsWith("rengokufloor"))
+                    ImportRengokuFloorsInternal(processedPath, csvPath);
+                else if (csvFilename.StartsWith("rengokuspawn"))
+                    ImportRengokuSpawnsInternal(processedPath, csvPath);
+                else
+                    _logger.Error($"Unknown rengoku CSV type '{csvFilename}'. Expected RengokuFloors.csv or RengokuSpawns.csv.");
+            }
+            finally
+            {
+                cleanup();
+            }
+        }
+
+        /// <summary>
+        /// Internal implementation: import floor stats CSV back into rengoku binary.
+        /// </summary>
+        public void ImportRengokuFloorsInternal(string rengokuPath, string csvPath)
+        {
+            var entries = LoadRengokuFloorsCsv(csvPath);
+            _logger.WriteLine($"Read {entries.Count} floor stats entries from CSV.");
+
+            byte[] data = _fileSystem.ReadAllBytes(rengokuPath);
+            using var ms = new MemoryStream(data);
+            using var br = new BinaryReader(ms);
+            using var bw = new BinaryWriter(ms);
+
+            string[] modeNames = ["Multi", "Solo"];
+            int[] modeOffsets = [
+                BinaryReaderService.RENGOKU_HEADER_SIZE,
+                BinaryReaderService.RENGOKU_HEADER_SIZE + BinaryReaderService.ROAD_MODE_SIZE
+            ];
+
+            for (int m = 0; m < 2; m++)
+            {
+                string modeName = modeNames[m];
+                br.BaseStream.Seek(modeOffsets[m], SeekOrigin.Begin);
+
+                uint floorStatsCount = br.ReadUInt32();
+                br.ReadUInt32(); // spawnCountCount
+                br.ReadUInt32(); // spawnTablePointersCount
+                uint floorStatsPointer = br.ReadUInt32();
+
+                var modeEntries = entries.Where(e => e.RoadMode == modeName).ToList();
+
+                if (modeEntries.Count != floorStatsCount)
+                {
+                    _logger.Error($"Warning: CSV has {modeEntries.Count} {modeName} floor entries, but binary expects {floorStatsCount}. Skipping.");
+                    continue;
+                }
+
+                _logger.WriteLine($"Writing {floorStatsCount} {modeName} floor entries at 0x{floorStatsPointer:X8}");
+
+                for (int i = 0; i < modeEntries.Count; i++)
+                {
+                    bw.BaseStream.Seek(floorStatsPointer + (i * BinaryReaderService.FLOOR_STATS_ENTRY_SIZE), SeekOrigin.Begin);
+                    _binaryReader.WriteFloorStatsEntry(bw, modeEntries[i]);
+                }
+            }
+
+            _fileSystem.CreateDirectory("output");
+            string outputPath = Path.Combine("output", "rengoku_data.bin");
+            _fileSystem.WriteAllBytes(outputPath, data);
+            _logger.WriteLine($"Wrote modified floor data to {outputPath}");
+        }
+
+        /// <summary>
+        /// Internal implementation: import spawn table CSV back into rengoku binary.
+        /// </summary>
+        public void ImportRengokuSpawnsInternal(string rengokuPath, string csvPath)
+        {
+            var entries = LoadRengokuSpawnsCsv(csvPath);
+            _logger.WriteLine($"Read {entries.Count} spawn entries from CSV.");
+
+            byte[] data = _fileSystem.ReadAllBytes(rengokuPath);
+            using var ms = new MemoryStream(data);
+            using var br = new BinaryReader(ms);
+            using var bw = new BinaryWriter(ms);
+
+            string[] modeNames = ["Multi", "Solo"];
+            int[] modeOffsets = [
+                BinaryReaderService.RENGOKU_HEADER_SIZE,
+                BinaryReaderService.RENGOKU_HEADER_SIZE + BinaryReaderService.ROAD_MODE_SIZE
+            ];
+
+            for (int m = 0; m < 2; m++)
+            {
+                string modeName = modeNames[m];
+                br.BaseStream.Seek(modeOffsets[m], SeekOrigin.Begin);
+
+                br.ReadUInt32(); // floorStatsCount
+                uint spawnCountCount = br.ReadUInt32();
+                uint spawnTablePointersCount = br.ReadUInt32();
+                br.ReadUInt32(); // floorStatsPointer
+                uint spawnTablePointersPtr = br.ReadUInt32();
+                uint spawnCountPointersPtr = br.ReadUInt32();
+
+                // Read spawn count array
+                br.BaseStream.Seek(spawnCountPointersPtr, SeekOrigin.Begin);
+                var spawnCounts = new uint[spawnCountCount];
+                for (int i = 0; i < spawnCountCount; i++)
+                    spawnCounts[i] = br.ReadUInt32();
+
+                // Read spawn table pointers
+                br.BaseStream.Seek(spawnTablePointersPtr, SeekOrigin.Begin);
+                var spawnTablePointers = new uint[spawnTablePointersCount];
+                for (int i = 0; i < spawnTablePointersCount; i++)
+                    spawnTablePointers[i] = br.ReadUInt32();
+
+                var modeEntries = entries.Where(e => e.RoadMode == modeName).ToList();
+
+                // Write spawn entries for each table
+                for (int t = 0; t < spawnTablePointersCount; t++)
+                {
+                    var tableEntries = modeEntries.Where(e => e.TableIndex == t).ToList();
+                    uint expectedCount = t < spawnCounts.Length ? spawnCounts[t] : 0;
+
+                    if (tableEntries.Count != expectedCount)
+                    {
+                        _logger.Error($"Warning: CSV has {tableEntries.Count} entries for {modeName} table {t}, but binary expects {expectedCount}. Skipping.");
+                        continue;
+                    }
+
+                    bw.BaseStream.Seek(spawnTablePointers[t], SeekOrigin.Begin);
+                    for (int e = 0; e < tableEntries.Count; e++)
+                    {
+                        _binaryReader.WriteSpawnEntry(bw, tableEntries[e]);
+                    }
+                }
+
+                _logger.WriteLine($"Wrote {modeEntries.Count} {modeName} spawn entries.");
+            }
+
+            _fileSystem.CreateDirectory("output");
+            string outputPath = Path.Combine("output", "rengoku_data.bin");
+            _fileSystem.WriteAllBytes(outputPath, data);
+            _logger.WriteLine($"Wrote modified spawn data to {outputPath}");
+        }
+
+        /// <summary>
+        /// Load rengoku floor stats entries from a CSV file.
+        /// </summary>
+        public List<RengokuFloorStats> LoadRengokuFloorsCsv(string csvPath)
+        {
+            using var stream = _fileSystem.OpenRead(csvPath);
+            var encoding = TextFileConfiguration.DetectCsvEncoding(stream);
+            using var textReader = new StreamReader(stream, encoding);
+            using var csvReader = new CsvReader(textReader, TextFileConfiguration.CreateJapaneseCsvConfig());
+            return csvReader.GetRecords<RengokuFloorStats>().ToList();
+        }
+
+        /// <summary>
+        /// Load rengoku spawn entries from a CSV file.
+        /// </summary>
+        public List<RengokuSpawnEntry> LoadRengokuSpawnsCsv(string csvPath)
+        {
+            using var stream = _fileSystem.OpenRead(csvPath);
+            var encoding = TextFileConfiguration.DetectCsvEncoding(stream);
+            using var textReader = new StreamReader(stream, encoding);
+            using var csvReader = new CsvReader(textReader, TextFileConfiguration.CreateJapaneseCsvConfig());
+            return csvReader.GetRecords<RengokuSpawnEntry>().ToList();
+        }
+
+        /// <summary>
         /// Add all-items shop to file, change item prices, change armor prices.
         /// </summary>
         /// <param name="file">Input file path, usually mhfdat.bin.</param>
