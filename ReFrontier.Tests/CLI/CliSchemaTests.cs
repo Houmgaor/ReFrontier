@@ -10,6 +10,53 @@ namespace ReFrontier.Tests.CLI
     public class CliSchemaTests
     {
         [Fact]
+        public void ExtractArguments_ByDefault_WritesMetadata()
+        {
+            var schema = new CliSchema();
+            var command = schema.CreateRootCommand("1.0.0", "TestApp", "Test");
+
+            // Without this a file cannot be rebuilt, and the option was easy to forget
+            // until the rebuild failed.
+            var cliArgs = schema.ExtractArguments(command.Parse(["mhfdat.bin"]));
+
+            Assert.True(cliArgs.ProcessingArgs.createLog);
+        }
+
+        [Fact]
+        public void ExtractArguments_WithNoMeta_SkipsMetadata()
+        {
+            var schema = new CliSchema();
+            var command = schema.CreateRootCommand("1.0.0", "TestApp", "Test");
+
+            var cliArgs = schema.ExtractArguments(command.Parse(["mhfdat.bin", "--noMeta"]));
+
+            Assert.False(cliArgs.ProcessingArgs.createLog);
+        }
+
+        [Fact]
+        public void ExtractArguments_WithDeprecatedSaveMeta_StillWritesMetadata()
+        {
+            var schema = new CliSchema();
+            var command = schema.CreateRootCommand("1.0.0", "TestApp", "Test");
+
+            // Existing scripts keep working.
+            var cliArgs = schema.ExtractArguments(command.Parse(["mhfdat.bin", "--saveMeta"]));
+
+            Assert.True(cliArgs.ProcessingArgs.createLog);
+        }
+
+        [Fact]
+        public void ExtractArguments_NoMetaWinsOverDeprecatedSaveMeta()
+        {
+            var schema = new CliSchema();
+            var command = schema.CreateRootCommand("1.0.0", "TestApp", "Test");
+
+            var cliArgs = schema.ExtractArguments(command.Parse(["mhfdat.bin", "--saveMeta", "--noMeta"]));
+
+            Assert.False(cliArgs.ProcessingArgs.createLog);
+        }
+
+        [Fact]
         public void ExtractArguments_WithRestore_SetsRestoreFlag()
         {
             var schema = new CliSchema();

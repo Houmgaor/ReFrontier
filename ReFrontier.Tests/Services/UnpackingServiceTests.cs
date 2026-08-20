@@ -145,8 +145,29 @@ namespace ReFrontier.Tests.Services
             // Assert
             Assert.NotNull(result);
             Assert.True(_fileSystem.FileExists(result));
-            Assert.False(_fileSystem.FileExists("/test/compressed.jkr")); // Original deleted
+            // The compressed form is kept: deleting it destroyed the user's own file when
+            // they decompressed one directly. --cleanUp opts back into removing it.
+            Assert.True(_fileSystem.FileExists("/test/compressed.jkr"));
             Assert.True(_logger.ContainsMessage("JPK LZ"));
+        }
+
+        [Fact]
+        public void UnpackJPK_WithCleanUp_RemovesTheCompressedInput()
+        {
+            byte[] originalData = new byte[256];
+            for (int i = 0; i < originalData.Length; i++)
+                originalData[i] = (byte)(i % 256);
+            _fileSystem.AddFile("/test/original.bin", originalData);
+
+            var packingService = new PackingService(_fileSystem, _logger, _codecFactory, _config);
+            packingService.JPKEncode(
+                new Compression(CompressionType.LZ, 10), "/test/original.bin", "/test/compressed.jkr"
+            );
+
+            string result = _service.UnpackJPK("/test/compressed.jkr", verbose: false, cleanUp: true, out _, out _);
+
+            Assert.True(_fileSystem.FileExists(result));
+            Assert.False(_fileSystem.FileExists("/test/compressed.jkr"));
         }
 
         [Fact]

@@ -351,7 +351,7 @@ namespace ReFrontier.Services
         /// <exception cref="ReFrontierException">Thrown if decompression fails.</exception>
         public string UnpackJPK(string input, bool verbose = false)
         {
-            return UnpackJPK(input, verbose, out _, out _);
+            return UnpackJPK(input, verbose, cleanUp: false, out _, out _);
         }
 
         /// <summary>
@@ -359,12 +359,14 @@ namespace ReFrontier.Services
         /// </summary>
         /// <param name="input">Input file path.</param>
         /// <param name="verbose">Show per-file processing messages.</param>
+        /// <param name="cleanUp">Remove the compressed input once it has been decompressed.</param>
         /// <param name="compressionType">Algorithm read from the JKR header.</param>
         /// <param name="compressedSize">Size in bytes of the input file before decompression.</param>
         /// <returns>Output file path.</returns>
         /// <exception cref="PackingException">Thrown if the JKR header is invalid or compression type is unsupported.</exception>
         /// <exception cref="ReFrontierException">Thrown if decompression fails.</exception>
-        public string UnpackJPK(string input, bool verbose, out CompressionType compressionType, out long compressedSize)
+        public string UnpackJPK(
+            string input, bool verbose, bool cleanUp, out CompressionType compressionType, out long compressedSize)
         {
             byte[] buffer = _fileSystem.ReadAllBytes(input);
             compressedSize = buffer.Length;
@@ -426,7 +428,12 @@ namespace ReFrontier.Services
                 string extension = ByteOperations.DetectExtension(outBuffer, out _);
 
                 string output = $"{input}.{extension}";
-                _fileSystem.DeleteFile(input);
+
+                // Only remove the compressed form on request. Deleting it unconditionally
+                // destroyed the user's own file when they decompressed one directly, and
+                // took the only record of how it had been compressed with it.
+                if (cleanUp)
+                    _fileSystem.DeleteFile(input);
 
                 // Write only the actual data size, not the full rented buffer
                 using (var outStream = _fileSystem.OpenWrite(output))

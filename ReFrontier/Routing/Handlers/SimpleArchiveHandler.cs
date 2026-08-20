@@ -1,6 +1,8 @@
+using System;
 using System.IO;
 
 using LibReFrontier;
+using LibReFrontier.Exceptions;
 using LibReFrontier.Abstractions;
 
 using ReFrontier.Services;
@@ -43,15 +45,33 @@ namespace ReFrontier.Routing.Handlers
         {
             // Try to unpack as simple container: i.e. txb, bin, pac, gab
             reader.BaseStream.Seek(0, SeekOrigin.Begin);
-            var outputPath = _unpackingService.UnpackSimpleArchive(
-                filePath,
-                reader,
-                4, // Skip 4-byte header
-                args.createLog,
-                args.cleanUp,
-                args.autoStage,
-                args.verbose
-            );
+            string outputPath;
+            try
+            {
+                outputPath = _unpackingService.UnpackSimpleArchive(
+                    filePath,
+                    reader,
+                    4, // Skip 4-byte header
+                    args.createLog,
+                    args.cleanUp,
+                    args.autoStage,
+                    args.verbose
+                );
+            }
+            catch (PackingException ex)
+            {
+                // This handler is the fallback probe: it accepts any file and finds out
+                // whether it is a container by trying. Not being one is an ordinary
+                // outcome, not an error, and counting it as one made a second run over an
+                // already extracted folder report failures that meant nothing.
+                if (ex.Message.Contains("--stageContainer", StringComparison.Ordinal))
+                    _logger.WriteLine(ex.Message);
+                else if (args.verbose)
+                    _logger.WriteLine($"{filePath} is not a container. Skipping.");
+
+                return ProcessFileResult.Skipped(ex.Message);
+            }
+
             // Record the container so it can be packed back through its log file.
             // Without a log there is nothing to repack from, so report no layer.
             if (!args.createLog)

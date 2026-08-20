@@ -1,5 +1,4 @@
 using LibReFrontier;
-using LibReFrontier.Exceptions;
 
 using ReFrontier.Jpk;
 using ReFrontier.Services;
@@ -340,7 +339,7 @@ namespace ReFrontier.Tests
         }
 
         [Fact]
-        public void ProcessFile_UnrecognizedMagic_ThrowsPackingException()
+        public void ProcessFile_UnrecognizedMagic_IsSkippedNotAnError()
         {
             // Arrange - Create a file with unrecognized magic (too small to be valid)
             byte[] unknownFile = new byte[] { 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0 };
@@ -351,11 +350,12 @@ namespace ReFrontier.Tests
                 recursive = false
             };
 
-            // Act & Assert - Should throw PackingException for invalid file
-            var ex = Assert.Throws<PackingException>(() =>
-                _program.ProcessFile("/test/unknown.bin", args)
-            );
-            Assert.Contains("too small", ex.Message);
+            // Act - the fallback handler probes the file and finds it is not a container
+            var result = _program.ProcessFile("/test/unknown.bin", args);
+
+            // Assert - that is an ordinary outcome, reported as a skip rather than an error
+            Assert.False(result.WasProcessed);
+            Assert.Contains("too small", result.SkipReason);
             // File should still exist
             Assert.True(_fileSystem.FileExists("/test/unknown.bin"));
         }
