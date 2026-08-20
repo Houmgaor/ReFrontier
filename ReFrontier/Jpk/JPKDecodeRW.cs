@@ -30,8 +30,17 @@ namespace ReFrontier.Jpk
         {
             for (int index = 0; index < outSize; index++)
             {
+                // Stopping here instead of reading would leave the tail of outBuffer
+                // zero-filled and report the truncated result as a complete file.
                 if (inStream.Position >= inStream.Length)
-                    break;
+                    throw new CompressionException(
+                        "Unexpected end of stream. " +
+                        $"Read {index} of {outSize} declared bytes " +
+                        $"({(outSize > 0 ? 100.0 * index / outSize : 0):F2}%) " +
+                        $"before running out of input at offset {inStream.Position} " +
+                        $"of {inStream.Length}. The stream is truncated, or the decompressed " +
+                        "size in the JPK header does not match the data."
+                    );
                 outBuffer[index] = ReadByte(inStream);
             }
         }
@@ -46,7 +55,7 @@ namespace ReFrontier.Jpk
         {
             int value = s.ReadByte();
             if (value < 0)
-                throw new CompressionException("Decompression failed: unexpected end of stream.");
+                throw new CompressionException("Unexpected end of stream.");
             return (byte)value;
         }
     }

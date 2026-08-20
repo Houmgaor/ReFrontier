@@ -1,3 +1,5 @@
+using LibReFrontier.Exceptions;
+
 using ReFrontier.Jpk;
 
 namespace ReFrontier.Tests
@@ -95,23 +97,22 @@ namespace ReFrontier.Tests
         }
 
         [Fact]
-        public void DecodeRW_StreamShorterThanBuffer_FillsPartially()
+        public void DecodeRW_StreamShorterThanBuffer_Throws()
         {
-            // When stream is shorter than output buffer, decoder should stop at stream end
+            // A stream shorter than the declared size would leave the tail of the
+            // buffer zero-filled, so the truncation must be reported. See issue #7.
             var decoder = new JPKDecodeRW();
             byte[] input = [0x01, 0x02, 0x03];
             byte[] outBuffer = new byte[10];
 
             using var inStream = new MemoryStream(input);
-            decoder.ProcessOnDecode(inStream, outBuffer, outBuffer.Length);
 
-            // First 3 bytes should match input
-            Assert.Equal(0x01, outBuffer[0]);
-            Assert.Equal(0x02, outBuffer[1]);
-            Assert.Equal(0x03, outBuffer[2]);
-            // Remaining bytes should be 0 (unmodified)
-            for (int i = 3; i < outBuffer.Length; i++)
-                Assert.Equal(0, outBuffer[i]);
+            var ex = Assert.Throws<CompressionException>(
+                () => decoder.ProcessOnDecode(inStream, outBuffer, outBuffer.Length)
+            );
+
+            Assert.Contains("Unexpected end of stream", ex.Message);
+            Assert.Contains("Read 3 of 10 declared bytes", ex.Message);
         }
 
         [Fact]

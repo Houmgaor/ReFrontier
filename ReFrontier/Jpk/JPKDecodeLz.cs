@@ -88,6 +88,55 @@ namespace ReFrontier.Jpk
         public virtual void ProcessOnDecode(Stream inStream, byte[] outBuffer, int outSize)
         {
             int outIndex = 0;
+            try
+            {
+                DecodeLoop(inStream, outBuffer, outSize, ref outIndex);
+            }
+            catch (Exception ex) when (ex is CompressionException || ex is EndOfStreamException)
+            {
+                throw TruncatedStream(inStream, outSize, outIndex, ex);
+            }
+
+            // The loop above also stops when the input is exhausted at an operation
+            // boundary. Without this check the tail of outBuffer would silently stay
+            // zero-filled and the caller would treat the result as a complete file.
+            if (outIndex != outSize)
+                throw TruncatedStream(inStream, outSize, outIndex, null);
+        }
+
+        /// <summary>
+        /// Build the exception describing an incomplete decode.
+        /// </summary>
+        /// <param name="inStream">Stream being read from.</param>
+        /// <param name="outSize">Decompressed size declared by the JPK header.</param>
+        /// <param name="outIndex">Number of bytes actually decoded.</param>
+        /// <param name="inner">Underlying end-of-stream exception, if any.</param>
+        /// <returns>Exception to throw.</returns>
+        private static CompressionException TruncatedStream(
+            Stream inStream, int outSize, int outIndex, Exception? inner
+        )
+        {
+            string message =
+                "Unexpected end of stream. " +
+                $"Decoded {outIndex} of {outSize} declared bytes " +
+                $"({(outSize > 0 ? 100.0 * outIndex / outSize : 0):F2}%) " +
+                $"before running out of input at offset {inStream.Position} of {inStream.Length}. " +
+                "The compressed stream is truncated, or the decompressed size in the JPK header " +
+                "does not match the data.";
+            return inner == null
+                ? new CompressionException(message)
+                : new CompressionException(message, inner);
+        }
+
+        /// <summary>
+        /// Run the LZ decoding loop, reporting progress through <paramref name="outIndex"/>.
+        /// </summary>
+        /// <param name="inStream">Stream to read from.</param>
+        /// <param name="outBuffer">Buffer of decompressed data to write to.</param>
+        /// <param name="outSize">Actual output size.</param>
+        /// <param name="outIndex">Number of bytes written to <paramref name="outBuffer"/> so far.</param>
+        private void DecodeLoop(Stream inStream, byte[] outBuffer, int outSize, ref int outIndex)
+        {
             while (inStream.Position < inStream.Length && outIndex < outSize)
             {
                 if (!JpkBitLz(inStream))
@@ -151,7 +200,7 @@ namespace ReFrontier.Jpk
         {
             int value = stream.ReadByte();
             if (value < 0)
-                throw new CompressionException("Decompression failed: unexpected end of stream.");
+                throw new CompressionException("Unexpected end of stream.");
             return (byte)value;
         }
     }

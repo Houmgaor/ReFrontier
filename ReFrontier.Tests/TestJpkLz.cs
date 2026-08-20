@@ -1,3 +1,5 @@
+using LibReFrontier.Exceptions;
+
 using ReFrontier.Jpk;
 
 namespace ReFrontier.Tests
@@ -323,6 +325,38 @@ namespace ReFrontier.Tests
 
             Assert.True(repSize < rndSize,
                 $"Repetitive data ({repSize} bytes) should compress better than random ({rndSize} bytes)");
+        }
+
+        #endregion
+
+        #region Truncated Stream Diagnostics
+
+        [Fact]
+        public void DecodeLz_TruncatedStream_ReportsDecodedProgress()
+        {
+            // Compress a known payload, then cut the compressed stream short so the
+            // decoder runs out of input before reaching the declared size.
+            byte[] input = TestHelpers.RepetitiveData(4096);
+            var encoder = new JPKEncodeLz();
+            using var compressed = new MemoryStream();
+            encoder.ProcessOnEncode(input, compressed, level: 1000);
+
+            byte[] truncated = compressed.ToArray()[..(int)(compressed.Length / 2)];
+
+            var decoder = new JPKDecodeLz();
+            using var inStream = new MemoryStream(truncated);
+            byte[] outBuffer = new byte[input.Length];
+
+            var ex = Assert.Throws<CompressionException>(
+                () => decoder.ProcessOnDecode(inStream, outBuffer, input.Length)
+            );
+
+            Assert.Contains("Unexpected end of stream", ex.Message);
+            // The message must say how far decoding got, so users can tell a truncated
+            // stream apart from a wrong header size. See issue #7.
+            Assert.Contains($"of {input.Length} declared bytes", ex.Message);
+            Assert.Contains($"of {truncated.Length}.", ex.Message);
+            Assert.NotNull(ex.InnerException);
         }
 
         #endregion

@@ -418,7 +418,7 @@ namespace ReFrontier.Tests.Services
                 _unpackingService.UnpackJPK("/test/truncated.jkr")
             );
             Assert.Equal("/test/truncated.jkr", ex.FilePath);
-            Assert.Contains("unexpected end of stream", ex.Message);
+            Assert.Contains("Unexpected end of stream", ex.Message);
         }
 
         #endregion
