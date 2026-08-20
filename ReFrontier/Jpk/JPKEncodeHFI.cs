@@ -22,7 +22,7 @@ namespace ReFrontier.Jpk
     /// <para><b>Huffman Tree Structure:</b></para>
     /// <para>The tree is stored as an array where:</para>
     /// <list type="bullet">
-    ///   <item>Indices 0-255: Leaf nodes (actual byte values, randomly shuffled)</item>
+    ///   <item>Indices 0-255: Leaf nodes (actual byte values, in a fixed shuffled order)</item>
     ///   <item>Indices 256-509: Internal nodes pointing to children at (value-256)*2 and (value-256)*2+1</item>
     /// </list>
     ///
@@ -58,6 +58,15 @@ namespace ReFrontier.Jpk
         /// </summary>
         private readonly short[] m_lengths = new short[m_headerLength];
 
+        /// <summary>
+        /// Seed for the leaf permutation below.
+        /// <para>The permutation itself is arbitrary — every code comes out 8 bits long
+        /// whatever the order — but leaving it unseeded made compression irreproducible:
+        /// the same input produced a different file on every run, so output could not be
+        /// compared, cached or checksummed. A fixed seed keeps the table stable.</para>
+        /// </summary>
+        private const int TableSeed = 0x1FE;
+
         private int m_depth = 0;
         private byte m_bits = 0;
         private int m_bitcount = 0;
@@ -89,7 +98,7 @@ namespace ReFrontier.Jpk
             Array.Clear(m_lengths, 0, m_lengths.Length);
             short[] rndseq = new short[m_headerLength];
             for (short i = 0; i < rndseq.Length; i++) rndseq[i] = i;
-            Random rnd = new();
+            Random rnd = new(TableSeed);
             rndseq = [.. rndseq.OrderBy(x => rnd.Next())];
             for (int i = 0; i < m_headerLength; i++)
                 m_hfTable[i] = rndseq[i];

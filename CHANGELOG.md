@@ -80,6 +80,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **ReFrontier**: HFI and HFIRW compression is reproducible. The Huffman leaf permutation
+  was shuffled with an unseeded `Random` on every call, so compressing the same file twice
+  produced two different files and output could not be compared, cached or checksummed.
+  The seed is now fixed. Compression ratio is unaffected — the permutation is arbitrary,
+  since every code is 8 bits long whatever the order — and the table is pinned by a test so
+  the multi-OS CI catches any platform difference in seeded `Random` or in `OrderBy`.
+  See the issue on HFI's Huffman stage not actually compressing.
 - **ReFrontier**: Compressing and encrypting in one pass works. `JPKEncode` writes to the
   output directory, but the encryption step then looked for its input beside the input
   file, so the documented one-step form failed with `Could not find file` every time and
