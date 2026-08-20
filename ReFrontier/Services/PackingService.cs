@@ -410,12 +410,20 @@ namespace ReFrontier.Services
             // Entries
             List<string> listFileNames = [];
             List<int> listFileIds = [];
+            List<int> listPaddedSizes = [];
 
             for (int i = 0; i < count; i++)
             {
                 string[] columns = logContent[i + 5].Split(',');  // 5 = Account for meta data entries before
                 listFileNames.Add(columns[0]);
                 listFileIds.Add(ParseOrThrow<int>(columns[1], "file ID", $"Entry {i + 1} in MHA log file."));
+
+                // Third column added later; logs written by older versions do not have it.
+                listPaddedSizes.Add(
+                    columns.Length > 2
+                        ? ParseOrThrow<int>(columns[2], "padded size", $"Entry {i + 1} in MHA log file.")
+                        : 0
+                );
             }
 
             EnsureEntriesArePackable(listFileNames, count, input, "MHA archive");
@@ -424,49 +432,77 @@ namespace ReFrontier.Services
             MemoryStream entryMetaBlock = new();
             MemoryStream entryNamesBlock = new();
 
-            using var stream = _fileSystem.OpenWrite(outputPath);
-            using BinaryWriter bwOutput = new(stream);
-            // Header
-            bwOutput.Write(23160941);    // MHA magic
-            bwOutput.Write(0);           // pointerEntryMetaBlock
-            bwOutput.Write(count);
-            bwOutput.Write(0);           // pointerEntryNamesBlock
-            bwOutput.Write(0);           // entryNamesBlockLength
-            bwOutput.Write(unk1);
-            bwOutput.Write(unk2);
-
-            int pointerEntryNamesBlock = 0x18;   // 0x18 = Header length
-            int stringOffset = 0;
-            for (int i = 0; i < count; i++)
+            using (var stream = _fileSystem.OpenWrite(outputPath))
+            using (BinaryWriter bwOutput = new(stream))
             {
-                _logger.WriteLine($"{input}/{listFileNames[i]}");
-                byte[] fileData = _fileSystem.ReadAllBytes($"{input}/{listFileNames[i]}");
-                bwOutput.Write(fileData);
+                // Header
+                bwOutput.Write(FileMagic.MHA);
+                bwOutput.Write(0);           // pointerEntryMetaBlock
+                bwOutput.Write(count);
+                bwOutput.Write(0);           // pointerEntryNamesBlock
+                bwOutput.Write(0);           // entryNamesBlockLength
+                bwOutput.Write(unk1);
+                bwOutput.Write(unk2);
 
-                entryMetaBlock.Write(BitConverter.GetBytes(stringOffset), 0, 4);
-                entryMetaBlock.Write(BitConverter.GetBytes(pointerEntryNamesBlock), 0, 4);
-                entryMetaBlock.Write(BitConverter.GetBytes(fileData.Length), 0, 4);
-                entryMetaBlock.Write(BitConverter.GetBytes(fileData.Length), 0, 4); // write psize if necessary
-                entryMetaBlock.Write(BitConverter.GetBytes(listFileIds[i]), 0, 4);
+                int entryOffset = FileFormatConstants.MhaHeaderSize;
+                int stringOffset = 0;
+                for (int i = 0; i < count; i++)
+                {
+                    _logger.WriteLine($"{input}/{listFileNames[i]}");
+                    byte[] fileData = _fileSystem.ReadAllBytes($"{input}/{listFileNames[i]}");
 
-                System.Text.UTF8Encoding enc = new();
-                byte[] arrayFileName = enc.GetBytes(listFileNames[i]);
-                entryNamesBlock.Write(arrayFileName, 0, arrayFileName.Length);
-                entryNamesBlock.WriteByte(0);
-                stringOffset += arrayFileName.Length + 1;
+                    // Keep the original padding when the entry still fits inside it, so an
+                    // untouched archive is rebuilt byte for byte. Entries that grew, and
+                    // logs from before the padded size was recorded, pad to the next
+                    // boundary past the data.
+                    int paddedSize = listPaddedSizes[i] > fileData.Length
+                        ? listPaddedSizes[i]
+                        : PadEntrySize(fileData.Length);
 
-                pointerEntryNamesBlock += fileData.Length; // update with psize if necessary
+                    bwOutput.BaseStream.Seek(entryOffset, SeekOrigin.Begin);
+                    bwOutput.Write(fileData);
+
+                    entryMetaBlock.Write(BitConverter.GetBytes(stringOffset), 0, 4);
+                    entryMetaBlock.Write(BitConverter.GetBytes(entryOffset), 0, 4);
+                    entryMetaBlock.Write(BitConverter.GetBytes(fileData.Length), 0, 4);
+                    entryMetaBlock.Write(BitConverter.GetBytes(paddedSize), 0, 4);
+                    entryMetaBlock.Write(BitConverter.GetBytes(listFileIds[i]), 0, 4);
+
+                    byte[] arrayFileName = Encoding.UTF8.GetBytes(listFileNames[i]);
+                    entryNamesBlock.Write(arrayFileName, 0, arrayFileName.Length);
+                    entryNamesBlock.WriteByte(0);
+                    stringOffset += arrayFileName.Length + 1;
+
+                    entryOffset += paddedSize;
+                }
+
+                // Names then metadata follow the padded entry data, and end the file.
+                // Seeking past the last entry's padding leaves it zero filled.
+                bwOutput.BaseStream.Seek(entryOffset, SeekOrigin.Begin);
+                bwOutput.Write(entryNamesBlock.ToArray());
+                bwOutput.Write(entryMetaBlock.ToArray());
+
+                // Update offsets
+                bwOutput.Seek(4, SeekOrigin.Begin);
+                bwOutput.Write(entryOffset + (int)entryNamesBlock.Length);
+                bwOutput.Write(count);
+                bwOutput.Write(entryOffset);
+                bwOutput.Write((int)entryNamesBlock.Length);
             }
+        }
 
-            bwOutput.Write(entryNamesBlock.ToArray());
-            bwOutput.Write(entryMetaBlock.ToArray());
-
-            // Update offsets
-            bwOutput.Seek(4, SeekOrigin.Begin);
-            bwOutput.Write((int)(pointerEntryNamesBlock + entryNamesBlock.Length));
-            bwOutput.Write(count);
-            bwOutput.Write(pointerEntryNamesBlock);
-            bwOutput.Write((int)entryNamesBlock.Length);
+        /// <summary>
+        /// Padded size of an MHA entry: the next alignment boundary strictly past its data.
+        ///
+        /// <para>Every entry in the game's archives carries at least one padding byte, so an
+        /// entry whose size already lands on the boundary still gains a full block.</para>
+        /// </summary>
+        /// <param name="size">Entry size in bytes.</param>
+        /// <returns>The padded size.</returns>
+        private static int PadEntrySize(int size)
+        {
+            return size - (size % FileFormatConstants.MhaEntryAlignment)
+                + FileFormatConstants.MhaEntryAlignment;
         }
 
         /// <summary>

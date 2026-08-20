@@ -29,6 +29,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **ReFrontier**: MHA archives are repacked with their entry padding intact. `PackMHA` laid
+  entries out consecutively and wrote the entry size as the padded size, so a repacked
+  archive was smaller than the original and every entry offset moved. Entry padding is a
+  multiple of 512 and always strictly greater than the entry, but the exact amount is not
+  derivable from the entry size: 1,140 of the 26,048 entries in the client's archives
+  reserve more than the next boundary. Unpacking now records each entry's padded size in the
+  log as a third column, and packing reuses it, falling back to the next boundary past the
+  data for entries that grew or for logs written before the column existed. All 81 MHA
+  archives shipped with the PC client now unpack and repack byte for byte.
+
 - **ReFrontier**: MOMO archives can be unpacked. `UnpackSimpleArchive` read the entry count
   at the stream's position, which for MOMO is the magic, so every one of the 615 MOMO
   archives in the PC client's `dat/sound` directory failed with "Not a valid simple

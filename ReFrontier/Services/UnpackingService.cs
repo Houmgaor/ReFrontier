@@ -321,7 +321,10 @@ namespace ReFrontier.Services
                 brInput.BaseStream.Seek(pointerEntryNamesBlock + stringOffset, SeekOrigin.Begin);
                 string entryName = FileOperations.ReadNullterminatedString(brInput, Encoding.UTF8);
                 if (createLog)
-                    logOutput.WriteLine(entryName + "," + fileId);
+                    // The padded size is recorded so packing can lay the archive out exactly
+                    // as it was. It is not derivable from the entry size: most entries pad to
+                    // the next 512-byte boundary, but some reserve more.
+                    logOutput.WriteLine($"{entryName},{fileId},{pSize}");
 
                 // Extract file
                 brInput.BaseStream.Seek(entryOffset, SeekOrigin.Begin);

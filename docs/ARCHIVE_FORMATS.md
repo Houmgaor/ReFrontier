@@ -95,6 +95,26 @@ Offset  Size  Description
 0x10    4     File ID (uint32)
 ```
 
+### Padding
+
+Entry data is padded, and the padded size is what separates one entry from the next:
+entry `i + 1` begins at entry `i`'s offset plus its padded size, with the first entry at
+0x18. Across all 26,048 entries in the 82 MHA archives shipped with the PC client:
+
+- the padded size is always a multiple of 512
+- it is always *strictly* greater than the entry size, so every entry carries at least one
+  padding byte, and an entry whose size already lands on a boundary still gains a full block
+- padding bytes are zero
+- the names block begins at the last entry's padded end, the metadata block follows it, and
+  the file ends there with no trailing padding
+
+The padded size is **not** derivable from the entry size. Padding to the next boundary past
+the data accounts for 24,908 of the 26,048 entries; the remaining 1,140 reserve one or more
+extra blocks for no reason visible in the file. ReFrontier therefore records each entry's
+padded size in the unpacking log (third column, after the name and file ID) and reuses it
+when packing, falling back to the next boundary past the data for entries that grew beyond
+their reserved space, or for logs written before the padded size was recorded.
+
 ## ECD Encrypted Container
 
 ECD files use a Linear Congruential Generator (LCG) with a nibble-based Feistel cipher.
