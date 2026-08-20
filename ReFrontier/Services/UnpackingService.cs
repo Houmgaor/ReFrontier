@@ -160,11 +160,13 @@ namespace ReFrontier.Services
         /// <param name="cleanUp">Remove the initial input file.</param>
         /// <param name="autoStage">Unpack stage container if true.</param>
         /// <param name="verbose">Show per-file processing messages.</param>
+        /// <param name="containerType">Container type to record in the log, which decides
+        /// how the archive is written back by packing.</param>
         /// <returns>Output folder path.</returns>
         /// <exception cref="PackingException">Thrown if the file is too small or not a valid container.</exception>
         public string UnpackSimpleArchive(
             string input, BinaryReader brInput, int magicSize, bool createLog,
-            bool cleanUp, bool autoStage, bool verbose = false
+            bool cleanUp, bool autoStage, bool verbose = false, string containerType = "SimpleArchive"
         )
         {
             long fileLength = _fileSystem.GetFileLength(input);
@@ -176,6 +178,10 @@ namespace ReFrontier.Services
                 throw new PackingException("File is too small to be a valid archive (minimum 16 bytes required).", input);
             }
 
+            // The entry count sits immediately before the entry table: at offset 0 for a
+            // headerless archive, and after the 4-byte magic for MOMO. Reading it at the
+            // stream's current position instead took MOMO's magic as the count.
+            brInput.BaseStream.Seek(magicSize - 4, SeekOrigin.Begin);
             uint count = brInput.ReadUInt32();
             uint tempCount = count;
 
@@ -183,7 +189,8 @@ namespace ReFrontier.Services
             int completeSize = magicSize;
             for (int i = 0; i < count; i++)
             {
-                brInput.BaseStream.Seek(magicSize, SeekOrigin.Current);
+                // Step over the entry's offset field to reach its size field.
+                brInput.BaseStream.Seek(4, SeekOrigin.Current);
                 if (brInput.BaseStream.Position + 4 > brInput.BaseStream.Length)
                 {
                     if (verbose)
@@ -227,7 +234,7 @@ namespace ReFrontier.Services
 
             // Write to log file if desired
             _fileSystem.CreateDirectory(outputDir);
-            using var logOutput = InitializeLogFile(input, "SimpleArchive", (int)count, createLog, out string logPath);
+            using var logOutput = InitializeLogFile(input, containerType, (int)count, createLog, out string logPath);
 
             for (int i = 0; i < count; i++)
             {

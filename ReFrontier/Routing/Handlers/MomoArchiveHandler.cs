@@ -47,7 +47,8 @@ namespace ReFrontier.Routing.Handlers
                 args.createLog,
                 args.cleanUp,
                 args.autoStage,
-                args.verbose
+                args.verbose,
+                containerType: "MOMO"
             );
             // Record the container so it can be packed back through its log file.
             // Without a log there is nothing to repack from, so report no layer.
@@ -57,7 +58,7 @@ namespace ReFrontier.Routing.Handlers
             return ProcessFileResult.Success(outputPath, new RecipeLayer
             {
                 Kind = RecipeLayerKind.Container,
-                ContainerType = "SimpleArchive",
+                ContainerType = "MOMO",
                 Directory = System.IO.Path.GetFileName(outputPath),
                 OriginalSize = reader.BaseStream.Length,
             });

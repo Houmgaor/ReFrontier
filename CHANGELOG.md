@@ -29,6 +29,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **ReFrontier**: MOMO archives can be unpacked. `UnpackSimpleArchive` read the entry count
+  at the stream's position, which for MOMO is the magic, so every one of the 615 MOMO
+  archives in the PC client's `dat/sound` directory failed with "Not a valid simple
+  container (invalid size or entry count)". The count sits immediately before the entry
+  table in both archive shapes: at offset 0 for a headerless archive, after the magic for
+  MOMO.
+- **ReFrontier**: MOMO archives are repacked as MOMO rather than as headerless archives.
+  Unpacking records `MOMO` as the container type, and packing writes the magic, the count
+  and 64-byte aligned entry data. All 615 shipped archives unpack and repack byte for byte.
+- **ReFrontier**: `--validate` read the entry count and entry table one field too far along
+  for both archive shapes, reporting every MOMO archive as invalid and headerless archives
+  as an unrecognised format. In the PC client's `dat` directory this moves 615 files from
+  invalid to valid and 30 from unrecognised to valid.
+- **ReFrontier**: `--validate` accepts an empty MHA archive. Six files in `dat/extend` are
+  well-formed archives whose 24-byte header is the whole file, with a zero entry count and
+  both pointers at its end; they were reported as invalid.
+
 - **ReFrontier**: `--pack` no longer leaves a truncated archive at the output path when it
   cannot complete. Entries named by the log are now all checked before anything is written,
   and packing goes through a temporary file that is only promoted once it has fully

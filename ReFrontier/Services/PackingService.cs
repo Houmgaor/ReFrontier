@@ -178,6 +178,9 @@ namespace ReFrontier.Services
                     case "SimpleArchive":
                         PackSimpleArchive(logContent, inputDir, workingPath);
                         break;
+                    case "MOMO":
+                        PackMomoArchive(logContent, inputDir, workingPath);
+                        break;
                     case "MHA":
                         PackMHA(logContent, inputDir, workingPath);
                         break;
@@ -321,6 +324,72 @@ namespace ReFrontier.Services
                     offset = WriteFileEntry(bwOutput, 0x04 + i * 0x08, offset, fileData);
                 }
             }
+        }
+
+        /// <summary>
+        /// MOMO archive packing.
+        ///
+        /// <para>A MOMO archive is a 4-byte magic, the entry count, then a table of
+        /// offset and size pairs. Entry data is aligned to
+        /// <see cref="FileFormatConstants.MomoEntryAlignment"/> and the file is padded with
+        /// zeros to the same boundary, which reproduces the game's archives exactly.</para>
+        /// </summary>
+        /// <param name="logContent">Content of the log file.</param>
+        /// <param name="input">Input directory to pack.</param>
+        /// <param name="outputPath">Path to write the packed archive to.</param>
+        private void PackMomoArchive(string[] logContent, string input, string outputPath)
+        {
+            int count = ParseOrThrow<int>(logContent[2], "entry count", "Check the MOMO log file format.");
+            _logger.WriteLine($"MOMO archive with {count} entries.");
+
+            List<string> listFileNames = [];
+            for (int i = 3; i < logContent.Length; i++)
+            {
+                string[] columns = logContent[i].Split(',');
+                listFileNames.Add(columns[0]);
+            }
+
+            EnsureEntriesArePackable(listFileNames, count, input, "MOMO archive");
+
+            using (var stream = _fileSystem.OpenWrite(outputPath))
+            using (BinaryWriter bwOutput = new(stream))
+            {
+                bwOutput.Write(FileMagic.MOMO);
+                bwOutput.Write(count);
+
+                int offset = AlignUp(
+                    FileFormatConstants.MomoHeaderSize + count * FileFormatConstants.SimpleArchiveEntrySize,
+                    FileFormatConstants.MomoEntryAlignment
+                );
+                for (int i = 0; i < count; i++)
+                {
+                    _logger.WriteLine($"{input}/{listFileNames[i]}");
+                    byte[] fileData = [];
+                    if (listFileNames[i] != "null")
+                    {
+                        fileData = _fileSystem.ReadAllBytes($"{input}/{listFileNames[i]}");
+                    }
+                    int entryHeader = FileFormatConstants.MomoHeaderSize
+                        + i * FileFormatConstants.SimpleArchiveEntrySize;
+                    int entryEnd = WriteFileEntry(bwOutput, entryHeader, offset, fileData);
+                    offset = AlignUp(entryEnd, FileFormatConstants.MomoEntryAlignment);
+                }
+
+                // Pad out to the alignment boundary, as the game's own archives are.
+                if (bwOutput.BaseStream.Length < offset)
+                    bwOutput.BaseStream.SetLength(offset);
+            }
+        }
+
+        /// <summary>
+        /// Round a value up to the next multiple of an alignment.
+        /// </summary>
+        /// <param name="value">Value to round.</param>
+        /// <param name="alignment">Alignment boundary, a power of two.</param>
+        /// <returns>The rounded value.</returns>
+        private static int AlignUp(int value, int alignment)
+        {
+            return (value + alignment - 1) & ~(alignment - 1);
         }
 
         /// <summary>

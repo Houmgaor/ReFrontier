@@ -109,36 +109,42 @@ namespace ReFrontier.Tests.Services
 
         /// <summary>
         /// Build a valid MOMO archive buffer.
+        ///
+        /// <para>Layout as shipped by the game: a 4-byte magic, the entry count, then a
+        /// table of offset and size pairs, with entry data aligned to
+        /// <see cref="FileFormatConstants.MomoEntryAlignment"/>.</para>
         /// </summary>
         private static byte[] BuildMomoArchive(int entryCount)
         {
-            // MOMO header: 4 bytes magic + 4 bytes padding
-            // Then: 4 bytes count, entry table, data
-            int momoHeaderSize = 8;
-            int entryTableSize = entryCount * 8;
-            int dataPerEntry = 16;
-            int dataStart = momoHeaderSize + 4 + entryTableSize;
-            int totalSize = dataStart + entryCount * dataPerEntry;
+            const int dataPerEntry = 16;
+            int alignment = FileFormatConstants.MomoEntryAlignment;
+            static int AlignUp(int value, int alignment) => (value + alignment - 1) & ~(alignment - 1);
 
-            using var ms = new System.IO.MemoryStream();
-            using var bw = new System.IO.BinaryWriter(ms);
+            int tableEnd = FileFormatConstants.MomoHeaderSize
+                + entryCount * FileFormatConstants.SimpleArchiveEntrySize;
 
-            bw.Write(FileMagic.MOMO);       // Magic
-            bw.Write((uint)0);               // Padding
-            bw.Write(entryCount);            // Count
-
+            var offsets = new int[entryCount];
+            int position = AlignUp(tableEnd, alignment);
             for (int i = 0; i < entryCount; i++)
             {
-                bw.Write(dataStart + i * dataPerEntry);
-                bw.Write(dataPerEntry);
+                offsets[i] = position;
+                position = AlignUp(position + dataPerEntry, alignment);
             }
 
-            for (int i = 0; i < entryCount * dataPerEntry; i++)
+            byte[] buffer = new byte[position];
+            BitConverter.GetBytes(FileMagic.MOMO).CopyTo(buffer, 0);
+            BitConverter.GetBytes(entryCount).CopyTo(buffer, 4);
+            for (int i = 0; i < entryCount; i++)
             {
-                bw.Write((byte)(i & 0xFF));
+                int entryBase = FileFormatConstants.MomoHeaderSize
+                    + i * FileFormatConstants.SimpleArchiveEntrySize;
+                BitConverter.GetBytes(offsets[i]).CopyTo(buffer, entryBase);
+                BitConverter.GetBytes(dataPerEntry).CopyTo(buffer, entryBase + 4);
+                for (int j = 0; j < dataPerEntry; j++)
+                    buffer[offsets[i] + j] = (byte)((i * dataPerEntry + j) & 0xFF);
             }
 
-            return ms.ToArray();
+            return buffer;
         }
 
         /// <summary>
@@ -399,6 +405,24 @@ namespace ReFrontier.Tests.Services
             Assert.Contains(result.Checks, c => c.Layer == "Unknown");
         }
 
+        [Fact]
+        public void ValidateMha_EmptyArchive_IsValid()
+        {
+            // The client ships well-formed empty MHA archives whose 24-byte header is the
+            // whole file, with both pointers at its end. Rejecting count 0 called them corrupt.
+            byte[] buffer = new byte[24];
+            BitConverter.GetBytes(FileMagic.MHA).CopyTo(buffer, 0);
+            BitConverter.GetBytes(24).CopyTo(buffer, 4);   // pointerEntryMeta
+            BitConverter.GetBytes(0).CopyTo(buffer, 8);    // count
+            BitConverter.GetBytes(24).CopyTo(buffer, 12);  // pointerEntryNames
+            BitConverter.GetBytes(0).CopyTo(buffer, 16);   // namesBlockLength
+
+            var result = _service.ValidateBuffer(buffer, "f02_face.abn");
+
+            Assert.True(result.IsValid);
+            Assert.All(result.Checks, c => Assert.True(c.Passed, $"{c.CheckName} failed: {c.Detail}"));
+        }
+
         #endregion
 
         #region MOMO Tests
@@ -411,6 +435,46 @@ namespace ReFrontier.Tests.Services
             var checks = _service.ValidateMomo(buffer);
 
             Assert.All(checks, c => Assert.True(c.Passed, $"{c.CheckName} failed: {c.Detail}"));
+        }
+
+        [Fact]
+        public void ValidateMomo_CountIsReadAfterTheMagic()
+        {
+            byte[] buffer = BuildMomoArchive(5);
+
+            var checks = _service.ValidateMomo(buffer);
+
+            var count = Assert.Single(checks, c => c.CheckName == "EntryCount");
+            Assert.True(count.Passed);
+            Assert.Contains("5 entries", count.Detail, StringComparison.Ordinal);
+        }
+
+        #endregion
+
+        #region Simple Archive Tests
+
+        [Fact]
+        public void ValidateSimpleArchive_CountAtOffsetZero_IsRecognized()
+        {
+            // A headerless archive keeps its count at offset 0 and its table at 4.
+            // Reading them one field further along rejected real game files as unknown.
+            const int entryCount = 3;
+            const int dataPerEntry = 16;
+            int dataStart = 4 + entryCount * FileFormatConstants.SimpleArchiveEntrySize;
+            byte[] buffer = new byte[dataStart + entryCount * dataPerEntry];
+
+            BitConverter.GetBytes(entryCount).CopyTo(buffer, 0);
+            for (int i = 0; i < entryCount; i++)
+            {
+                int entryBase = 4 + i * FileFormatConstants.SimpleArchiveEntrySize;
+                BitConverter.GetBytes(dataStart + i * dataPerEntry).CopyTo(buffer, entryBase);
+                BitConverter.GetBytes(dataPerEntry).CopyTo(buffer, entryBase + 4);
+            }
+
+            var result = _service.ValidateBuffer(buffer, "plain.txb");
+
+            Assert.True(result.IsRecognized);
+            Assert.All(result.Checks, c => Assert.True(c.Passed, $"{c.CheckName} failed: {c.Detail}"));
         }
 
         #endregion
