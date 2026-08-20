@@ -45,8 +45,23 @@ namespace LibReFrontier
         /// <summary>
         /// Path to the meta file holding the original encryption header.
         /// Only set for <see cref="RecipeLayerKind.Ecd"/> and <see cref="RecipeLayerKind.Exf"/>.
+        ///
+        /// <para>Superseded by <see cref="Header"/>, which carries the same bytes inside the
+        /// recipe. Still written so that the meta file keeps working with <c>--encrypt</c>,
+        /// with FrontierTextTool, and with recipes read by older versions.</para>
         /// </summary>
         public string? MetaFile { get; set; }
+
+        /// <summary>
+        /// The original encryption header, Base64 encoded, as recipe version 2 and above
+        /// record it. Sixteen bytes holding the magic, key index, payload size and checksum
+        /// for ECD, or the seed for EXF.
+        ///
+        /// <para>Carrying it here makes the recipe self-contained: it can be moved or renamed
+        /// without its meta file. Restoring prefers it and falls back to
+        /// <see cref="MetaFile"/> for recipes written before version 2.</para>
+        /// </summary>
+        public string? Header { get; set; }
 
         /// <summary>
         /// JPK compression algorithm read from the JKR header.
@@ -93,8 +108,11 @@ namespace LibReFrontier
     {
         /// <summary>
         /// Schema version of recipes written by this build.
+        ///
+        /// <para>Version 2 embeds the encryption header in the recipe. Version 1 recipes are
+        /// still read, taking the header from the companion meta file.</para>
         /// </summary>
-        public const int CurrentVersion = 1;
+        public const int CurrentVersion = 2;
 
         /// <summary>
         /// Suffix appended to the source file name to build the recipe file name.

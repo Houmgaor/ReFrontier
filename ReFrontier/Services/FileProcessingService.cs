@@ -72,6 +72,40 @@ namespace ReFrontier.Services
         /// <exception cref="ReFrontierException">Thrown if encryption fails.</exception>
         public string EncryptEcdFile(string inputFile, string metaFile, bool cleanUp, bool verbose = false)
         {
+            byte[]? header = null;
+            if (_fileSystem.FileExists(metaFile))
+            {
+                header = _fileSystem.ReadAllBytes(metaFile);
+            }
+            else if (verbose)
+            {
+                _logger.Write(
+                    $"WARNING: META file {metaFile} not found. " +
+                    $"Using default ECD key index {Crypto.DefaultEcdKeyIndex}. " +
+                    "This works for all known MHF files, but may not match other game versions/regions.\n"
+                );
+            }
+
+            string encryptedFilePath = EncryptEcdFile(inputFile, header, cleanUp, verbose);
+            if (cleanUp)
+                _fileSystem.DeleteFile(metaFile);
+            return encryptedFilePath;
+        }
+
+        /// <summary>
+        /// Encrypt a single file to a new file, using an encryption header already in hand.
+        ///
+        /// <para>Recipes carry the header themselves from version 2 on, so restoring does not
+        /// need the meta file to still be sitting next to the recipe.</para>
+        /// </summary>
+        /// <param name="inputFile">Input file to encrypt.</param>
+        /// <param name="header">Original ECD header, or null to use the default key index.</param>
+        /// <param name="cleanUp">Remove inputFile once it has been encrypted.</param>
+        /// <param name="verbose">Show per-file processing messages.</param>
+        /// <returns>Encrypted file path.</returns>
+        /// <exception cref="ReFrontierException">Thrown if encryption fails.</exception>
+        public string EncryptEcdFile(string inputFile, byte[]? header, bool cleanUp, bool verbose = false)
+        {
             byte[] buffer = _fileSystem.ReadAllBytes(inputFile);
             // From mhfdat.bin.decd to mhdat.bin
             string encryptedFilePath = Path.Join(
@@ -80,23 +114,9 @@ namespace ReFrontier.Services
             );
             try
             {
-                if (_fileSystem.FileExists(metaFile))
-                {
-                    byte[] bufferMeta = _fileSystem.ReadAllBytes(metaFile);
-                    buffer = Crypto.EncodeEcd(buffer, bufferMeta);
-                }
-                else
-                {
-                    if (verbose)
-                    {
-                        _logger.Write(
-                            $"WARNING: META file {metaFile} not found. " +
-                            $"Using default ECD key index {Crypto.DefaultEcdKeyIndex}. " +
-                            "This works for all known MHF files, but may not match other game versions/regions.\n"
-                        );
-                    }
-                    buffer = Crypto.EncodeEcd(buffer, Crypto.DefaultEcdKeyIndex);
-                }
+                buffer = header != null
+                    ? Crypto.EncodeEcd(buffer, header)
+                    : Crypto.EncodeEcd(buffer, Crypto.DefaultEcdKeyIndex);
             }
             catch (ReFrontierException ex)
             {
@@ -107,10 +127,7 @@ namespace ReFrontier.Services
                 _logger.PrintWithSeparator($"File encrypted to {encryptedFilePath}.", false);
             _fileOperations.GetUpdateEntryInstance(inputFile);
             if (cleanUp)
-            {
                 _fileSystem.DeleteFile(inputFile);
-                _fileSystem.DeleteFile(metaFile);
-            }
             return encryptedFilePath;
         }
 
@@ -125,6 +142,22 @@ namespace ReFrontier.Services
         /// <exception cref="ReFrontierException">Thrown if decryption fails (e.g., invalid CRC32).</exception>
         public string DecryptEcdFile(string inputFile, bool createLog, bool cleanUp, bool verbose = false)
         {
+            return DecryptEcdFile(inputFile, createLog, cleanUp, verbose, out _);
+        }
+
+        /// <summary>
+        /// Decrypt a ECD encoded file, reporting the header that was stripped.
+        /// </summary>
+        /// <param name="inputFile">Input file path.</param>
+        /// <param name="createLog">True if we should create a meta file with the header.</param>
+        /// <param name="cleanUp">true if the original file should be deleted.</param>
+        /// <param name="verbose">Show per-file processing messages.</param>
+        /// <param name="header">The original encryption header, needed to encrypt the file back.</param>
+        /// <returns>Path to the decrypted file.</returns>
+        /// <exception cref="ReFrontierException">Thrown if decryption fails.</exception>
+        public string DecryptEcdFile(
+            string inputFile, bool createLog, bool cleanUp, bool verbose, out byte[] header)
+        {
             byte[] buffer = _fileSystem.ReadAllBytes(inputFile);
             try
             {
@@ -136,6 +169,7 @@ namespace ReFrontier.Services
             }
 
             var (ecdHeader, bufferStripped) = StripEncryptionHeader(buffer);
+            header = ecdHeader;
 
             string outputFile = inputFile + _config.DecryptedSuffix;
             _fileSystem.WriteAllBytes(outputFile, bufferStripped);
@@ -173,6 +207,22 @@ namespace ReFrontier.Services
         /// <exception cref="ReFrontierException">Thrown if decryption fails.</exception>
         public string DecryptExfFile(string inputFile, bool createLog, bool cleanUp, bool verbose = false)
         {
+            return DecryptExfFile(inputFile, createLog, cleanUp, verbose, out _);
+        }
+
+        /// <summary>
+        /// Decrypt a EXF encoded file, reporting the header that was stripped.
+        /// </summary>
+        /// <param name="inputFile">Input file path.</param>
+        /// <param name="createLog">True if we should create a meta file with the header.</param>
+        /// <param name="cleanUp">true if the original file should be deleted.</param>
+        /// <param name="verbose">Show per-file processing messages.</param>
+        /// <param name="header">The original encryption header, needed to encrypt the file back.</param>
+        /// <returns>Path to the decrypted file.</returns>
+        /// <exception cref="ReFrontierException">Thrown if decryption fails.</exception>
+        public string DecryptExfFile(
+            string inputFile, bool createLog, bool cleanUp, bool verbose, out byte[] header)
+        {
             byte[] buffer = _fileSystem.ReadAllBytes(inputFile);
             try
             {
@@ -184,6 +234,7 @@ namespace ReFrontier.Services
             }
 
             var (exfHeader, bufferStripped) = StripEncryptionHeader(buffer);
+            header = exfHeader;
 
             string outputFile = inputFile + _config.DecryptedExfSuffix;
             _fileSystem.WriteAllBytes(outputFile, bufferStripped);
@@ -226,26 +277,48 @@ namespace ReFrontier.Services
         /// <exception cref="ReFrontierException">Thrown if encryption fails.</exception>
         public string EncryptExfFile(string inputFile, string metaFile, bool cleanUp, bool verbose = false)
         {
+            if (!_fileSystem.FileExists(metaFile))
+            {
+                throw new FileNotFoundException(
+                    $"META file {metaFile} does not exist, " +
+                    $"cannot encrypt {inputFile}. " +
+                    "EXF encryption needs the original header, which extraction saves next to " +
+                    "the file unless --noMeta was used. Place the meta file in the same folder " +
+                    "as the file to encrypt, or extract the original again."
+                );
+            }
+
+            string encryptedFilePath = EncryptExfFile(
+                inputFile, _fileSystem.ReadAllBytes(metaFile), cleanUp, verbose
+            );
+            if (cleanUp)
+                _fileSystem.DeleteFile(metaFile);
+            return encryptedFilePath;
+        }
+
+        /// <summary>
+        /// Encrypt a single file to EXF format, using an encryption header already in hand.
+        ///
+        /// <para>Recipes carry the header themselves from version 2 on, so restoring does not
+        /// need the meta file to still be sitting next to the recipe.</para>
+        /// </summary>
+        /// <param name="inputFile">Input file to encrypt.</param>
+        /// <param name="header">Original EXF header, which carries the seed.</param>
+        /// <param name="cleanUp">Remove inputFile once it has been encrypted.</param>
+        /// <param name="verbose">Show per-file processing messages.</param>
+        /// <returns>Encrypted file path.</returns>
+        /// <exception cref="ReFrontierException">Thrown if encryption fails.</exception>
+        public string EncryptExfFile(string inputFile, byte[] header, bool cleanUp, bool verbose = false)
+        {
             byte[] buffer = _fileSystem.ReadAllBytes(inputFile);
             // From file.exf.dexf to file.exf
             string encryptedFilePath = Path.Join(
                 Path.GetDirectoryName(inputFile),
                 Path.GetFileNameWithoutExtension(inputFile)
             );
-            if (!_fileSystem.FileExists(metaFile))
-            {
-                throw new FileNotFoundException(
-                    $"META file {metaFile} does not exist, " +
-                    $"cannot encrypt {inputFile}. " +
-                    "Make sure to decrypt the initial file with the --saveMeta option, " +
-                    "and to place the generated meta file in the same folder as the file " +
-                    "to encrypt."
-                );
-            }
-            byte[] bufferMeta = _fileSystem.ReadAllBytes(metaFile);
             try
             {
-                buffer = Crypto.EncodeExf(buffer, bufferMeta);
+                buffer = Crypto.EncodeExf(buffer, header);
             }
             catch (ReFrontierException ex)
             {
@@ -256,10 +329,7 @@ namespace ReFrontier.Services
                 _logger.PrintWithSeparator($"File encrypted to {encryptedFilePath}.", false);
             _fileOperations.GetUpdateEntryInstance(inputFile);
             if (cleanUp)
-            {
                 _fileSystem.DeleteFile(inputFile);
-                _fileSystem.DeleteFile(metaFile);
-            }
             return encryptedFilePath;
         }
     }

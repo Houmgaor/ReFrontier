@@ -114,7 +114,7 @@ Files are identified by magic headers:
 
 - Unpacked files go to `output/` directory
 - `.meta` files store encryption metadata (required for re-encryption)
-- `.recipe.json` files record the encryption/compression/container layers undone during extraction, consumed by `--restore`
+- `.recipe.json` files record the encryption/compression/container layers undone during extraction, consumed by `--restore`. From recipe version 2 they embed the encryption header, so they work without the `.meta` file; `.meta` is still written for `--encrypt`, FrontierTextTool and older versions
 - `.decd` suffix for decrypted files
 - `.unpacked/` suffix for unpacked directories
 

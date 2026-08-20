@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 
 using LibReFrontier;
@@ -46,10 +47,7 @@ namespace ReFrontier.Routing.Handlers
                 _logger.WriteLine("ECD Header detected.");
 
             var outputPath = _fileProcessingService.DecryptEcdFile(
-                filePath,
-                args.createLog,
-                args.cleanUp,
-                args.verbose
+                filePath, args.createLog, args.cleanUp, args.verbose, out byte[] header
             );
 
             // Record the encryption so the file can be re-encrypted with its original key.
@@ -57,6 +55,9 @@ namespace ReFrontier.Routing.Handlers
             {
                 Kind = RecipeLayerKind.Ecd,
                 MetaFile = args.createLog ? $"{filePath}{_config.MetaSuffix}" : null,
+                // Carried in the recipe so it stays usable on its own; the meta file is
+                // still written for --encrypt, FrontierTextTool and older versions.
+                Header = Convert.ToBase64String(header),
                 OriginalSize = reader.BaseStream.Length,
             });
         }
