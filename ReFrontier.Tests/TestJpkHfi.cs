@@ -4,13 +4,86 @@ namespace ReFrontier.Tests
 {
     /// <summary>
     /// Tests for JPKEncodeHFI and JPKDecodeHFI (Huffman + LZ compression).
-    /// Note: HFI uses randomization in table generation, so some tests verify
-    /// structural properties rather than exact byte equality across runs.
     /// </summary>
     public class TestJpkHfi
     {
         private const int HuffmanTableHeaderSize = 2; // Int16 for table length
         private const short ExpectedTableLength = 0x1FE;
+
+        /// <summary>
+        /// SHA-256 of the 1022-byte Huffman table the encoder emits (2-byte length plus
+        /// 510 entries). The table does not depend on the input, so pinning it detects any
+        /// change in the permutation — including a platform or runtime difference in
+        /// seeded Random or in OrderBy, which the multi-OS CI would otherwise not catch.
+        /// Update this only when the table is meant to change.
+        /// </summary>
+        private const string ExpectedTableHash =
+            "3f48199120871acbb432cc02e47760ac6f89e617731a7f5efa68ec994fead6cf";
+
+        private const int HuffmanTableSize = 1022;
+
+        private static byte[] Encode(byte[] input, int level = 50)
+        {
+            var encoder = new JPKEncodeHFI();
+            using var outStream = new MemoryStream();
+            encoder.ProcessOnEncode(input, outStream, level);
+            return outStream.ToArray();
+        }
+
+        #region Determinism Tests
+
+        [Fact]
+        public void EncodeHFI_IsDeterministic()
+        {
+            // The leaf permutation used to be seeded from the clock, so the same input
+            // compressed to a different file on every run and output could not be
+            // compared, cached or checksummed.
+            byte[] input = TestHelpers.RandomData(4096, seed: 4242);
+
+            byte[] first = Encode(input);
+            byte[] second = Encode(input);
+
+            Assert.Equal(first, second);
+        }
+
+        [Fact]
+        public void EncodeHFIRW_IsDeterministic()
+        {
+            // HFIRW builds its table with the same FillTable, so it shared the problem.
+            byte[] input = TestHelpers.RandomData(4096, seed: 2424);
+
+            static byte[] EncodeRw(byte[] data)
+            {
+                var encoder = new JPKEncodeHFIRW();
+                using var outStream = new MemoryStream();
+                encoder.ProcessOnEncode(data, outStream, level: 50);
+                return outStream.ToArray();
+            }
+
+            Assert.Equal(EncodeRw(input), EncodeRw(input));
+        }
+
+        [Fact]
+        public void EncodeHFI_TableDoesNotDependOnInput()
+        {
+            byte[] fromOneInput = Encode(TestHelpers.RandomData(2048, seed: 1))[..HuffmanTableSize];
+            byte[] fromAnother = Encode(TestHelpers.RandomData(3000, seed: 2))[..HuffmanTableSize];
+
+            Assert.Equal(fromOneInput, fromAnother);
+        }
+
+        [Fact]
+        public void EncodeHFI_TableMatchesPinnedValue()
+        {
+            byte[] table = Encode(TestHelpers.RandomData(1024, seed: 7))[..HuffmanTableSize];
+
+            string actual = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(table))
+                .ToLowerInvariant();
+
+            Assert.Equal(ExpectedTableHash, actual);
+        }
+
+        #endregion
 
         #region Encode Tests
 
