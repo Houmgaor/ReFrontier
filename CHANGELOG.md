@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-08-20
+
 ### Added
 
 - **ReFrontier**: Every task is now a command: `unpack`, `decrypt`, `pack`, `restore`,
@@ -32,33 +34,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   bytes rather than a file path (`EncryptEcdFile`, `EncryptExfFile`), and that report the
   header when decrypting (`DecryptEcdFile`, `DecryptExfFile`).
 
-### Changed
-
-- The task-selecting flags are deprecated in favour of the commands and warn with the
-  command to use: `--decryptOnly`, `--pack`, `--restore`, `--validate`, `--diff`,
-  `--compress` and `--encrypt`. They still work, so existing scripts keep running, and
-  will be removed in a future major release. The bare form `ReFrontier <file>` is not
-  deprecated.
-- `.meta` files are still written and still read. `--encrypt`, FrontierTextTool and older
-  versions of ReFrontier all use them, and a version 2 recipe read by an older build falls
-  back to the `.meta` file and rebuilds correctly. Version 1 recipes are read unchanged.
-- **BREAKING**: Metadata is written by default. `.meta`, `.log` and `.recipe.json` were only
-  produced with `--saveMeta`, so the common case of extracting a file and then trying to
-  rebuild it failed, and on a bare JPK file the original was deleted with nothing recording
-  how it had been compressed. `--saveMeta` is still accepted and now warns; `--noMeta`
-  disables the metadata for anyone who wants a clean directory.
-- **BREAKING**: Decompressing a file no longer deletes it. `UnpackJPK` removed its input
-  unconditionally, which destroyed the user's own file when they decompressed one directly.
-  Files supplied by the user are now kept unless `--cleanUp` is passed; intermediates
-  ReFrontier itself produces are still removed, so the extracted layout is unchanged.
-- A file that turns out not to be a container is reported as skipped rather than as an
-  error. The fallback handler accepts any file and finds out by trying, so failing is an
-  ordinary outcome; counting it as an error made a second run over an already extracted
-  folder report failures that meant nothing.
-- Directory scans skip payloads a previous run extracted, so re-running over the same
-  folder no longer retries them.
-
-### Added
 
 - **ReFrontier**: Extraction now records how a file was taken apart in a
   `<original file>.recipe.json` next to it, written alongside the `.meta` file when
@@ -77,6 +52,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   then discarded, leaving the user to guess it when repacking; guessing wrong produced a
   file the game rejects, with no error. `--restore` accepts either the original file name
   or the extracted one, and refuses to run on a file that is still packed.
+
+### Changed
+
+- The task-selecting flags are deprecated in favour of the commands and warn with the
+  command to use: `--decryptOnly`, `--pack`, `--restore`, `--validate`, `--diff`,
+  `--compress` and `--encrypt`. They still work, so existing scripts keep running, and
+  will be removed in a future major release. The bare form `ReFrontier <file>` is not
+  deprecated.
+- `.meta` files are still written and still read. `--encrypt`, FrontierTextTool and older
+  versions of ReFrontier all use them, and a version 2 recipe read by an older build falls
+  back to the `.meta` file and rebuilds correctly. Version 1 recipes are read unchanged.
+- Metadata is written by default. `.meta`, `.log` and `.recipe.json` were only
+  produced with `--saveMeta`, so the common case of extracting a file and then trying to
+  rebuild it failed, and on a bare JPK file the original was deleted with nothing recording
+  how it had been compressed. `--saveMeta` is still accepted and now warns; `--noMeta`
+  disables the metadata for anyone who wants a clean directory.
+- Decompressing a file no longer deletes it. `UnpackJPK` removed its input
+  unconditionally, which destroyed the user's own file when they decompressed one directly.
+  Files supplied by the user are now kept unless `--cleanUp` is passed; intermediates
+  ReFrontier itself produces are still removed, so the extracted layout is unchanged.
+- A file that turns out not to be a container is reported as skipped rather than as an
+  error. The fallback handler accepts any file and finds out by trying, so failing is an
+  ordinary outcome; counting it as an error made a second run over an already extracted
+  folder report failures that meant nothing.
+- Directory scans skip payloads a previous run extracted, so re-running over the same
+  folder no longer retries them.
 
 ### Fixed
 
@@ -152,6 +153,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `--restore` is the equivalent for a normal recursive extraction.
 - Restoring a container rebuilds its entries in place, under the names the log uses, so the
   unpacked directory is modified. Rebuilding is idempotent.
+
+## [2.2.0] - 2026-02-23
+
+### Added
+
+- **ReFrontier**: New `--validate` option checks a file's integrity without writing any
+  output, walking every encryption, compression and archive layer (ECD, EXF, JPK, MOMO,
+  MHA, FTXT) and verifying CRC32, declared sizes and bounds.
+- **ReFrontier**: New `--diff` option compares two game files structurally, through their
+  encryption and compression layers, rather than as opaque bytes.
+- **FrontierDataTool**: Quest text can be reimported, and extracted data can be written as
+  JSON in addition to CSV.
+
+### Notes
+
+- This section was reconstructed after the fact: the 2.2.0 release bumped the project
+  version but did not move its entries out of `[Unreleased]`, so these changes shipped
+  undocumented.
 
 ## [2.1.0] - 2026-02-22
 
