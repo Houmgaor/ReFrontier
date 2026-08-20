@@ -36,7 +36,7 @@ namespace ReFrontier.Tests.Services
             var recipe = _service.FindRecipe("/test/mhfdat.bin", out string? recipePath);
 
             Assert.NotNull(recipe);
-            Assert.Equal("/test/mhfdat.bin.recipe.json", recipePath);
+            Assert.Equal("/test/mhfdat.bin.recipe.json", recipePath?.Replace('\\', '/'));
         }
 
         [Fact]
@@ -48,7 +48,7 @@ namespace ReFrontier.Tests.Services
             var recipe = _service.FindRecipe("/test/mhfdat.bin.decd.bin", out string? recipePath);
 
             Assert.NotNull(recipe);
-            Assert.Equal("/test/mhfdat.bin.recipe.json", recipePath);
+            Assert.Equal("/test/mhfdat.bin.recipe.json", recipePath?.Replace('\\', '/'));
         }
 
         [Fact]

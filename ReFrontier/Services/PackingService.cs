@@ -138,14 +138,18 @@ namespace ReFrontier.Services
         /// <exception cref="PackingException">Thrown if the container type is unknown or packing fails.</exception>
         public string ProcessPackInput(string inputDir, string? outputDirectory)
         {
-            string logFile = Path.Join(
-                inputDir,
-                $"{inputDir[(inputDir.LastIndexOf('/') + 1)..]}{_config.LogSuffix}"
-            );
+            // The log is either inside the directory under the directory's own name, or
+            // beside it under the name of the file that was unpacked. Slicing on a literal
+            // '/' missed the first form on Windows, where paths are separated by '\'.
+            string trimmed = inputDir.TrimEnd('/', '\\');
+            string logFile = Path.Join(trimmed, $"{Path.GetFileName(trimmed)}{_config.LogSuffix}");
             if (!_fileSystem.FileExists(logFile))
             {
                 string tempLog = logFile;
-                logFile = inputDir[..inputDir.LastIndexOf('.')] + _config.LogSuffix;
+                int lastDot = trimmed.LastIndexOf('.');
+                logFile = lastDot < 0
+                    ? trimmed + _config.LogSuffix
+                    : trimmed[..lastDot] + _config.LogSuffix;
                 if (!_fileSystem.FileExists(logFile))
                     throw new FileNotFoundException(
                         $"Neither log files {tempLog} nor {logFile} exist."
