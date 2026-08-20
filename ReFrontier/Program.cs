@@ -362,13 +362,13 @@ namespace ReFrontier
 
             // Record how the file was taken apart, so it can be put back together
             // without the user having to re-specify encryption and compression settings.
-            // Only meaningful when the extraction ended on a single editable file:
-            // container archives are repacked through their .log file instead.
+            // The artifact is a file for an encrypted or compressed chain, and the
+            // unpacked directory when the chain ends in a container archive.
             if (inputArguments.createLog
                 && layers.Count > 0
                 && result.WasProcessed
                 && result.OutputPath != null
-                && _fileSystem.FileExists(result.OutputPath))
+                && (_fileSystem.FileExists(result.OutputPath) || _fileSystem.DirectoryExists(result.OutputPath)))
             {
                 WriteRecipe(filePath, result.OutputPath, layers, inputArguments.verbose);
             }

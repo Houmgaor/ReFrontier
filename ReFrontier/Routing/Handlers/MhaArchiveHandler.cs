@@ -41,7 +41,18 @@ namespace ReFrontier.Routing.Handlers
             if (args.verbose)
                 _logger.WriteLine("MHA Header detected.");
             var outputPath = _unpackingService.UnpackMHA(filePath, reader, args.createLog, args.verbose);
-            return ProcessFileResult.Success(outputPath);
+            // Record the container so it can be packed back through its log file.
+            // Without a log there is nothing to repack from, so report no layer.
+            if (!args.createLog)
+                return ProcessFileResult.Success(outputPath);
+
+            return ProcessFileResult.Success(outputPath, new RecipeLayer
+            {
+                Kind = RecipeLayerKind.Container,
+                ContainerType = "MHA",
+                Directory = System.IO.Path.GetFileName(outputPath),
+                OriginalSize = reader.BaseStream.Length,
+            });
         }
     }
 }

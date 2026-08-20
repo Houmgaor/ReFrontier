@@ -78,7 +78,7 @@ Packing reverses this flow: Pack → Compress → Encrypt.
 
 **Services** (`ReFrontier/Services/`):
 - `FileProcessingService` - Encryption/decryption operations
-- `RestoreService` - Rebuilds a file from its `ExtractionRecipe` (finds the recipe, reverses its layers)
+- `RestoreService` - Rebuilds a file from its `ExtractionRecipe` (finds the recipe, reverses its layers, recurses through container entries)
 - `PackingService` - JPK encoding and archive packing
 - `UnpackingService` - JPK decoding and archive unpacking
 - `FileProcessingConfig` - Configurable paths and suffixes
@@ -114,7 +114,7 @@ Files are identified by magic headers:
 
 - Unpacked files go to `output/` directory
 - `.meta` files store encryption metadata (required for re-encryption)
-- `.recipe.json` files record the encryption/compression layers undone during extraction, consumed by `--restore`
+- `.recipe.json` files record the encryption/compression/container layers undone during extraction, consumed by `--restore`
 - `.decd` suffix for decrypted files
 - `.unpacked/` suffix for unpacked directories
 
@@ -164,7 +164,7 @@ Key options:
 - `--autoStage` - Auto-detect stage-specific containers
 - `--ignoreJPK` - Skip JPK decompression
 - `--pack` - Repack directory
-- `--restore` - Rebuild a file from its `.recipe.json` (reverses recorded encryption/compression; `--level` overrides the level)
+- `--restore` - Rebuild a file or unpacked directory from its `.recipe.json` (reverses recorded encryption, compression and container layers, recursing into nested containers; `--level` overrides the level)
 - `--cleanUp` - Delete source files after processing
 
 ## Testing

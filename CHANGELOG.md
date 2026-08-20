@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `<original file>.recipe.json` next to it, written alongside the `.meta` file when
   extracting with `--saveMeta`. The recipe lists each encryption and compression layer
   that was undone, outermost first.
+- **ReFrontier**: Container archives are recorded too. A file that unpacks into a directory
+  (simple archive, MOMO, MHA, stage container) gets a `Container` layer naming that
+  directory, and `--restore` rebuilds every entry that was itself unpacked, packs the
+  directory back through its log file, and applies whatever compression and encryption sat
+  above it. Nesting is followed to the bottom and rebuilt depth first, so a model file that
+  is an encrypted archive of archives of compressed streams comes back in one command.
+  `--restore` accepts the original file name or the unpacked directory.
 - **ReFrontier**: New `--restore` option rebuilds a file by reversing its recipe, so
   repacking no longer requires re-specifying `--compress`, `--level` and `--encrypt`.
   Previously the JPK compression type was read from the JKR header during extraction and
@@ -39,8 +46,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Compression level is still not recoverable from a game file (it is an encoder-side
   parameter absent from the JKR header). `--restore` defaults to level 80 and accepts
   `--level` as an override; this affects output size only, not correctness.
-- Container archives (MOMO, MHA) that unpack into a directory keep using the existing
-  `.log` plus `--pack` flow; recipes cover single-file extraction chains.
+- `--pack` remains available for repacking a directory on its own; it requires the entries
+  to still be in the form the log names, which means extracting with `--nonRecursive`.
+  `--restore` is the equivalent for a normal recursive extraction.
+- Restoring a container rebuilds its entries in place, under the names the log uses, so the
+  unpacked directory is modified. Rebuilding is idempotent.
 
 ## [2.1.0] - 2026-02-22
 

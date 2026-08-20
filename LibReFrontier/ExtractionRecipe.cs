@@ -23,6 +23,12 @@ namespace LibReFrontier
         /// JPK (JKR) compression.
         /// </summary>
         Jpk = 2,
+
+        /// <summary>
+        /// A container archive that was unpacked into a directory. Reversed by packing
+        /// that directory back through its log file.
+        /// </summary>
+        Container = 3,
     }
 
     /// <summary>
@@ -55,6 +61,19 @@ namespace LibReFrontier
         /// the game file. Restoring falls back to <see cref="ExtractionRecipe.DefaultCompressionLevel"/>.</para>
         /// </summary>
         public int? Level { get; set; }
+
+        /// <summary>
+        /// Container type as written on the first line of the log file
+        /// (<c>SimpleArchive</c>, <c>MHA</c> or <c>StageContainer</c>).
+        /// Only set for <see cref="RecipeLayerKind.Container"/>.
+        /// </summary>
+        public string? ContainerType { get; set; }
+
+        /// <summary>
+        /// Name of the directory the container was unpacked into.
+        /// Only set for <see cref="RecipeLayerKind.Container"/>.
+        /// </summary>
+        public string? Directory { get; set; }
 
         /// <summary>
         /// Size in bytes of this layer as it was in the original file.
@@ -100,8 +119,9 @@ namespace LibReFrontier
         public string SourceFile { get; set; } = "";
 
         /// <summary>
-        /// File name of the editable file produced by extraction,
-        /// e.g. <c>mhfdat.bin.decd.bin</c>.
+        /// File name of the artifact produced by extraction: an editable file such as
+        /// <c>mhfdat.bin.decd.bin</c>, or the unpacked directory of a container such as
+        /// <c>em001_b.pac.decd.unpacked</c>.
         /// </summary>
         public string ExtractedFile { get; set; } = "";
 

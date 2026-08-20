@@ -26,6 +26,12 @@ namespace ReFrontier.Services
         /// </summary>
         private const int MaxSuffixProbes = 3;
 
+        /// <summary>
+        /// How deep container nesting may go before a recipe is assumed to be cyclic.
+        /// Real game files nest two or three levels.
+        /// </summary>
+        private const int MaxNestingDepth = 16;
+
         private readonly IFileSystem _fileSystem;
         private readonly ILogger _logger;
         private readonly PackingService _packingService;
@@ -107,6 +113,47 @@ namespace ReFrontier.Services
         /// <exception cref="ReFrontierException">Thrown when compression or encryption fails.</exception>
         public string Restore(string inputPath, int? levelOverride, bool verbose = false)
         {
+            return Restore(inputPath, levelOverride, null, verbose);
+        }
+
+        /// <summary>
+        /// Rebuild a game file from its recipe, into a chosen directory.
+        /// </summary>
+        /// <param name="inputPath">Edited file or unpacked directory to rebuild from.</param>
+        /// <param name="levelOverride">Compression level to use instead of the recipe's, if any.</param>
+        /// <param name="outputDirectory">Directory to write the rebuilt file into, or null
+        /// for the configured output directory. Nested entries are rebuilt beside their
+        /// siblings so that the container above them can be packed from a complete directory.</param>
+        /// <param name="verbose">Show per-file processing messages.</param>
+        /// <returns>Path of the rebuilt file.</returns>
+        /// <exception cref="FileNotFoundException">Thrown when no recipe can be found.</exception>
+        /// <exception cref="ReFrontierException">Thrown when packing, compression or encryption fails.</exception>
+        public string Restore(string inputPath, int? levelOverride, string? outputDirectory, bool verbose = false)
+        {
+            return RestoreInternal(inputPath, levelOverride, outputDirectory, verbose, depth: 0);
+        }
+
+        /// <summary>
+        /// Rebuild one artifact, recursing into nested containers.
+        /// </summary>
+        /// <param name="inputPath">Edited file or unpacked directory to rebuild from.</param>
+        /// <param name="levelOverride">Compression level to use instead of the recipe's, if any.</param>
+        /// <param name="outputDirectory">Directory to write the rebuilt file into.</param>
+        /// <param name="verbose">Show per-file processing messages.</param>
+        /// <param name="depth">Current nesting depth, guarding against a recipe that points at itself.</param>
+        /// <returns>Path of the rebuilt file.</returns>
+        private string RestoreInternal(
+            string inputPath, int? levelOverride, string? outputDirectory, bool verbose, int depth)
+        {
+            if (depth > MaxNestingDepth)
+            {
+                throw new ReFrontierException(
+                    $"Gave up rebuilding {inputPath} after {MaxNestingDepth} levels of nesting. " +
+                    "A recipe most likely points back at a container that contains it.",
+                    inputPath
+                );
+            }
+
             var recipe = FindRecipe(inputPath, out string? recipePath)
                 ?? throw new FileNotFoundException(
                     $"No extraction recipe found for {inputPath}. " +
@@ -121,22 +168,6 @@ namespace ReFrontier.Services
                     $"Warning: {recipePath} was written by a newer version of ReFrontier " +
                     $"(recipe version {recipe.Version}, this build understands {ExtractionRecipe.CurrentVersion}). " +
                     "Restoring anyway, the result may be incomplete."
-                );
-            }
-
-            // Guard against rebuilding from a file that is still packed. Extraction leaves
-            // the original next to the recipe, and pointing at it by mistake would compress
-            // and encrypt already-compressed, already-encrypted bytes into a broken file.
-            uint magic = ReadMagic(inputPath);
-            if (FileMagic.IsEncrypted(magic) || FileMagic.IsJpkCompressed(magic))
-            {
-                string hint = string.IsNullOrEmpty(recipe.ExtractedFile)
-                    ? "the extracted file"
-                    : recipe.ExtractedFile;
-                throw new ReFrontierException(
-                    $"{Path.GetFileName(inputPath)} is still encrypted or compressed, " +
-                    $"so there is nothing to rebuild from it. Point --restore at {hint} instead.",
-                    inputPath
                 );
             }
 
@@ -156,7 +187,7 @@ namespace ReFrontier.Services
             if (recipe.Layers.Count == 0)
             {
                 throw new ReFrontierException(
-                    $"{recipePath} records no encryption or compression, so there is nothing to rebuild. " +
+                    $"{recipePath} records no layer to reverse, so there is nothing to rebuild. " +
                     "Extract the original file again with --saveMeta to write a usable recipe.",
                     inputPath
                 );
@@ -165,6 +196,7 @@ namespace ReFrontier.Services
             // Layers are recorded outermost first, so reverse them to rebuild.
             RecipeLayer? encryption = null;
             RecipeLayer? compression = null;
+            RecipeLayer? container = null;
             foreach (var layer in recipe.Layers)
             {
                 switch (layer.Kind)
@@ -176,22 +208,70 @@ namespace ReFrontier.Services
                     case RecipeLayerKind.Jpk:
                         compression ??= layer;
                         break;
+                    case RecipeLayerKind.Container:
+                        container ??= layer;
+                        break;
                     default:
                         break;
                 }
             }
 
-            _fileSystem.CreateDirectory(_config.OutputDirectory);
+            string targetDirectory = outputDirectory ?? _config.OutputDirectory;
+            _fileSystem.CreateDirectory(targetDirectory);
 
             // When the file is encrypted, compression has to write to the name the
             // encryption step expects, since it derives its output from its input name.
             string encryptedSuffix = encryption?.Kind == RecipeLayerKind.Exf
                 ? _config.DecryptedExfSuffix
                 : _config.DecryptedSuffix;
-            string finalPath = Path.Combine(_config.OutputDirectory, sourceName);
+            string finalPath = Path.Combine(targetDirectory, sourceName);
             string intermediatePath = encryption == null ? finalPath : $"{finalPath}{encryptedSuffix}";
 
             _logger.WriteLine($"Restoring {sourceName} from {recipePath}.");
+
+            // Produce the payload the compression and encryption layers apply to. For a
+            // container that means rebuilding its entries and packing the directory;
+            // otherwise it is simply the file the user edited.
+            string payloadPath;
+            string? scratchPath = null;
+            if (container != null)
+            {
+                string containerDir = ResolveContainerDirectory(inputPath, recipe, container, recipeDir);
+                int rebuilt = RestoreContainerEntries(containerDir, levelOverride, verbose, depth);
+                if (rebuilt > 0)
+                    _logger.WriteLine($"Rebuilt {rebuilt} nested {(rebuilt == 1 ? "entry" : "entries")} in {containerDir}.");
+
+                payloadPath = _packingService.ProcessPackInput(containerDir, targetDirectory);
+                scratchPath = payloadPath;
+            }
+            else
+            {
+                if (_fileSystem.DirectoryExists(inputPath))
+                {
+                    throw new ReFrontierException(
+                        $"{Path.GetFileName(inputPath)} is a directory, but {recipePath} does not " +
+                        "describe a container archive. Point --restore at the extracted file, " +
+                        "or repack the directory with --pack.",
+                        inputPath
+                    );
+                }
+
+                // Extraction leaves the original next to the recipe, and pointing at it by
+                // mistake would compress and encrypt already-packed bytes into a broken file.
+                uint magic = ReadMagic(inputPath);
+                if (FileMagic.IsEncrypted(magic) || FileMagic.IsJpkCompressed(magic))
+                {
+                    string hint = string.IsNullOrEmpty(recipe.ExtractedFile)
+                        ? "the extracted file"
+                        : recipe.ExtractedFile;
+                    throw new ReFrontierException(
+                        $"{Path.GetFileName(inputPath)} is still encrypted or compressed, " +
+                        $"so there is nothing to rebuild from it. Point --restore at {hint} instead.",
+                        inputPath
+                    );
+                }
+                payloadPath = inputPath;
+            }
 
             if (compression != null)
             {
@@ -204,11 +284,20 @@ namespace ReFrontier.Services
                         "Override it with --level."
                     );
                 }
-                _packingService.JPKEncode(new Compression(algorithm, level), inputPath, intermediatePath);
+                _packingService.JPKEncode(new Compression(algorithm, level), payloadPath, intermediatePath);
             }
-            else
+            else if (!SamePath(payloadPath, intermediatePath))
             {
-                _fileSystem.WriteAllBytes(intermediatePath, _fileSystem.ReadAllBytes(inputPath));
+                _fileSystem.WriteAllBytes(intermediatePath, _fileSystem.ReadAllBytes(payloadPath));
+            }
+
+            // Packing names its output from the log, which may not be the name the next
+            // layer expects; drop the copy once its contents have moved on.
+            if (scratchPath != null
+                && !SamePath(scratchPath, intermediatePath)
+                && _fileSystem.FileExists(scratchPath))
+            {
+                _fileSystem.DeleteFile(scratchPath);
             }
 
             if (encryption != null)
@@ -226,6 +315,100 @@ namespace ReFrontier.Services
 
             ReportResult(finalPath, recipe);
             return finalPath;
+        }
+
+        /// <summary>
+        /// Locate the unpacked directory of a container layer.
+        ///
+        /// <para>Accepts the directory itself, or the original file name, in which case the
+        /// recipe says which directory the container was unpacked into.</para>
+        /// </summary>
+        /// <param name="inputPath">Path the user pointed at.</param>
+        /// <param name="recipe">Recipe being restored.</param>
+        /// <param name="container">The container layer.</param>
+        /// <param name="recipeDir">Directory holding the recipe.</param>
+        /// <returns>Path of the unpacked directory.</returns>
+        /// <exception cref="ReFrontierException">Thrown when the directory cannot be found.</exception>
+        private string ResolveContainerDirectory(
+            string inputPath, ExtractionRecipe recipe, RecipeLayer container, string recipeDir)
+        {
+            if (_fileSystem.DirectoryExists(inputPath))
+                return inputPath;
+
+            string? directoryName = container.Directory;
+            if (string.IsNullOrEmpty(directoryName))
+                directoryName = recipe.ExtractedFile;
+
+            if (!string.IsNullOrEmpty(directoryName))
+            {
+                string candidate = Path.Combine(recipeDir, directoryName);
+                if (_fileSystem.DirectoryExists(candidate))
+                    return candidate;
+            }
+
+            throw new ReFrontierException(
+                $"Cannot rebuild {recipe.SourceFile}: its unpacked directory " +
+                $"{directoryName ?? "(unknown)"} is missing. Extract the original file again " +
+                "with --saveMeta, or point --restore at the unpacked directory.",
+                inputPath
+            );
+        }
+
+        /// <summary>
+        /// Rebuild every entry of a container that extraction unpacked in place.
+        ///
+        /// <para>Each such entry left a recipe of its own next to it, so the whole nested
+        /// structure is rebuilt depth first: an entry that is itself a container recurses
+        /// through this method again before its parent is packed.</para>
+        /// </summary>
+        /// <param name="containerDir">Unpacked directory of the container.</param>
+        /// <param name="levelOverride">Compression level to use instead of each recipe's, if any.</param>
+        /// <param name="verbose">Show per-file processing messages.</param>
+        /// <param name="depth">Current nesting depth.</param>
+        /// <returns>How many entries were rebuilt.</returns>
+        private int RestoreContainerEntries(string containerDir, int? levelOverride, bool verbose, int depth)
+        {
+            string[] recipePaths = _fileSystem.GetFiles(
+                containerDir, $"*{ExtractionRecipe.FileSuffix}", SearchOption.TopDirectoryOnly
+            );
+            Array.Sort(recipePaths, StringComparer.Ordinal);
+
+            int rebuilt = 0;
+            foreach (string recipePath in recipePaths)
+            {
+                var entryRecipe = ExtractionRecipe.Deserialize(_fileSystem.ReadAllBytes(recipePath));
+                if (entryRecipe == null || string.IsNullOrEmpty(entryRecipe.ExtractedFile))
+                {
+                    _logger.WriteLine($"Warning: {recipePath} is not a readable recipe, ignoring it.");
+                    continue;
+                }
+
+                // Nothing to rebuild from means the entry is either already in its packed
+                // form or genuinely gone; packing reports the latter with full context.
+                string extracted = Path.Combine(containerDir, entryRecipe.ExtractedFile);
+                if (!_fileSystem.FileExists(extracted) && !_fileSystem.DirectoryExists(extracted))
+                    continue;
+
+                RestoreInternal(extracted, levelOverride, containerDir, verbose, depth + 1);
+                rebuilt++;
+            }
+
+            return rebuilt;
+        }
+
+        /// <summary>
+        /// Compare two paths that may have been built with different separators.
+        /// </summary>
+        /// <param name="left">First path.</param>
+        /// <param name="right">Second path.</param>
+        /// <returns>true if both denote the same location.</returns>
+        private static bool SamePath(string left, string right)
+        {
+            return string.Equals(
+                left.Replace('\\', '/').TrimEnd('/'),
+                right.Replace('\\', '/').TrimEnd('/'),
+                StringComparison.OrdinalIgnoreCase
+            );
         }
 
         /// <summary>

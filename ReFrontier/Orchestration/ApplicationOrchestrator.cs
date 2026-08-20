@@ -185,12 +185,6 @@ namespace ReFrontier.Orchestration
         /// </summary>
         private int ExecuteRestore(CliArguments args)
         {
-            if (_fileSystem.DirectoryExists(args.FilePath))
-            {
-                _logger.WriteLine("Error: --restore takes a file, not a directory. Repack directories with --pack.");
-                return 1;
-            }
-
             var restoreService = new RestoreService(_fileSystem, _logger, _codecFactory, _config);
             try
             {

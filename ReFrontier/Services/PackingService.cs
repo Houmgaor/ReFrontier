@@ -120,6 +120,24 @@ namespace ReFrontier.Services
         /// <exception cref="PackingException">Thrown if the container type is unknown or packing fails.</exception>
         public void ProcessPackInput(string inputDir)
         {
+            ProcessPackInput(inputDir, null);
+        }
+
+        /// <summary>
+        /// Standard packing of an input directory, into a chosen directory.
+        ///
+        /// <para>Restoring a nested container writes it back beside its siblings rather
+        /// than into the output directory, so that the parent container can then be packed
+        /// from a complete directory.</para>
+        /// </summary>
+        /// <param name="inputDir">Input directory path.</param>
+        /// <param name="outputDirectory">Directory to write the packed container into,
+        /// or null to use the configured output directory.</param>
+        /// <returns>Path of the packed container.</returns>
+        /// <exception cref="FileNotFoundException">Thrown if the log file does not exist.</exception>
+        /// <exception cref="PackingException">Thrown if the container type is unknown or packing fails.</exception>
+        public string ProcessPackInput(string inputDir, string? outputDirectory)
+        {
             string logFile = Path.Join(
                 inputDir,
                 $"{inputDir[(inputDir.LastIndexOf('/') + 1)..]}{_config.LogSuffix}"
@@ -145,8 +163,9 @@ namespace ReFrontier.Services
             }
 
             string containerType = logContent[0];
-            _fileSystem.CreateDirectory(_config.OutputDirectory);
-            string outputPath = $"{_config.OutputDirectory}/{logContent[1]}";
+            string targetDirectory = outputDirectory ?? _config.OutputDirectory;
+            _fileSystem.CreateDirectory(targetDirectory);
+            string outputPath = $"{targetDirectory}/{logContent[1]}";
 
             // Pack into a temporary file and only promote it once packing has fully
             // succeeded. Writing straight to the output path would leave a truncated
@@ -180,6 +199,7 @@ namespace ReFrontier.Services
             if (containerType != "StageContainer")
                 _fileOperations.GetUpdateEntryInstance(outputPath);
             _logger.WriteSeparator();
+            return outputPath;
         }
 
         /// <summary>

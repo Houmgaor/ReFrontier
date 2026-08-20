@@ -49,7 +49,18 @@ namespace ReFrontier.Routing.Handlers
                 args.autoStage,
                 args.verbose
             );
-            return ProcessFileResult.Success(outputPath);
+            // Record the container so it can be packed back through its log file.
+            // Without a log there is nothing to repack from, so report no layer.
+            if (!args.createLog)
+                return ProcessFileResult.Success(outputPath);
+
+            return ProcessFileResult.Success(outputPath, new RecipeLayer
+            {
+                Kind = RecipeLayerKind.Container,
+                ContainerType = "SimpleArchive",
+                Directory = System.IO.Path.GetFileName(outputPath),
+                OriginalSize = reader.BaseStream.Length,
+            });
         }
     }
 }

@@ -44,7 +44,11 @@ See [ARCHIVE_FORMATS.md](../docs/ARCHIVE_FORMATS.md#compression-types) for algor
 `--restore` replaces having to remember `--compress`, `--level` and `--encrypt` for a file
 you extracted earlier. It needs a `<original file>.recipe.json`, written when you extract
 with `--saveMeta`. Pass `--level` alongside it to override the compression level;
-everything else comes from the recipe. See the [main README](../README.md#rebuilding).
+everything else comes from the recipe.
+
+It accepts a file or an unpacked directory. For a container archive it rebuilds the nested
+entries, packs the directory through its log, and applies the layers above it, following
+nesting to the bottom. See the [main README](../README.md#rebuilding).
 
 ### Unpacking Options
 
@@ -125,15 +129,23 @@ everything else comes from the recipe. See the [main README](../README.md#rebuil
 ./ReFrontier unpacked_folder/ --pack
 ```
 
-Repacking rebuilds the archive from its `.log` file, which names each entry as it was
+`--pack` rebuilds the archive from its `.log` file, which names each entry as it was
 inside the container. Unpacking is recursive by default, so a nested `entry.jkr` is
 replaced by its decompressed `entry.jkr.bin` and the log no longer matches what is on
-disk. Extract with `--nonRecursive` when you intend to repack:
+disk. Either extract with `--nonRecursive` so entries stay packed:
 
 ```shell
 ./ReFrontier em001_b.pac --saveMeta --nonRecursive   # entries stay packed
 # edit the entries in em001_b.pac.decd.unpacked/
 ./ReFrontier em001_b.pac.decd.unpacked --pack        # writes output/em001_b.pac.decd
+```
+
+or use `--restore`, which rebuilds the unpacked entries itself and applies the encryption
+and compression around the container in the same pass:
+
+```shell
+./ReFrontier em001_b.pac --saveMeta                  # entries unpacked as usual
+./ReFrontier em001_b.pac --restore                   # writes output/em001_b.pac
 ```
 
 If entries are missing, `--pack` reports all of them and what each became, and writes

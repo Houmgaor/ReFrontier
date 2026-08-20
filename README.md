@@ -132,6 +132,26 @@ The rebuilt file is written to `output/` under its original name. You can point
 `--restore` at either the edited file or the original name; ReFrontier finds the
 recipe either way, and refuses to run if you point it at a file that is still packed.
 
+#### Container archives
+
+Files that unpack into a directory (simple archives, MOMO, MHA, stage containers) are
+recorded the same way, with a `Container` layer naming the unpacked directory. Restoring
+one rebuilds every entry that was itself unpacked, packs the directory back through its
+log file, and then applies whatever compression and encryption sat above it:
+
+```shell
+./ReFrontier em001_b.pac --saveMeta     # ECD > SimpleArchive, entries unpacked too
+# edit anything inside em001_b.pac.decd.unpacked/
+./ReFrontier em001_b.pac --restore      # writes output/em001_b.pac
+```
+
+Nesting is followed to the bottom and rebuilt depth first, so a model file whose entries
+are archives of compressed streams comes back in one command. Point `--restore` at either
+the original file or the unpacked directory.
+
+Entries are rebuilt in place, under the names their log uses, so the unpacked directory is
+modified by a restore. Rebuilding is idempotent: run it again after further edits.
+
 Recipes are plain JSON and safe to edit by hand, for instance to force a different
 algorithm. Two notes on what they can and cannot capture:
 
@@ -139,8 +159,8 @@ algorithm. Two notes on what they can and cannot capture:
   header does not store, so it cannot be recovered from a game file. Restoring defaults
   to level 80; override it with `--level`. This affects output size only, not
   correctness — the game reads any valid level.
-- **Container archives are out of scope.** Files that unpack into a directory (MOMO,
-  MHA) are repacked through their `.log` file with `--pack`, as before.
+- **Stage containers need `--stageContainer` to extract**, but restore reverses them from
+  the recipe like any other container.
 
 If you prefer to drive it manually, or have no recipe, the explicit route still works:
 
