@@ -219,7 +219,7 @@ namespace ReFrontier.Services
         /// <param name="containerType">Container type, for the error message.</param>
         /// <exception cref="PackingException">Thrown if the log is truncated or entries are missing.</exception>
         private void EnsureEntriesArePackable(
-            IReadOnlyList<string> entryNames, int expectedCount, string input, string containerType)
+            List<string> entryNames, int expectedCount, string input, string containerType)
         {
             if (expectedCount > entryNames.Count)
             {
