@@ -16,7 +16,7 @@ dotnet build
 dotnet build --configuration Release
 
 # Run directly (without building separately)
-dotnet run --project ReFrontier -- mhfdat.bin --saveMeta
+dotnet run --project ReFrontier -- mhfdat.bin
 
 # Run tests
 dotnet test
@@ -121,8 +121,8 @@ Files are identified by magic headers:
 ## CLI Usage
 
 ```bash
-# Basic unpacking with metadata (required for repacking/re-encryption)
-./ReFrontier mhfdat.bin --saveMeta
+# Basic unpacking; metadata for repacking is written automatically
+./ReFrontier mhfdat.bin
 
 # Use 8 parallel threads
 ./ReFrontier directory/ --parallelism 8
@@ -153,7 +153,7 @@ Key options:
 - `--parallelism` - Number of parallel threads (0=auto-detect using CPU cores, default: 0)
 - `--quiet` - Suppress the progress bar during processing
 - `--verbose` - Show per-file processing messages (off by default for cleaner output)
-- `--saveMeta` - Save metadata files (recommended for repacking/re-encryption)
+- `--noMeta` - Skip metadata (`.meta`, `.log`, `.recipe.json`); rebuilding becomes impossible. Metadata is written by default.
 - `--nonRecursive` - Disable recursive unpacking (recursive is the default)
 - `--compress <type>` - Compression type: `rw`, `hfirw`, `lz`, `hfi` (or `0`, `2`, `3`, `4`)
 - `--level <n>` - Compression level (1-100, diminishing returns above ~80)

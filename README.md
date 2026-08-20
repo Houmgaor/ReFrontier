@@ -24,7 +24,8 @@ Key features:
 - **Reliability**: Fixed duplicate filename issues
 - **Security**: Removed memory-unsafe code and outdated libraries
 - **Text tools**: Improved CSV parsing and cleaner fulldump output
-- **Stateful round-trip**: Extraction records how a file was packed, so rebuilding it is one flag (`--restore`)
+- **Stateful round-trip**: Extraction records how a file was packed, so rebuilding it is one flag (`--restore`), with no setup to remember
+- **Safe by default**: Nothing you supplied is deleted, and the metadata needed to rebuild is always written
 - **Validation**: Non-destructive integrity checking of game files (`--validate`)
 - **Diff**: Structural comparison of two game files through encryption/compression layers (`--diff`)
 
@@ -45,7 +46,7 @@ You can drag-and-drop files or folders onto the executable, or use the command l
 
 2. Decrypt and decompress the file:
     ```shell
-    ./ReFrontier mhfdat.bin --saveMeta
+    ./ReFrontier mhfdat.bin
     ```
 
 3. Edit the extracted data (see [tools](#see-also) and [included utilities](#data-editing)).
@@ -71,7 +72,7 @@ For detailed command reference, see [ReFrontier/README.md](./ReFrontier/README.m
 | Option | Description |
 |--------|-------------|
 | `--help` | Display CLI help |
-| `--saveMeta` | Save metadata files (required for repacking/re-encryption) |
+| `--noMeta` | Skip the metadata that makes rebuilding possible |
 | `--restore` | Rebuild a file using the recipe saved during extraction |
 | `--cleanUp` | Delete intermediate files |
 | `--validate` | Check file integrity without writing output |
@@ -81,14 +82,15 @@ For detailed command reference, see [ReFrontier/README.md](./ReFrontier/README.m
 
 ReFrontier decrypts (ECD → JPK) and decompresses files by default.
 
-To preserve metadata for later re-encryption, use `--saveMeta`:
+Metadata needed for re-encryption is written automatically:
 ```shell
-./ReFrontier mhfdat.bin --saveMeta --decryptOnly
+./ReFrontier mhfdat.bin --decryptOnly
 ```
 
 ### Decompression
 
-Decompression *replaces* the original file. Always backup important data first.
+Decompression writes a new file beside the original and leaves the original in place.
+Pass `--cleanUp` to remove it instead.
 
 Compressed files are identified by their `JKR` header (first bytes of the file).
 
@@ -106,7 +108,7 @@ Once files are decrypted and decompressed, you can edit them using:
 
 ### Rebuilding
 
-Extracting with `--saveMeta` writes an *extraction recipe* next to the original file,
+Extracting writes an *extraction recipe* next to the original file,
 recording every transformation that was undone:
 
 ```json
@@ -140,7 +142,7 @@ one rebuilds every entry that was itself unpacked, packs the directory back thro
 log file, and then applies whatever compression and encryption sat above it:
 
 ```shell
-./ReFrontier em001_b.pac --saveMeta     # ECD > SimpleArchive, entries unpacked too
+./ReFrontier em001_b.pac                # ECD > SimpleArchive, entries unpacked too
 # edit anything inside em001_b.pac.decd.unpacked/
 ./ReFrontier em001_b.pac --restore      # writes output/em001_b.pac
 ```
@@ -214,7 +216,7 @@ FTXT text files can be extracted and repacked:
 
 ```shell
 # Extract text with metadata
-./ReFrontier text.ftxt --saveMeta
+./ReFrontier text.ftxt
 
 # Edit the generated .txt file, then repack
 ./ReFrontier text.ftxt.txt --pack

@@ -12,6 +12,7 @@ namespace ReFrontier.CLI
         private readonly Argument<string> _fileArgument;
         private readonly Option<string?> _fileOption;
         private readonly Option<bool> _logOption;
+        private readonly Option<bool> _noMetaOption;
         private readonly Option<bool> _stageContainerOption;
         private readonly Option<bool> _autoStageOption;
         private readonly Option<bool> _nonRecursiveOption;
@@ -49,9 +50,16 @@ namespace ReFrontier.CLI
             };
 
             // Unpacking options
+            // Metadata is written by default: without it a file cannot be rebuilt, and
+            // the option to produce it was easy to forget until the rebuild failed.
             _logOption = new Option<bool>("--saveMeta")
             {
-                Description = "Save metadata files (required for repacking/re-encryption)"
+                Description = "[Deprecated] Metadata is now saved by default. Use --noMeta to disable."
+            };
+
+            _noMetaOption = new Option<bool>("--noMeta")
+            {
+                Description = "Do not write metadata (.meta, .log, .recipe.json). Rebuilding will not be possible."
             };
 
             _stageContainerOption = new Option<bool>("--stageContainer")
@@ -157,6 +165,7 @@ namespace ReFrontier.CLI
                 _fileArgument,
                 _fileOption,
                 _logOption,
+                _noMetaOption,
                 _stageContainerOption,
                 _autoStageOption,
                 _nonRecursiveOption,
@@ -208,7 +217,14 @@ namespace ReFrontier.CLI
                 );
             }
 
-            var log = parseResult.GetValue(_logOption);
+            var noMeta = parseResult.GetValue(_noMetaOption);
+            var log = !noMeta;
+            if (parseResult.GetValue(_logOption))
+            {
+                System.Console.Error.WriteLine(
+                    "Warning: --saveMeta is deprecated. Metadata is saved by default; use --noMeta to disable it."
+                );
+            }
             var stageContainer = parseResult.GetValue(_stageContainerOption);
             var autoStage = parseResult.GetValue(_autoStageOption);
             var nonRecursive = parseResult.GetValue(_nonRecursiveOption);

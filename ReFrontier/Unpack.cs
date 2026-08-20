@@ -82,10 +82,11 @@ namespace ReFrontier
         /// Unpack, decompress, a JPK file.
         /// </summary>
         /// <param name="input">Input file path.</param>
+        /// <param name="cleanUp">Remove the compressed input once it has been decompressed.</param>
         /// <returns>Output folder path.</returns>
-        public string UnpackJPK(string input)
+        public string UnpackJPK(string input, bool cleanUp = false)
         {
-            return _unpackingService.UnpackJPK(input);
+            return _unpackingService.UnpackJPK(input, verbose: false, cleanUp, out _, out _);
         }
 
         /// <summary>

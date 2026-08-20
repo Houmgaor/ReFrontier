@@ -272,7 +272,7 @@ namespace ReFrontier
         /// </summary>
         /// <param name="files">All files to filter.</param>
         /// <returns>Files that should be processed.</returns>
-        private static string[] FilterInputFiles(string[] files)
+        private string[] FilterInputFiles(string[] files)
         {
             // Extensions to exclude (output files from previous runs)
             var excludedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -299,6 +299,14 @@ namespace ReFrontier
 
                 // Skip extraction recipes written by previous runs
                 if (file.EndsWith(ExtractionRecipe.FileSuffix, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                // Skip payloads a previous run extracted. They keep the .bin extension, so
+                // without this a second run over the same folder retries each one as a
+                // container and reports the failure.
+                string name = Path.GetFileName(file);
+                if (name.Contains(_config.DecryptedSuffix + ".", StringComparison.OrdinalIgnoreCase)
+                    || name.Contains(_config.DecryptedExfSuffix + ".", StringComparison.OrdinalIgnoreCase))
                     continue;
 
                 // Skip files inside .unpacked directories
@@ -453,9 +461,16 @@ namespace ReFrontier
             {
                 string decdFilePath = outputPath;
                 var result = ProcessFileCore(decdFilePath, inputArguments, layers);
-                if (inputArguments.cleanUp)
-                    _fileSystem.DeleteFile(decdFilePath);
                 outputPath = result.OutputPath ?? outputPath;
+
+                // The decrypted file is an intermediate this run just produced, so drop it
+                // once the layer below has replaced it with something else. Files the user
+                // supplied are never removed unless they ask with --cleanUp.
+                if (!string.Equals(outputPath, decdFilePath, StringComparison.Ordinal)
+                    && _fileSystem.FileExists(decdFilePath))
+                {
+                    _fileSystem.DeleteFile(decdFilePath);
+                }
             }
             return ProcessFileResult.Success(outputPath);
         }

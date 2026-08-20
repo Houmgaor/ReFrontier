@@ -1,5 +1,4 @@
 using LibReFrontier;
-using LibReFrontier.Exceptions;
 
 using ReFrontier.Jpk;
 using ReFrontier.Services;
@@ -90,13 +89,13 @@ namespace ReFrontier.Tests
         [Fact]
         public void ProcessFile_PlainFile_WritesNoRecipe()
         {
-            // Nothing was undone, so there is nothing to reverse. A plain file is still
-            // tried as a simple archive and rejected, which is existing behaviour here;
-            // what matters is that the failed attempt leaves no recipe behind.
+            // Nothing was undone, so there is nothing to reverse. A plain file is probed as
+            // a simple archive and skipped; the probe must leave no recipe behind.
             _fileSystem.AddFile("/test/plain.bin", CreateTestData(64));
 
-            Assert.Throws<PackingException>(() => _program.ProcessFile("/test/plain.bin", ExtractArgs()));
+            var result = _program.ProcessFile("/test/plain.bin", ExtractArgs());
 
+            Assert.False(result.WasProcessed);
             Assert.False(_fileSystem.FileExists($"/test/plain.bin{ExtractionRecipe.FileSuffix}"));
         }
 

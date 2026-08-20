@@ -16,7 +16,7 @@ Where `<inputPath>` is a file or directory to process.
 
 | Option | Description |
 |--------|-------------|
-| `--saveMeta` | Save metadata files (required for repacking/re-encryption) |
+| `--noMeta` | Do not write `.meta`, `.log` or `.recipe.json`. Rebuilding will not be possible. |
 | `--decryptOnly` | Decrypt without decompressing |
 | `--noDecryption` | Skip decryption entirely |
 
@@ -42,8 +42,8 @@ See [ARCHIVE_FORMATS.md](../docs/ARCHIVE_FORMATS.md#compression-types) for algor
 | `--restore` | Rebuild a file from the recipe saved during extraction, reversing every layer it recorded |
 
 `--restore` replaces having to remember `--compress`, `--level` and `--encrypt` for a file
-you extracted earlier. It needs a `<original file>.recipe.json`, written when you extract
-with `--saveMeta`. Pass `--level` alongside it to override the compression level;
+you extracted earlier. It needs a `<original file>.recipe.json`, which extraction writes
+unless you pass `--noMeta`. Pass `--level` alongside it to override the compression level;
 everything else comes from the recipe.
 
 It accepts a file or an unpacked directory. For a container archive it rebuilds the nested
@@ -76,19 +76,20 @@ nesting to the bottom. See the [main README](../README.md#rebuilding).
 | Option | Description |
 |--------|-------------|
 | `--file <path>` | [Deprecated] Use positional argument `<inputPath>` instead |
+| `--saveMeta` | [Deprecated] Metadata is written by default; use `--noMeta` to disable |
 
 ## Examples
 
 ### Decrypt and decompress a file
 
 ```shell
-./ReFrontier mhfdat.bin --saveMeta
+./ReFrontier mhfdat.bin
 ```
 
 ### Decrypt only (preserve compression)
 
 ```shell
-./ReFrontier mhfdat.bin --saveMeta --decryptOnly
+./ReFrontier mhfdat.bin --decryptOnly
 ```
 
 ### Compress with LZ at level 50
@@ -106,7 +107,7 @@ nesting to the bottom. See the [main README](../README.md#rebuilding).
 ### Rebuild a file you extracted earlier
 
 ```shell
-./ReFrontier mhfdat.bin --saveMeta            # writes mhfdat.bin.recipe.json
+./ReFrontier mhfdat.bin                       # writes mhfdat.bin.recipe.json
 # edit mhfdat.bin.decd.bin
 ./ReFrontier mhfdat.bin.decd.bin --restore    # writes output/mhfdat.bin
 ```
@@ -120,7 +121,7 @@ nesting to the bottom. See the [main README](../README.md#rebuilding).
 ### Unpack a folder recursively
 
 ```shell
-./ReFrontier dat_folder/ --saveMeta
+./ReFrontier dat_folder/
 ```
 
 ### Repack a directory
@@ -135,7 +136,7 @@ replaced by its decompressed `entry.jkr.bin` and the log no longer matches what 
 disk. Either extract with `--nonRecursive` so entries stay packed:
 
 ```shell
-./ReFrontier em001_b.pac --saveMeta --nonRecursive   # entries stay packed
+./ReFrontier em001_b.pac --nonRecursive              # entries stay packed
 # edit the entries in em001_b.pac.decd.unpacked/
 ./ReFrontier em001_b.pac.decd.unpacked --pack        # writes output/em001_b.pac.decd
 ```
@@ -144,7 +145,7 @@ or use `--restore`, which rebuilds the unpacked entries itself and applies the e
 and compression around the container in the same pass:
 
 ```shell
-./ReFrontier em001_b.pac --saveMeta                  # entries unpacked as usual
+./ReFrontier em001_b.pac                             # entries unpacked as usual
 ./ReFrontier em001_b.pac --restore                   # writes output/em001_b.pac
 ```
 

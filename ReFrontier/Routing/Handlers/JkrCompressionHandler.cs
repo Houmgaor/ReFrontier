@@ -45,7 +45,7 @@ namespace ReFrontier.Routing.Handlers
             if (!args.ignoreJPK)
             {
                 outputPath = _unpackingService.UnpackJPK(
-                    filePath, args.verbose, out var algorithm, out long compressedSize
+                    filePath, args.verbose, args.cleanUp, out var algorithm, out long compressedSize
                 );
                 if (args.verbose)
                     _logger.WriteLine($"File decompressed to {outputPath}.");

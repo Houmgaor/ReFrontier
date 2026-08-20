@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **BREAKING**: Metadata is written by default. `.meta`, `.log` and `.recipe.json` were only
+  produced with `--saveMeta`, so the common case of extracting a file and then trying to
+  rebuild it failed, and on a bare JPK file the original was deleted with nothing recording
+  how it had been compressed. `--saveMeta` is still accepted and now warns; `--noMeta`
+  disables the metadata for anyone who wants a clean directory.
+- **BREAKING**: Decompressing a file no longer deletes it. `UnpackJPK` removed its input
+  unconditionally, which destroyed the user's own file when they decompressed one directly.
+  Files supplied by the user are now kept unless `--cleanUp` is passed; intermediates
+  ReFrontier itself produces are still removed, so the extracted layout is unchanged.
+- A file that turns out not to be a container is reported as skipped rather than as an
+  error. The fallback handler accepts any file and finds out by trying, so failing is an
+  ordinary outcome; counting it as an error made a second run over an already extracted
+  folder report failures that meant nothing.
+- Directory scans skip payloads a previous run extracted, so re-running over the same
+  folder no longer retries them.
+
 ### Added
 
 - **ReFrontier**: Extraction now records how a file was taken apart in a
