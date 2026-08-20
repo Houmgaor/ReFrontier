@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **ReFrontier**: Extraction now records how a file was taken apart in a
+  `<original file>.recipe.json` next to it, written alongside the `.meta` file when
+  extracting with `--saveMeta`. The recipe lists each encryption and compression layer
+  that was undone, outermost first.
+- **ReFrontier**: New `--restore` option rebuilds a file by reversing its recipe, so
+  repacking no longer requires re-specifying `--compress`, `--level` and `--encrypt`.
+  Previously the JPK compression type was read from the JKR header during extraction and
+  then discarded, leaving the user to guess it when repacking; guessing wrong produced a
+  file the game rejects, with no error. `--restore` accepts either the original file name
+  or the extracted one, and refuses to run on a file that is still packed.
+
+### Notes
+
+- Compression level is still not recoverable from a game file (it is an encoder-side
+  parameter absent from the JKR header). `--restore` defaults to level 80 and accepts
+  `--level` as an override; this affects output size only, not correctness.
+- Container archives (MOMO, MHA) that unpack into a directory keep using the existing
+  `.log` plus `--pack` flow; recipes cover single-file extraction chains.
+
 ## [2.1.0] - 2026-02-22
 
 ### Added

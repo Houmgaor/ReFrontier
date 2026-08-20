@@ -28,6 +28,7 @@ namespace ReFrontier.CLI
         private readonly Option<bool> _verboseOption;
         private readonly Option<bool> _validateOption;
         private readonly Option<string?> _diffOption;
+        private readonly Option<bool> _restoreOption;
 
         /// <summary>
         /// Creates a new CliSchema instance and initializes all CLI options.
@@ -135,6 +136,11 @@ namespace ReFrontier.CLI
             {
                 Description = "Compare structurally against another file"
             };
+
+            _restoreOption = new Option<bool>("--restore")
+            {
+                Description = "Rebuild a file using the recipe saved during extraction (no need for --compress/--encrypt)"
+            };
         }
 
         /// <summary>
@@ -166,7 +172,8 @@ namespace ReFrontier.CLI
                 _quietOption,
                 _verboseOption,
                 _validateOption,
-                _diffOption
+                _diffOption,
+                _restoreOption
             };
 
             return rootCommand;
@@ -218,6 +225,7 @@ namespace ReFrontier.CLI
             var verbose = parseResult.GetValue(_verboseOption);
             var validate = parseResult.GetValue(_validateOption);
             var diffPath = parseResult.GetValue(_diffOption);
+            var restore = parseResult.GetValue(_restoreOption);
 
             // Parse compression if specified
             Compression compression = new();
@@ -256,7 +264,9 @@ namespace ReFrontier.CLI
                 Quiet = quiet,
                 Verbose = verbose,
                 Validate = validate,
-                DiffPath = diffPath
+                DiffPath = diffPath,
+                Restore = restore,
+                CompressionLevel = compressLevel > 0 ? compressLevel : null
             };
         }
     }

@@ -10,6 +10,42 @@ namespace ReFrontier.Tests.CLI
     public class CliSchemaTests
     {
         [Fact]
+        public void ExtractArguments_WithRestore_SetsRestoreFlag()
+        {
+            var schema = new CliSchema();
+            var command = schema.CreateRootCommand("1.0.0", "TestApp", "Test");
+
+            var cliArgs = schema.ExtractArguments(command.Parse(["mhfdat.bin.decd.bin", "--restore"]));
+
+            Assert.True(cliArgs.Restore);
+            Assert.Null(cliArgs.CompressionLevel);
+        }
+
+        [Fact]
+        public void ExtractArguments_RestoreWithLevel_DoesNotRequireCompress()
+        {
+            var schema = new CliSchema();
+            var command = schema.CreateRootCommand("1.0.0", "TestApp", "Test");
+
+            // --level alone is valid here: it overrides the level the recipe would use.
+            var cliArgs = schema.ExtractArguments(command.Parse(["file.bin", "--restore", "--level", "100"]));
+
+            Assert.True(cliArgs.Restore);
+            Assert.Equal(100, cliArgs.CompressionLevel);
+        }
+
+        [Fact]
+        public void ExtractArguments_WithoutRestore_RestoreIsFalse()
+        {
+            var schema = new CliSchema();
+            var command = schema.CreateRootCommand("1.0.0", "TestApp", "Test");
+
+            var cliArgs = schema.ExtractArguments(command.Parse(["test.bin", "--saveMeta"]));
+
+            Assert.False(cliArgs.Restore);
+        }
+
+        [Fact]
         public void CreateRootCommand_ReturnsValidCommand()
         {
             var schema = new CliSchema();

@@ -341,7 +341,23 @@ namespace ReFrontier.Services
         /// <exception cref="ReFrontierException">Thrown if decompression fails.</exception>
         public string UnpackJPK(string input, bool verbose = false)
         {
+            return UnpackJPK(input, verbose, out _, out _);
+        }
+
+        /// <summary>
+        /// Unpack, decompress, a JPK file, reporting the algorithm it was compressed with.
+        /// </summary>
+        /// <param name="input">Input file path.</param>
+        /// <param name="verbose">Show per-file processing messages.</param>
+        /// <param name="compressionType">Algorithm read from the JKR header.</param>
+        /// <param name="compressedSize">Size in bytes of the input file before decompression.</param>
+        /// <returns>Output file path.</returns>
+        /// <exception cref="PackingException">Thrown if the JKR header is invalid or compression type is unsupported.</exception>
+        /// <exception cref="ReFrontierException">Thrown if decompression fails.</exception>
+        public string UnpackJPK(string input, bool verbose, out CompressionType compressionType, out long compressedSize)
+        {
             byte[] buffer = _fileSystem.ReadAllBytes(input);
+            compressedSize = buffer.Length;
             using MemoryStream ms = new(buffer);
             using BinaryReader br = new(ms);
 
@@ -365,7 +381,7 @@ namespace ReFrontier.Services
                     input
                 );
             }
-            var compressionType = compressionTypes[type];
+            compressionType = compressionTypes[type];
             if (verbose)
                 _logger.WriteLine($"JPK {compressionType} (type {type})");
             IJPKDecode decoder;

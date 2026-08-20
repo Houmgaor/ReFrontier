@@ -78,6 +78,7 @@ Packing reverses this flow: Pack → Compress → Encrypt.
 
 **Services** (`ReFrontier/Services/`):
 - `FileProcessingService` - Encryption/decryption operations
+- `RestoreService` - Rebuilds a file from its `ExtractionRecipe` (finds the recipe, reverses its layers)
 - `PackingService` - JPK encoding and archive packing
 - `UnpackingService` - JPK decoding and archive unpacking
 - `FileProcessingConfig` - Configurable paths and suffixes
@@ -96,6 +97,8 @@ Packing reverses this flow: Pack → Compress → Encrypt.
 
 **LibReFrontier/Compression.cs**: `CompressionType` enum (RW, None, HFIRW, LZ, HFI) and `Compression` struct.
 
+**LibReFrontier/ExtractionRecipe.cs**: `ExtractionRecipe` and `RecipeLayer`, the JSON record of how a file was unpacked. Handlers report a `RecipeLayer` through `ProcessFileResult.Layer`; `Program.ProcessFile` accumulates them across its recursion and writes the recipe.
+
 **LibReFrontier/FileMagic.cs**: Magic number constants for all file formats.
 
 ### Supported File Formats
@@ -111,6 +114,7 @@ Files are identified by magic headers:
 
 - Unpacked files go to `output/` directory
 - `.meta` files store encryption metadata (required for re-encryption)
+- `.recipe.json` files record the encryption/compression layers undone during extraction, consumed by `--restore`
 - `.decd` suffix for decrypted files
 - `.unpacked/` suffix for unpacked directories
 
@@ -140,6 +144,9 @@ Files are identified by magic headers:
 
 # Repack directory
 ./ReFrontier file.bin --pack
+
+# Rebuild a file from the recipe written during extraction
+./ReFrontier mhfdat.bin.decd.bin --restore
 ```
 
 Key options:
@@ -157,6 +164,7 @@ Key options:
 - `--autoStage` - Auto-detect stage-specific containers
 - `--ignoreJPK` - Skip JPK decompression
 - `--pack` - Repack directory
+- `--restore` - Rebuild a file from its `.recipe.json` (reverses recorded encryption/compression; `--level` overrides the level)
 - `--cleanUp` - Delete source files after processing
 
 ## Testing

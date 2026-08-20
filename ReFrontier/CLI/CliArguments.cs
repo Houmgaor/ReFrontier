@@ -39,5 +39,16 @@ namespace ReFrontier.CLI
         /// Path to a second file for structural diff comparison.
         /// </summary>
         public string? DiffPath { get; init; }
+
+        /// <summary>
+        /// Whether to rebuild the file from the recipe saved during extraction.
+        /// </summary>
+        public bool Restore { get; init; }
+
+        /// <summary>
+        /// Compression level given on the command line, null when not specified.
+        /// Overrides the level recorded in a recipe during restore.
+        /// </summary>
+        public int? CompressionLevel { get; init; }
     }
 }

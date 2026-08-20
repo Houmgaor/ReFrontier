@@ -21,6 +21,8 @@ namespace ReFrontier.Orchestration
         private readonly IFileSystem _fileSystem;
         private readonly ILogger _logger;
         private readonly Program _program;
+        private readonly ICodecFactory _codecFactory;
+        private readonly FileProcessingConfig _config;
         private readonly string _productName;
         private readonly string _version;
         private readonly string _description;
@@ -67,6 +69,8 @@ namespace ReFrontier.Orchestration
             _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _program = new Program(fileSystem, logger, codecFactory, config);
+            _codecFactory = codecFactory ?? throw new ArgumentNullException(nameof(codecFactory));
+            _config = config ?? throw new ArgumentNullException(nameof(config));
             _productName = productName;
             _version = version;
             _description = description;
@@ -100,6 +104,12 @@ namespace ReFrontier.Orchestration
             if (args.Validate)
             {
                 return ExecuteValidation(args);
+            }
+
+            // Restore mode: rebuild a file from the recipe written during extraction
+            if (args.Restore)
+            {
+                return ExecuteRestore(args);
             }
 
             // Resolve parallelism value (0 = auto-detect)
@@ -168,6 +178,35 @@ namespace ReFrontier.Orchestration
             var result = diffService.Compare(args.FilePath, args.DiffPath!);
             diffService.PrintResult(result);
             return result.AreIdentical ? 0 : 1;
+        }
+
+        /// <summary>
+        /// Execute restore mode: rebuild a file from its extraction recipe.
+        /// </summary>
+        private int ExecuteRestore(CliArguments args)
+        {
+            if (_fileSystem.DirectoryExists(args.FilePath))
+            {
+                _logger.WriteLine("Error: --restore takes a file, not a directory. Repack directories with --pack.");
+                return 1;
+            }
+
+            var restoreService = new RestoreService(_fileSystem, _logger, _codecFactory, _config);
+            try
+            {
+                restoreService.Restore(args.FilePath, args.CompressionLevel, args.Verbose);
+            }
+            catch (FileNotFoundException ex)
+            {
+                _logger.WriteLine($"Error: {ex.Message}");
+                return 1;
+            }
+            catch (LibReFrontier.Exceptions.ReFrontierException ex)
+            {
+                _logger.WriteLine($"Error: {ex.Message}");
+                return 1;
+            }
+            return 0;
         }
 
         /// <summary>

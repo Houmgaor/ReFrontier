@@ -15,16 +15,19 @@ namespace ReFrontier.Routing.Handlers
     {
         private readonly ILogger _logger;
         private readonly FileProcessingService _fileProcessingService;
+        private readonly FileProcessingConfig _config;
 
         /// <summary>
         /// Create a new EcdEncryptionHandler.
         /// </summary>
         /// <param name="logger">Logger for output.</param>
         /// <param name="fileProcessingService">Service for file processing operations.</param>
-        public EcdEncryptionHandler(ILogger logger, FileProcessingService fileProcessingService)
+        /// <param name="config">Configuration settings, defaults are used when omitted.</param>
+        public EcdEncryptionHandler(ILogger logger, FileProcessingService fileProcessingService, FileProcessingConfig? config = null)
         {
             _logger = logger;
             _fileProcessingService = fileProcessingService;
+            _config = config ?? FileProcessingConfig.Default();
         }
 
         /// <inheritdoc/>
@@ -49,7 +52,13 @@ namespace ReFrontier.Routing.Handlers
                 args.verbose
             );
 
-            return ProcessFileResult.Success(outputPath);
+            // Record the encryption so the file can be re-encrypted with its original key.
+            return ProcessFileResult.Success(outputPath, new RecipeLayer
+            {
+                Kind = RecipeLayerKind.Ecd,
+                MetaFile = args.createLog ? $"{filePath}{_config.MetaSuffix}" : null,
+                OriginalSize = reader.BaseStream.Length,
+            });
         }
     }
 }

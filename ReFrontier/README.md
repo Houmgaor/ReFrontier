@@ -35,6 +35,17 @@ See [ARCHIVE_FORMATS.md](../docs/ARCHIVE_FORMATS.md#compression-types) for algor
 |--------|-------------|
 | `--encrypt` | Encrypt with ECD algorithm (uses `.meta` file if available, otherwise default key) |
 
+### Rebuilding Options
+
+| Option | Description |
+|--------|-------------|
+| `--restore` | Rebuild a file from the recipe saved during extraction, reversing every layer it recorded |
+
+`--restore` replaces having to remember `--compress`, `--level` and `--encrypt` for a file
+you extracted earlier. It needs a `<original file>.recipe.json`, written when you extract
+with `--saveMeta`. Pass `--level` alongside it to override the compression level;
+everything else comes from the recipe. See the [main README](../README.md#rebuilding).
+
 ### Unpacking Options
 
 | Option | Description |
@@ -86,6 +97,20 @@ See [ARCHIVE_FORMATS.md](../docs/ARCHIVE_FORMATS.md#compression-types) for algor
 
 ```shell
 ./ReFrontier mhfdat.bin --compress hfi --level 80 --encrypt
+```
+
+### Rebuild a file you extracted earlier
+
+```shell
+./ReFrontier mhfdat.bin --saveMeta            # writes mhfdat.bin.recipe.json
+# edit mhfdat.bin.decd.bin
+./ReFrontier mhfdat.bin.decd.bin --restore    # writes output/mhfdat.bin
+```
+
+### Rebuild at a different compression level
+
+```shell
+./ReFrontier mhfdat.bin.decd.bin --restore --level 100
 ```
 
 ### Unpack a folder recursively
