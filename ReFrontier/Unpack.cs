@@ -52,13 +52,18 @@ namespace ReFrontier
         /// <param name="createLog">true is a log file should be created.</param>
         /// <param name="cleanUp">Remove the initial input file.</param>
         /// <param name="autoStage">Unpack stage container if true.</param>
+        /// <param name="containerType">Container type to record in the log, which decides
+        /// how the archive is written back by packing. Pass "MOMO" for a MOMO archive,
+        /// otherwise the archive is repacked headerless and loses its magic.</param>
         /// <returns>Output folder path.</returns>
         public string UnpackSimpleArchive(
             string input, BinaryReader brInput, int magicSize, bool createLog,
-            bool cleanUp, bool autoStage
+            bool cleanUp, bool autoStage, string containerType = "SimpleArchive"
         )
         {
-            return _unpackingService.UnpackSimpleArchive(input, brInput, magicSize, createLog, cleanUp, autoStage);
+            return _unpackingService.UnpackSimpleArchive(
+                input, brInput, magicSize, createLog, cleanUp, autoStage, verbose: false, containerType
+            );
         }
 
         /// <summary>

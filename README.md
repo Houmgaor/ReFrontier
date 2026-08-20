@@ -24,6 +24,7 @@ Key features:
 - **Reliability**: Fixed duplicate filename issues
 - **Security**: Removed memory-unsafe code and outdated libraries
 - **Text tools**: Improved CSV parsing and cleaner fulldump output
+- **Stateful round-trip**: Extraction records how a file was packed, so rebuilding it is one flag (`--restore`)
 - **Validation**: Non-destructive integrity checking of game files (`--validate`)
 - **Diff**: Structural comparison of two game files through encryption/compression layers (`--diff`)
 
@@ -49,12 +50,15 @@ You can drag-and-drop files or folders onto the executable, or use the command l
 
 3. Edit the extracted data (see [tools](#see-also) and [included utilities](#data-editing)).
 
-4. Compress and encrypt:
+4. Rebuild the game file:
     ```shell
-    ./ReFrontier mhfdat.bin --compress hfi --level 80 --encrypt
+    ./ReFrontier mhfdat.bin.decd.bin --restore
     ```
 
-5. Replace the original `mhfdat.bin` with the new file.
+    The compression algorithm and encryption key come from the recipe written in step 2,
+    so there is nothing to remember. See [Rebuilding](#rebuilding) for the details.
+
+5. Replace the original `mhfdat.bin` with `output/mhfdat.bin`.
 
 For detailed command reference, see [ReFrontier/README.md](./ReFrontier/README.md) or run:
 
@@ -68,6 +72,7 @@ For detailed command reference, see [ReFrontier/README.md](./ReFrontier/README.m
 |--------|-------------|
 | `--help` | Display CLI help |
 | `--saveMeta` | Save metadata files (required for repacking/re-encryption) |
+| `--restore` | Rebuild a file using the recipe saved during extraction |
 | `--cleanUp` | Delete intermediate files |
 | `--validate` | Check file integrity without writing output |
 | `--diff <file>` | Structural comparison with another file |
@@ -98,6 +103,70 @@ Once files are decrypted and decompressed, you can edit them using:
 - [FrontierTextTool](./FrontierTextTool/README.md) - Extract and modify game text
 - [FrontierDataTool](./FrontierDataTool/README.md) - Extract and modify game data structures
 - External tools listed in [See Also](#see-also)
+
+### Rebuilding
+
+Extracting with `--saveMeta` writes an *extraction recipe* next to the original file,
+recording every transformation that was undone:
+
+```json
+{
+  "Version": 1,
+  "SourceFile": "mhfdat.bin",
+  "ExtractedFile": "mhfdat.bin.decd.bin",
+  "Layers": [
+    { "Kind": "Ecd", "MetaFile": "mhfdat.bin.meta", "OriginalSize": 7383160 },
+    { "Kind": "Jpk", "Algorithm": "HFI", "OriginalSize": 7383144 }
+  ]
+}
+```
+
+`--restore` reads it and reverses those layers, so you do not have to know that
+`mhfdat.bin` happens to be ECD-encrypted and HFI-compressed:
+
+```shell
+./ReFrontier mhfdat.bin.decd.bin --restore
+```
+
+The rebuilt file is written to `output/` under its original name. You can point
+`--restore` at either the edited file or the original name; ReFrontier finds the
+recipe either way, and refuses to run if you point it at a file that is still packed.
+
+#### Container archives
+
+Files that unpack into a directory (simple archives, MOMO, MHA, stage containers) are
+recorded the same way, with a `Container` layer naming the unpacked directory. Restoring
+one rebuilds every entry that was itself unpacked, packs the directory back through its
+log file, and then applies whatever compression and encryption sat above it:
+
+```shell
+./ReFrontier em001_b.pac --saveMeta     # ECD > SimpleArchive, entries unpacked too
+# edit anything inside em001_b.pac.decd.unpacked/
+./ReFrontier em001_b.pac --restore      # writes output/em001_b.pac
+```
+
+Nesting is followed to the bottom and rebuilt depth first, so a model file whose entries
+are archives of compressed streams comes back in one command. Point `--restore` at either
+the original file or the unpacked directory.
+
+Entries are rebuilt in place, under the names their log uses, so the unpacked directory is
+modified by a restore. Rebuilding is idempotent: run it again after further edits.
+
+Recipes are plain JSON and safe to edit by hand, for instance to force a different
+algorithm. Two notes on what they can and cannot capture:
+
+- **Compression level is not recorded.** It is an encoder-side parameter that the JKR
+  header does not store, so it cannot be recovered from a game file. Restoring defaults
+  to level 80; override it with `--level`. This affects output size only, not
+  correctness — the game reads any valid level.
+- **Stage containers need `--stageContainer` to extract**, but restore reverses them from
+  the recipe like any other container.
+
+If you prefer to drive it manually, or have no recipe, the explicit route still works:
+
+```shell
+./ReFrontier mhfdat.bin.decd.bin --compress hfi --level 80 --encrypt
+```
 
 ### Compression
 

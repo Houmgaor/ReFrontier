@@ -453,9 +453,10 @@ namespace ReFrontier.Services
                 return checks;
             }
 
-            // MOMO has 8-byte magic header, then entry count
-            // Delegate to shared archive validation with magicSize=8
-            var archiveChecks = ValidateArchiveEntries(buffer, 8, "MOMO");
+            // A MOMO archive is a 4-byte magic, the entry count, then the entry table.
+            // The count sits immediately before the table in both archive shapes, so the
+            // shared validation reads it at headerSize - 4.
+            var archiveChecks = ValidateArchiveEntries(buffer, FileFormatConstants.MomoHeaderSize, "MOMO");
             checks.AddRange(archiveChecks);
 
             return checks;
@@ -494,17 +495,18 @@ namespace ReFrontier.Services
             int count = BitConverter.ToInt32(buffer, 8);
             int pointerEntryNames = BitConverter.ToInt32(buffer, 12);
 
-            // Count check
-            bool countValid = count > 0 && count <= 9999;
+            // Count check. Zero is legitimate: the client ships well-formed empty archives
+            // whose header is the whole file, with both pointers at its end.
+            bool countValid = count >= 0 && count <= 9999;
             checks.Add(new ValidationCheck
             {
                 Layer = "MHA",
                 CheckName = "EntryCount",
                 Passed = countValid,
-                Detail = $"{count} entries"
+                Detail = count == 0 ? "0 entries (empty archive)" : $"{count} entries"
             });
 
-            if (!countValid)
+            if (!countValid || count == 0)
                 return checks;
 
             // Metadata pointer check
@@ -781,11 +783,11 @@ namespace ReFrontier.Services
         /// <summary>
         /// Shared validation for simple archive entries (MOMO and SimpleArchive).
         /// </summary>
-        private List<ValidationCheck> ValidateArchiveEntries(byte[] buffer, int magicSize, string layerName)
+        private List<ValidationCheck> ValidateArchiveEntries(byte[] buffer, int headerSize, string layerName)
         {
             var checks = new List<ValidationCheck>();
 
-            if (buffer.Length < magicSize + 4)
+            if (buffer.Length < headerSize + 4)
             {
                 checks.Add(new ValidationCheck
                 {
@@ -797,7 +799,9 @@ namespace ReFrontier.Services
                 return checks;
             }
 
-            uint count = BitConverter.ToUInt32(buffer, magicSize);
+            // The entry count sits immediately before the entry table: at offset 0 for a
+            // headerless archive, and after the magic for MOMO.
+            uint count = BitConverter.ToUInt32(buffer, headerSize - 4);
             bool countValid = count > 0 && count <= 9999;
             checks.Add(new ValidationCheck
             {
@@ -811,7 +815,7 @@ namespace ReFrontier.Services
                 return checks;
 
             // Check entry table fits
-            int entryTableEnd = magicSize + 4 + (int)count * FileFormatConstants.SimpleArchiveEntrySize;
+            int entryTableEnd = headerSize + (int)count * FileFormatConstants.SimpleArchiveEntrySize;
             if (entryTableEnd > buffer.Length)
             {
                 checks.Add(new ValidationCheck
@@ -827,10 +831,10 @@ namespace ReFrontier.Services
             // Validate each entry
             bool allValid = true;
             string? failDetail = null;
-            int completeSize = magicSize;
+            int completeSize = headerSize;
             for (int i = 0; i < (int)count; i++)
             {
-                int entryBase = magicSize + 4 + i * FileFormatConstants.SimpleArchiveEntrySize;
+                int entryBase = headerSize + i * FileFormatConstants.SimpleArchiveEntrySize;
                 int offset = BitConverter.ToInt32(buffer, entryBase);
                 int size = BitConverter.ToInt32(buffer, entryBase + 4);
 

@@ -160,11 +160,13 @@ namespace ReFrontier.Services
         /// <param name="cleanUp">Remove the initial input file.</param>
         /// <param name="autoStage">Unpack stage container if true.</param>
         /// <param name="verbose">Show per-file processing messages.</param>
+        /// <param name="containerType">Container type to record in the log, which decides
+        /// how the archive is written back by packing.</param>
         /// <returns>Output folder path.</returns>
         /// <exception cref="PackingException">Thrown if the file is too small or not a valid container.</exception>
         public string UnpackSimpleArchive(
             string input, BinaryReader brInput, int magicSize, bool createLog,
-            bool cleanUp, bool autoStage, bool verbose = false
+            bool cleanUp, bool autoStage, bool verbose = false, string containerType = "SimpleArchive"
         )
         {
             long fileLength = _fileSystem.GetFileLength(input);
@@ -176,6 +178,10 @@ namespace ReFrontier.Services
                 throw new PackingException("File is too small to be a valid archive (minimum 16 bytes required).", input);
             }
 
+            // The entry count sits immediately before the entry table: at offset 0 for a
+            // headerless archive, and after the 4-byte magic for MOMO. Reading it at the
+            // stream's current position instead took MOMO's magic as the count.
+            brInput.BaseStream.Seek(magicSize - 4, SeekOrigin.Begin);
             uint count = brInput.ReadUInt32();
             uint tempCount = count;
 
@@ -183,7 +189,8 @@ namespace ReFrontier.Services
             int completeSize = magicSize;
             for (int i = 0; i < count; i++)
             {
-                brInput.BaseStream.Seek(magicSize, SeekOrigin.Current);
+                // Step over the entry's offset field to reach its size field.
+                brInput.BaseStream.Seek(4, SeekOrigin.Current);
                 if (brInput.BaseStream.Position + 4 > brInput.BaseStream.Length)
                 {
                     if (verbose)
@@ -227,7 +234,7 @@ namespace ReFrontier.Services
 
             // Write to log file if desired
             _fileSystem.CreateDirectory(outputDir);
-            using var logOutput = InitializeLogFile(input, "SimpleArchive", (int)count, createLog, out string logPath);
+            using var logOutput = InitializeLogFile(input, containerType, (int)count, createLog, out string logPath);
 
             for (int i = 0; i < count; i++)
             {
@@ -314,7 +321,10 @@ namespace ReFrontier.Services
                 brInput.BaseStream.Seek(pointerEntryNamesBlock + stringOffset, SeekOrigin.Begin);
                 string entryName = FileOperations.ReadNullterminatedString(brInput, Encoding.UTF8);
                 if (createLog)
-                    logOutput.WriteLine(entryName + "," + fileId);
+                    // The padded size is recorded so packing can lay the archive out exactly
+                    // as it was. It is not derivable from the entry size: most entries pad to
+                    // the next 512-byte boundary, but some reserve more.
+                    logOutput.WriteLine($"{entryName},{fileId},{pSize}");
 
                 // Extract file
                 brInput.BaseStream.Seek(entryOffset, SeekOrigin.Begin);
@@ -341,7 +351,23 @@ namespace ReFrontier.Services
         /// <exception cref="ReFrontierException">Thrown if decompression fails.</exception>
         public string UnpackJPK(string input, bool verbose = false)
         {
+            return UnpackJPK(input, verbose, out _, out _);
+        }
+
+        /// <summary>
+        /// Unpack, decompress, a JPK file, reporting the algorithm it was compressed with.
+        /// </summary>
+        /// <param name="input">Input file path.</param>
+        /// <param name="verbose">Show per-file processing messages.</param>
+        /// <param name="compressionType">Algorithm read from the JKR header.</param>
+        /// <param name="compressedSize">Size in bytes of the input file before decompression.</param>
+        /// <returns>Output file path.</returns>
+        /// <exception cref="PackingException">Thrown if the JKR header is invalid or compression type is unsupported.</exception>
+        /// <exception cref="ReFrontierException">Thrown if decompression fails.</exception>
+        public string UnpackJPK(string input, bool verbose, out CompressionType compressionType, out long compressedSize)
+        {
             byte[] buffer = _fileSystem.ReadAllBytes(input);
+            compressedSize = buffer.Length;
             using MemoryStream ms = new(buffer);
             using BinaryReader br = new(ms);
 
@@ -365,7 +391,7 @@ namespace ReFrontier.Services
                     input
                 );
             }
-            var compressionType = compressionTypes[type];
+            compressionType = compressionTypes[type];
             if (verbose)
                 _logger.WriteLine($"JPK {compressionType} (type {type})");
             IJPKDecode decoder;

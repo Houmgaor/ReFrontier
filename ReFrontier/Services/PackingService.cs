@@ -16,6 +16,12 @@ namespace ReFrontier.Services
     /// </summary>
     public class PackingService
     {
+        /// <summary>
+        /// Suffix of the temporary file an archive is packed into before being promoted
+        /// to its final name, so a failed pack cannot leave a truncated archive behind.
+        /// </summary>
+        private const string PackingSuffix = ".packing";
+
         private readonly IFileSystem _fileSystem;
         private readonly ILogger _logger;
         private readonly ICodecFactory _codecFactory;
@@ -114,14 +120,36 @@ namespace ReFrontier.Services
         /// <exception cref="PackingException">Thrown if the container type is unknown or packing fails.</exception>
         public void ProcessPackInput(string inputDir)
         {
-            string logFile = Path.Join(
-                inputDir,
-                $"{inputDir[(inputDir.LastIndexOf('/') + 1)..]}{_config.LogSuffix}"
-            );
+            ProcessPackInput(inputDir, null);
+        }
+
+        /// <summary>
+        /// Standard packing of an input directory, into a chosen directory.
+        ///
+        /// <para>Restoring a nested container writes it back beside its siblings rather
+        /// than into the output directory, so that the parent container can then be packed
+        /// from a complete directory.</para>
+        /// </summary>
+        /// <param name="inputDir">Input directory path.</param>
+        /// <param name="outputDirectory">Directory to write the packed container into,
+        /// or null to use the configured output directory.</param>
+        /// <returns>Path of the packed container.</returns>
+        /// <exception cref="FileNotFoundException">Thrown if the log file does not exist.</exception>
+        /// <exception cref="PackingException">Thrown if the container type is unknown or packing fails.</exception>
+        public string ProcessPackInput(string inputDir, string? outputDirectory)
+        {
+            // The log is either inside the directory under the directory's own name, or
+            // beside it under the name of the file that was unpacked. Slicing on a literal
+            // '/' missed the first form on Windows, where paths are separated by '\'.
+            string trimmed = inputDir.TrimEnd('/', '\\');
+            string logFile = Path.Join(trimmed, $"{Path.GetFileName(trimmed)}{_config.LogSuffix}");
             if (!_fileSystem.FileExists(logFile))
             {
                 string tempLog = logFile;
-                logFile = inputDir[..inputDir.LastIndexOf('.')] + _config.LogSuffix;
+                int lastDot = trimmed.LastIndexOf('.');
+                logFile = lastDot < 0
+                    ? trimmed + _config.LogSuffix
+                    : trimmed[..lastDot] + _config.LogSuffix;
                 if (!_fileSystem.FileExists(logFile))
                     throw new FileNotFoundException(
                         $"Neither log files {tempLog} nor {logFile} exist."
@@ -129,21 +157,137 @@ namespace ReFrontier.Services
             }
             string[] logContent = _fileSystem.ReadAllLines(logFile);
 
-            switch (logContent[0])
+            if (logContent.Length < 2)
             {
-                case "SimpleArchive":
-                    PackSimpleArchive(logContent, inputDir);
-                    break;
-                case "MHA":
-                    PackMHA(logContent, inputDir);
-                    break;
-                case "StageContainer":
-                    PackStageContainer(logContent, inputDir);
-                    break;
-                default:
-                    throw new PackingException("Unknown container type: " + logContent[0], inputDir);
+                throw new PackingException(
+                    $"Log file {logFile} is too short to describe a container. " +
+                    "Extract the original file again with --saveMeta to regenerate it.",
+                    inputDir
+                );
             }
+
+            string containerType = logContent[0];
+            string targetDirectory = outputDirectory ?? _config.OutputDirectory;
+            _fileSystem.CreateDirectory(targetDirectory);
+            string outputPath = $"{targetDirectory}/{logContent[1]}";
+
+            // Pack into a temporary file and only promote it once packing has fully
+            // succeeded. Writing straight to the output path would leave a truncated
+            // archive behind on failure, which reads as a result rather than a failure.
+            string workingPath = $"{outputPath}{PackingSuffix}";
+            try
+            {
+                switch (containerType)
+                {
+                    case "SimpleArchive":
+                        PackSimpleArchive(logContent, inputDir, workingPath);
+                        break;
+                    case "MOMO":
+                        PackMomoArchive(logContent, inputDir, workingPath);
+                        break;
+                    case "MHA":
+                        PackMHA(logContent, inputDir, workingPath);
+                        break;
+                    case "StageContainer":
+                        PackStageContainer(logContent, inputDir, workingPath);
+                        break;
+                    default:
+                        throw new PackingException("Unknown container type: " + containerType, inputDir);
+                }
+
+                _fileSystem.Copy(workingPath, outputPath);
+            }
+            finally
+            {
+                if (_fileSystem.FileExists(workingPath))
+                    _fileSystem.DeleteFile(workingPath);
+            }
+
+            if (containerType != "StageContainer")
+                _fileOperations.GetUpdateEntryInstance(outputPath);
             _logger.WriteSeparator();
+            return outputPath;
+        }
+
+        /// <summary>
+        /// Check that every entry the log names is present before any output is written.
+        ///
+        /// <para>Extraction unpacks nested entries by default, which renames them
+        /// (<c>entry.jkr</c> becomes <c>entry.jkr.bin</c>) and leaves the log pointing at
+        /// the original names. Packing then failed part way through the archive, so this
+        /// reports the whole picture up front instead.</para>
+        /// </summary>
+        /// <param name="entryNames">Entry names taken from the log.</param>
+        /// <param name="expectedCount">How many entries the packer will write.</param>
+        /// <param name="input">Input directory being packed.</param>
+        /// <param name="containerType">Container type, for the error message.</param>
+        /// <exception cref="PackingException">Thrown if the log is truncated or entries are missing.</exception>
+        private void EnsureEntriesArePackable(
+            List<string> entryNames, int expectedCount, string input, string containerType)
+        {
+            if (expectedCount > entryNames.Count)
+            {
+                throw new PackingException(
+                    $"Cannot pack {containerType} {input}: the log declares {expectedCount} entries " +
+                    $"but lists only {entryNames.Count}. The log file is truncated or corrupt.",
+                    input
+                );
+            }
+
+            var missing = new List<string>();
+            for (int i = 0; i < expectedCount; i++)
+            {
+                string name = entryNames[i];
+                if (name == "null" || string.IsNullOrEmpty(name))
+                    continue;
+                if (_fileSystem.FileExists($"{input}/{name}"))
+                    continue;
+
+                string? detail = DescribeMissingEntry(input, name);
+                missing.Add(detail == null ? $"  {name}" : $"  {name} - {detail}");
+            }
+
+            if (missing.Count == 0)
+                return;
+
+            throw new PackingException(
+                $"Cannot pack {containerType} {input}: {missing.Count} of {expectedCount} entries " +
+                $"named by the log are missing.\n" +
+                string.Join("\n", missing) +
+                "\n\nUnpacking is recursive by default, which replaces nested entries with their " +
+                "unpacked form and leaves the log naming the originals. Rebuild each entry under the " +
+                "name the log uses, or extract the container again with --nonRecursive so its entries " +
+                "stay packed.",
+                input
+            );
+        }
+
+        /// <summary>
+        /// Explain what became of an entry the log names but that is no longer on disk.
+        /// </summary>
+        /// <param name="input">Input directory being packed.</param>
+        /// <param name="name">Entry name as it appears in the log.</param>
+        /// <returns>A short explanation, or null if nothing recognisable was found.</returns>
+        private string? DescribeMissingEntry(string input, string name)
+        {
+            // A recipe means extraction decrypted or decompressed this entry in place,
+            // and records exactly what it became.
+            string recipePath = $"{input}/{name}{ExtractionRecipe.FileSuffix}";
+            if (_fileSystem.FileExists(recipePath))
+            {
+                var recipe = ExtractionRecipe.Deserialize(_fileSystem.ReadAllBytes(recipePath));
+                if (recipe != null && !string.IsNullOrEmpty(recipe.ExtractedFile))
+                    return $"unpacked to {recipe.ExtractedFile}, rebuild it with --restore";
+            }
+
+            if (_fileSystem.DirectoryExists($"{input}/{name}{_config.UnpackedSuffix}"))
+                return $"unpacked into {name}{_config.UnpackedSuffix}/, repack that directory first";
+
+            string[] candidates = _fileSystem.GetFiles(input, $"{name}.*", SearchOption.TopDirectoryOnly);
+            if (candidates.Length > 0)
+                return $"found {Path.GetFileName(candidates[0])} instead";
+
+            return null;
         }
 
         /// <summary>
@@ -151,9 +295,9 @@ namespace ReFrontier.Services
         /// </summary>
         /// <param name="logContent">Content of the log file.</param>
         /// <param name="input">Input directory to pack.</param>
-        private void PackSimpleArchive(string[] logContent, string input)
+        /// <param name="outputPath">Path to write the packed archive to.</param>
+        private void PackSimpleArchive(string[] logContent, string input, string outputPath)
         {
-            string fileName = logContent[1];
             int count = ParseOrThrow<int>(logContent[2], "entry count", "Check the log file format.");
             _logger.WriteLine($"Simple archive with {count} entries.");
 
@@ -166,9 +310,9 @@ namespace ReFrontier.Services
                 listFileNames.Add(columns[0]);
             }
 
-            _fileSystem.CreateDirectory(_config.OutputDirectory);
-            fileName = $"{_config.OutputDirectory}/{fileName}";
-            using (var stream = _fileSystem.OpenWrite(fileName))
+            EnsureEntriesArePackable(listFileNames, count, input, "simple archive");
+
+            using (var stream = _fileSystem.OpenWrite(outputPath))
             using (BinaryWriter bwOutput = new(stream))
             {
                 bwOutput.Write(count);
@@ -184,7 +328,72 @@ namespace ReFrontier.Services
                     offset = WriteFileEntry(bwOutput, 0x04 + i * 0x08, offset, fileData);
                 }
             }
-            _fileOperations.GetUpdateEntryInstance(fileName);
+        }
+
+        /// <summary>
+        /// MOMO archive packing.
+        ///
+        /// <para>A MOMO archive is a 4-byte magic, the entry count, then a table of
+        /// offset and size pairs. Entry data is aligned to
+        /// <see cref="FileFormatConstants.MomoEntryAlignment"/> and the file is padded with
+        /// zeros to the same boundary, which reproduces the game's archives exactly.</para>
+        /// </summary>
+        /// <param name="logContent">Content of the log file.</param>
+        /// <param name="input">Input directory to pack.</param>
+        /// <param name="outputPath">Path to write the packed archive to.</param>
+        private void PackMomoArchive(string[] logContent, string input, string outputPath)
+        {
+            int count = ParseOrThrow<int>(logContent[2], "entry count", "Check the MOMO log file format.");
+            _logger.WriteLine($"MOMO archive with {count} entries.");
+
+            List<string> listFileNames = [];
+            for (int i = 3; i < logContent.Length; i++)
+            {
+                string[] columns = logContent[i].Split(',');
+                listFileNames.Add(columns[0]);
+            }
+
+            EnsureEntriesArePackable(listFileNames, count, input, "MOMO archive");
+
+            using (var stream = _fileSystem.OpenWrite(outputPath))
+            using (BinaryWriter bwOutput = new(stream))
+            {
+                bwOutput.Write(FileMagic.MOMO);
+                bwOutput.Write(count);
+
+                int offset = AlignUp(
+                    FileFormatConstants.MomoHeaderSize + count * FileFormatConstants.SimpleArchiveEntrySize,
+                    FileFormatConstants.MomoEntryAlignment
+                );
+                for (int i = 0; i < count; i++)
+                {
+                    _logger.WriteLine($"{input}/{listFileNames[i]}");
+                    byte[] fileData = [];
+                    if (listFileNames[i] != "null")
+                    {
+                        fileData = _fileSystem.ReadAllBytes($"{input}/{listFileNames[i]}");
+                    }
+                    int entryHeader = FileFormatConstants.MomoHeaderSize
+                        + i * FileFormatConstants.SimpleArchiveEntrySize;
+                    int entryEnd = WriteFileEntry(bwOutput, entryHeader, offset, fileData);
+                    offset = AlignUp(entryEnd, FileFormatConstants.MomoEntryAlignment);
+                }
+
+                // Pad out to the alignment boundary, as the game's own archives are.
+                if (bwOutput.BaseStream.Length < offset)
+                    bwOutput.BaseStream.SetLength(offset);
+            }
+        }
+
+        /// <summary>
+        /// Round a value up to the next multiple of an alignment.
+        /// </summary>
+        /// <param name="value">Value to round.</param>
+        /// <param name="alignment">Alignment boundary, a power of two.</param>
+        /// <returns>The rounded value.</returns>
+        private static int AlignUp(int value, int alignment)
+        {
+            return (value + alignment - 1) & ~(alignment - 1);
         }
 
         /// <summary>
@@ -194,9 +403,9 @@ namespace ReFrontier.Services
         /// </summary>
         /// <param name="logContent">Content of the log file.</param>
         /// <param name="input">Input directory to pack.</param>
-        private void PackMHA(string[] logContent, string input)
+        /// <param name="outputPath">Path to write the packed archive to.</param>
+        private void PackMHA(string[] logContent, string input, string outputPath)
         {
-            string fileName = logContent[1];
             int count = ParseOrThrow<int>(logContent[2], "entry count", "Check the MHA log file format.");
             short unk1 = ParseOrThrow<short>(logContent[3], "unk1", "Check the MHA log file format.");
             short unk2 = ParseOrThrow<short>(logContent[4], "unk2", "Check the MHA log file format.");
@@ -205,63 +414,99 @@ namespace ReFrontier.Services
             // Entries
             List<string> listFileNames = [];
             List<int> listFileIds = [];
+            List<int> listPaddedSizes = [];
 
             for (int i = 0; i < count; i++)
             {
                 string[] columns = logContent[i + 5].Split(',');  // 5 = Account for meta data entries before
                 listFileNames.Add(columns[0]);
                 listFileIds.Add(ParseOrThrow<int>(columns[1], "file ID", $"Entry {i + 1} in MHA log file."));
+
+                // Third column added later; logs written by older versions do not have it.
+                listPaddedSizes.Add(
+                    columns.Length > 2
+                        ? ParseOrThrow<int>(columns[2], "padded size", $"Entry {i + 1} in MHA log file.")
+                        : 0
+                );
             }
+
+            EnsureEntriesArePackable(listFileNames, count, input, "MHA archive");
 
             // Set up memory streams for segments
             MemoryStream entryMetaBlock = new();
             MemoryStream entryNamesBlock = new();
 
-            _fileSystem.CreateDirectory(_config.OutputDirectory);
-            fileName = $"{_config.OutputDirectory}/{fileName}";
-            using var stream = _fileSystem.OpenWrite(fileName);
-            using BinaryWriter bwOutput = new(stream);
-            // Header
-            bwOutput.Write(23160941);    // MHA magic
-            bwOutput.Write(0);           // pointerEntryMetaBlock
-            bwOutput.Write(count);
-            bwOutput.Write(0);           // pointerEntryNamesBlock
-            bwOutput.Write(0);           // entryNamesBlockLength
-            bwOutput.Write(unk1);
-            bwOutput.Write(unk2);
-
-            int pointerEntryNamesBlock = 0x18;   // 0x18 = Header length
-            int stringOffset = 0;
-            for (int i = 0; i < count; i++)
+            using (var stream = _fileSystem.OpenWrite(outputPath))
+            using (BinaryWriter bwOutput = new(stream))
             {
-                _logger.WriteLine($"{input}/{listFileNames[i]}");
-                byte[] fileData = _fileSystem.ReadAllBytes($"{input}/{listFileNames[i]}");
-                bwOutput.Write(fileData);
+                // Header
+                bwOutput.Write(FileMagic.MHA);
+                bwOutput.Write(0);           // pointerEntryMetaBlock
+                bwOutput.Write(count);
+                bwOutput.Write(0);           // pointerEntryNamesBlock
+                bwOutput.Write(0);           // entryNamesBlockLength
+                bwOutput.Write(unk1);
+                bwOutput.Write(unk2);
 
-                entryMetaBlock.Write(BitConverter.GetBytes(stringOffset), 0, 4);
-                entryMetaBlock.Write(BitConverter.GetBytes(pointerEntryNamesBlock), 0, 4);
-                entryMetaBlock.Write(BitConverter.GetBytes(fileData.Length), 0, 4);
-                entryMetaBlock.Write(BitConverter.GetBytes(fileData.Length), 0, 4); // write psize if necessary
-                entryMetaBlock.Write(BitConverter.GetBytes(listFileIds[i]), 0, 4);
+                int entryOffset = FileFormatConstants.MhaHeaderSize;
+                int stringOffset = 0;
+                for (int i = 0; i < count; i++)
+                {
+                    _logger.WriteLine($"{input}/{listFileNames[i]}");
+                    byte[] fileData = _fileSystem.ReadAllBytes($"{input}/{listFileNames[i]}");
 
-                System.Text.UTF8Encoding enc = new();
-                byte[] arrayFileName = enc.GetBytes(listFileNames[i]);
-                entryNamesBlock.Write(arrayFileName, 0, arrayFileName.Length);
-                entryNamesBlock.WriteByte(0);
-                stringOffset += arrayFileName.Length + 1;
+                    // Keep the original padding when the entry still fits inside it, so an
+                    // untouched archive is rebuilt byte for byte. Entries that grew, and
+                    // logs from before the padded size was recorded, pad to the next
+                    // boundary past the data.
+                    int paddedSize = listPaddedSizes[i] > fileData.Length
+                        ? listPaddedSizes[i]
+                        : PadEntrySize(fileData.Length);
 
-                pointerEntryNamesBlock += fileData.Length; // update with psize if necessary
+                    bwOutput.BaseStream.Seek(entryOffset, SeekOrigin.Begin);
+                    bwOutput.Write(fileData);
+
+                    entryMetaBlock.Write(BitConverter.GetBytes(stringOffset), 0, 4);
+                    entryMetaBlock.Write(BitConverter.GetBytes(entryOffset), 0, 4);
+                    entryMetaBlock.Write(BitConverter.GetBytes(fileData.Length), 0, 4);
+                    entryMetaBlock.Write(BitConverter.GetBytes(paddedSize), 0, 4);
+                    entryMetaBlock.Write(BitConverter.GetBytes(listFileIds[i]), 0, 4);
+
+                    byte[] arrayFileName = Encoding.UTF8.GetBytes(listFileNames[i]);
+                    entryNamesBlock.Write(arrayFileName, 0, arrayFileName.Length);
+                    entryNamesBlock.WriteByte(0);
+                    stringOffset += arrayFileName.Length + 1;
+
+                    entryOffset += paddedSize;
+                }
+
+                // Names then metadata follow the padded entry data, and end the file.
+                // Seeking past the last entry's padding leaves it zero filled.
+                bwOutput.BaseStream.Seek(entryOffset, SeekOrigin.Begin);
+                bwOutput.Write(entryNamesBlock.ToArray());
+                bwOutput.Write(entryMetaBlock.ToArray());
+
+                // Update offsets
+                bwOutput.Seek(4, SeekOrigin.Begin);
+                bwOutput.Write(entryOffset + (int)entryNamesBlock.Length);
+                bwOutput.Write(count);
+                bwOutput.Write(entryOffset);
+                bwOutput.Write((int)entryNamesBlock.Length);
             }
+        }
 
-            bwOutput.Write(entryNamesBlock.ToArray());
-            bwOutput.Write(entryMetaBlock.ToArray());
-
-            // Update offsets
-            bwOutput.Seek(4, SeekOrigin.Begin);
-            bwOutput.Write((int)(pointerEntryNamesBlock + entryNamesBlock.Length));
-            bwOutput.Write(count);
-            bwOutput.Write(pointerEntryNamesBlock);
-            bwOutput.Write((int)entryNamesBlock.Length);
+        /// <summary>
+        /// Padded size of an MHA entry: the next alignment boundary strictly past its data.
+        ///
+        /// <para>Every entry in the game's archives carries at least one padding byte, so an
+        /// entry whose size already lands on the boundary still gains a full block.</para>
+        /// </summary>
+        /// <param name="size">Entry size in bytes.</param>
+        /// <returns>The padded size.</returns>
+        private static int PadEntrySize(int size)
+        {
+            return size - (size % FileFormatConstants.MhaEntryAlignment)
+                + FileFormatConstants.MhaEntryAlignment;
         }
 
         /// <summary>
@@ -269,10 +514,9 @@ namespace ReFrontier.Services
         /// </summary>
         /// <param name="logContent">Content of the log file.</param>
         /// <param name="input">Input directory to pack.</param>
-        private void PackStageContainer(string[] logContent, string input)
+        /// <param name="outputPath">Path to write the packed container to.</param>
+        private void PackStageContainer(string[] logContent, string input, string outputPath)
         {
-            string fileName = logContent[1];
-
             // Entries
             List<string> listFileNames = [];
 
@@ -296,9 +540,9 @@ namespace ReFrontier.Services
 
             _logger.WriteLine($"Stage Container with {listFileNames.Count} entries.");
 
-            _fileSystem.CreateDirectory(_config.OutputDirectory);
-            fileName = $"{_config.OutputDirectory}/{fileName}";
-            using var stream = _fileSystem.OpenWrite(fileName);
+            EnsureEntriesArePackable(listFileNames, listFileNames.Count, input, "stage container");
+
+            using var stream = _fileSystem.OpenWrite(outputPath);
             using BinaryWriter bwOutput = new(stream);
             // Write temp dir
             // + 8 = rest count and unk header int

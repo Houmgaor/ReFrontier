@@ -145,8 +145,8 @@ namespace ReFrontier
             // Higher priority handlers are checked first for same magic number
             _fileRouter.RegisterHandler(new StageContainerHandler(_logger, _unpackingService));
             _fileRouter.RegisterHandler(new NoDecryptionHandler(_logger));
-            _fileRouter.RegisterHandler(new EcdEncryptionHandler(_logger, _fileProcessingService));
-            _fileRouter.RegisterHandler(new ExfEncryptionHandler(_logger, _fileProcessingService));
+            _fileRouter.RegisterHandler(new EcdEncryptionHandler(_logger, _fileProcessingService, _config));
+            _fileRouter.RegisterHandler(new ExfEncryptionHandler(_logger, _fileProcessingService, _config));
             _fileRouter.RegisterHandler(new JkrCompressionHandler(_logger, _unpackingService));
             _fileRouter.RegisterHandler(new MomoArchiveHandler(_logger, _unpackingService));
             _fileRouter.RegisterHandler(new MhaArchiveHandler(_logger, _unpackingService));
@@ -297,6 +297,10 @@ namespace ReFrontier
                 if (excludedExtensions.Contains(extension))
                     continue;
 
+                // Skip extraction recipes written by previous runs
+                if (file.EndsWith(ExtractionRecipe.FileSuffix, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
                 // Skip files inside .unpacked directories
                 if (file.Contains(unpackedSuffix + Path.DirectorySeparatorChar) ||
                     file.Contains(unpackedSuffix + Path.AltDirectorySeparatorChar))
@@ -353,6 +357,64 @@ namespace ReFrontier
         /// <returns>Result indicating success with output path, or skipped with reason.</returns>
         public ProcessFileResult ProcessFile(string filePath, InputArguments inputArguments)
         {
+            var layers = new List<RecipeLayer>();
+            var result = ProcessFileCore(filePath, inputArguments, layers);
+
+            // Record how the file was taken apart, so it can be put back together
+            // without the user having to re-specify encryption and compression settings.
+            // The artifact is a file for an encrypted or compressed chain, and the
+            // unpacked directory when the chain ends in a container archive.
+            if (inputArguments.createLog
+                && layers.Count > 0
+                && result.WasProcessed
+                && result.OutputPath != null
+                && (_fileSystem.FileExists(result.OutputPath) || _fileSystem.DirectoryExists(result.OutputPath)))
+            {
+                WriteRecipe(filePath, result.OutputPath, layers, inputArguments.verbose);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Write an extraction recipe next to the source file.
+        /// </summary>
+        /// <param name="sourcePath">Path of the original game file.</param>
+        /// <param name="extractedPath">Path of the editable file extraction produced.</param>
+        /// <param name="layers">Transformations that were undone, outermost first.</param>
+        /// <param name="verbose">Show per-file processing messages.</param>
+        private void WriteRecipe(string sourcePath, string extractedPath, List<RecipeLayer> layers, bool verbose)
+        {
+            var recipe = new ExtractionRecipe
+            {
+                SourceFile = Path.GetFileName(sourcePath),
+                ExtractedFile = Path.GetFileName(extractedPath),
+            };
+            foreach (var layer in layers)
+            {
+                // Store the meta file by name: the recipe sits in the same folder,
+                // so the pair stays valid if the folder is moved or renamed.
+                if (layer.MetaFile != null)
+                    layer.MetaFile = Path.GetFileName(layer.MetaFile);
+                recipe.Layers.Add(layer);
+            }
+
+            string recipePath = $"{sourcePath}{ExtractionRecipe.FileSuffix}";
+            _fileSystem.WriteAllBytes(recipePath, recipe.Serialize());
+            if (verbose)
+                _logger.WriteLine($"Recipe written to {recipePath}.");
+        }
+
+        /// <summary>
+        /// Unpack or (decrypt and decompress) a single file, collecting the
+        /// transformations that were undone along the way.
+        /// </summary>
+        /// <param name="filePath">Input file path.</param>
+        /// <param name="inputArguments">Configuration arguments from CLI.</param>
+        /// <param name="layers">Accumulator for undone transformations, outermost first.</param>
+        /// <returns>Result indicating success with output path, or skipped with reason.</returns>
+        private ProcessFileResult ProcessFileCore(string filePath, InputArguments inputArguments, List<RecipeLayer> layers)
+        {
             if (inputArguments.verbose)
                 _logger.PrintWithSeparator($"Processing {filePath}", false);
 
@@ -381,6 +443,8 @@ namespace ReFrontier
             }
 
             outputPath = routerResult.OutputPath!;
+            if (routerResult.Layer != null)
+                layers.Add(routerResult.Layer);
 
             if (inputArguments.verbose)
                 _logger.WriteSeparator();
@@ -388,7 +452,7 @@ namespace ReFrontier
             if (fileMagic == FileMagic.ECD && !inputArguments.decryptOnly)
             {
                 string decdFilePath = outputPath;
-                var result = ProcessFile(decdFilePath, inputArguments);
+                var result = ProcessFileCore(decdFilePath, inputArguments, layers);
                 if (inputArguments.cleanUp)
                     _fileSystem.DeleteFile(decdFilePath);
                 outputPath = result.OutputPath ?? outputPath;

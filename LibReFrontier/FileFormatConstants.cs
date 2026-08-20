@@ -17,6 +17,33 @@ public static class FileFormatConstants
     public const int SimpleArchiveEntrySize = 0x08;
 
     /// <summary>
+    /// Header size of a MOMO archive (8 bytes): 4-byte magic then the entry count.
+    /// </summary>
+    public const int MomoHeaderSize = 0x08;
+
+    /// <summary>
+    /// Alignment of entry data inside a MOMO archive (64 bytes).
+    /// <para>Entry data begins at the entry table end rounded up to this boundary, each
+    /// following entry begins at the previous entry's end rounded up to it, and the file
+    /// is padded with zeros to it. Verified against all 615 MOMO archives shipped in the
+    /// PC client's dat/sound directory.</para>
+    /// </summary>
+    public const int MomoEntryAlignment = 0x40;
+
+    /// <summary>
+    /// Alignment of entry data inside an MHA archive (512 bytes).
+    /// <para>Every entry's padded size is a multiple of this and is strictly greater than
+    /// the entry, so each entry carries at least one padding byte. Verified against all
+    /// 26,048 entries in the 82 MHA archives shipped with the PC client.</para>
+    /// </summary>
+    public const int MhaEntryAlignment = 0x200;
+
+    /// <summary>
+    /// Header size of an MHA archive (24 bytes), where entry data begins.
+    /// </summary>
+    public const int MhaHeaderSize = 0x18;
+
+    /// <summary>
     /// Entry metadata size in MHA archives (20 bytes).
     /// Contains: stringOffset, entryOffset, entrySize, paddedSize, fileId.
     /// </summary>

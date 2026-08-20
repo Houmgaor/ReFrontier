@@ -35,6 +35,21 @@ See [ARCHIVE_FORMATS.md](../docs/ARCHIVE_FORMATS.md#compression-types) for algor
 |--------|-------------|
 | `--encrypt` | Encrypt with ECD algorithm (uses `.meta` file if available, otherwise default key) |
 
+### Rebuilding Options
+
+| Option | Description |
+|--------|-------------|
+| `--restore` | Rebuild a file from the recipe saved during extraction, reversing every layer it recorded |
+
+`--restore` replaces having to remember `--compress`, `--level` and `--encrypt` for a file
+you extracted earlier. It needs a `<original file>.recipe.json`, written when you extract
+with `--saveMeta`. Pass `--level` alongside it to override the compression level;
+everything else comes from the recipe.
+
+It accepts a file or an unpacked directory. For a container archive it rebuilds the nested
+entries, packs the directory through its log, and applies the layers above it, following
+nesting to the bottom. See the [main README](../README.md#rebuilding).
+
 ### Unpacking Options
 
 | Option | Description |
@@ -88,6 +103,20 @@ See [ARCHIVE_FORMATS.md](../docs/ARCHIVE_FORMATS.md#compression-types) for algor
 ./ReFrontier mhfdat.bin --compress hfi --level 80 --encrypt
 ```
 
+### Rebuild a file you extracted earlier
+
+```shell
+./ReFrontier mhfdat.bin --saveMeta            # writes mhfdat.bin.recipe.json
+# edit mhfdat.bin.decd.bin
+./ReFrontier mhfdat.bin.decd.bin --restore    # writes output/mhfdat.bin
+```
+
+### Rebuild at a different compression level
+
+```shell
+./ReFrontier mhfdat.bin.decd.bin --restore --level 100
+```
+
 ### Unpack a folder recursively
 
 ```shell
@@ -99,6 +128,28 @@ See [ARCHIVE_FORMATS.md](../docs/ARCHIVE_FORMATS.md#compression-types) for algor
 ```shell
 ./ReFrontier unpacked_folder/ --pack
 ```
+
+`--pack` rebuilds the archive from its `.log` file, which names each entry as it was
+inside the container. Unpacking is recursive by default, so a nested `entry.jkr` is
+replaced by its decompressed `entry.jkr.bin` and the log no longer matches what is on
+disk. Either extract with `--nonRecursive` so entries stay packed:
+
+```shell
+./ReFrontier em001_b.pac --saveMeta --nonRecursive   # entries stay packed
+# edit the entries in em001_b.pac.decd.unpacked/
+./ReFrontier em001_b.pac.decd.unpacked --pack        # writes output/em001_b.pac.decd
+```
+
+or use `--restore`, which rebuilds the unpacked entries itself and applies the encryption
+and compression around the container in the same pass:
+
+```shell
+./ReFrontier em001_b.pac --saveMeta                  # entries unpacked as usual
+./ReFrontier em001_b.pac --restore                   # writes output/em001_b.pac
+```
+
+If entries are missing, `--pack` reports all of them and what each became, and writes
+nothing rather than leaving a partial archive.
 
 ## Compression Performance
 

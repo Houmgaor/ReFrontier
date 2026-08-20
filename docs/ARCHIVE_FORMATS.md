@@ -15,14 +15,27 @@ This document describes the binary structure of archive formats used in Monster 
 
 ## Simple Archive (MOMO)
 
-Simple archives are unnamed containers with sequential file entries.
+Simple archives are unnamed containers with sequential file entries. They come in two
+shapes that differ only by a magic: the entry count always sits immediately before the
+entry table.
 
 ### Header Structure
+
+Headerless (txb, bin, pac, gab), 4-byte header:
 
 ```text
 Offset  Size  Description
 0x00    4     Entry count (uint32)
 0x04    8*N   Entry table (N entries)
+```
+
+MOMO, 8-byte header:
+
+```text
+Offset  Size  Description
+0x00    4     Magic: 0x4F4D4F4D ("MOMO")
+0x04    4     Entry count (uint32)
+0x08    8*N   Entry table (N entries)
 ```
 
 ### Entry Table Structure (8 bytes per entry)
@@ -33,10 +46,17 @@ Offset  Size  Description
 0x04    4     File data size (uint32)
 ```
 
-### Notes
+### Alignment
 
-- Files with MOMO magic (`0x4F4D4F4D`) have an 8-byte header before the entry table
-- Generic simple containers (txb, bin, pac, gab) have a 4-byte header (just the count)
+MOMO archives align entry data to 64 bytes:
+
+- the first entry begins at the entry table's end rounded up to 64
+- each following entry begins at the previous entry's end rounded up to 64
+- the file is zero-padded to 64 bytes past the last entry's end
+
+Verified against all 615 MOMO archives in the PC client's `dat/sound` directory, which
+unpack and repack byte for byte under this rule. Headerless archives are packed compactly,
+with no alignment.
 
 ## MHA Archive (Named Archive)
 
@@ -74,6 +94,26 @@ Offset  Size  Description
 0x0C    4     Padded size (uint32)
 0x10    4     File ID (uint32)
 ```
+
+### Padding
+
+Entry data is padded, and the padded size is what separates one entry from the next:
+entry `i + 1` begins at entry `i`'s offset plus its padded size, with the first entry at
+0x18. Across all 26,048 entries in the 82 MHA archives shipped with the PC client:
+
+- the padded size is always a multiple of 512
+- it is always *strictly* greater than the entry size, so every entry carries at least one
+  padding byte, and an entry whose size already lands on a boundary still gains a full block
+- padding bytes are zero
+- the names block begins at the last entry's padded end, the metadata block follows it, and
+  the file ends there with no trailing padding
+
+The padded size is **not** derivable from the entry size. Padding to the next boundary past
+the data accounts for 24,908 of the 26,048 entries; the remaining 1,140 reserve one or more
+extra blocks for no reason visible in the file. ReFrontier therefore records each entry's
+padded size in the unpacking log (third column, after the name and file ID) and reuses it
+when packing, falling back to the next boundary past the data for entries that grew beyond
+their reserved space, or for logs written before the padded size was recorded.
 
 ## ECD Encrypted Container
 

@@ -7,6 +7,80 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **ReFrontier**: Extraction now records how a file was taken apart in a
+  `<original file>.recipe.json` next to it, written alongside the `.meta` file when
+  extracting with `--saveMeta`. The recipe lists each encryption and compression layer
+  that was undone, outermost first.
+- **ReFrontier**: Container archives are recorded too. A file that unpacks into a directory
+  (simple archive, MOMO, MHA, stage container) gets a `Container` layer naming that
+  directory, and `--restore` rebuilds every entry that was itself unpacked, packs the
+  directory back through its log file, and applies whatever compression and encryption sat
+  above it. Nesting is followed to the bottom and rebuilt depth first, so a model file that
+  is an encrypted archive of archives of compressed streams comes back in one command.
+  `--restore` accepts the original file name or the unpacked directory.
+- **ReFrontier**: New `--restore` option rebuilds a file by reversing its recipe, so
+  repacking no longer requires re-specifying `--compress`, `--level` and `--encrypt`.
+  Previously the JPK compression type was read from the JKR header during extraction and
+  then discarded, leaving the user to guess it when repacking; guessing wrong produced a
+  file the game rejects, with no error. `--restore` accepts either the original file name
+  or the extracted one, and refuses to run on a file that is still packed.
+
+### Fixed
+
+- **ReFrontier**: MHA archives are repacked with their entry padding intact. `PackMHA` laid
+  entries out consecutively and wrote the entry size as the padded size, so a repacked
+  archive was smaller than the original and every entry offset moved. Entry padding is a
+  multiple of 512 and always strictly greater than the entry, but the exact amount is not
+  derivable from the entry size: 1,140 of the 26,048 entries in the client's archives
+  reserve more than the next boundary. Unpacking now records each entry's padded size in the
+  log as a third column, and packing reuses it, falling back to the next boundary past the
+  data for entries that grew or for logs written before the column existed. All 81 MHA
+  archives shipped with the PC client now unpack and repack byte for byte.
+
+- **ReFrontier**: MOMO archives can be unpacked. `UnpackSimpleArchive` read the entry count
+  at the stream's position, which for MOMO is the magic, so every one of the 615 MOMO
+  archives in the PC client's `dat/sound` directory failed with "Not a valid simple
+  container (invalid size or entry count)". The count sits immediately before the entry
+  table in both archive shapes: at offset 0 for a headerless archive, after the magic for
+  MOMO.
+- **ReFrontier**: MOMO archives are repacked as MOMO rather than as headerless archives.
+  Unpacking records `MOMO` as the container type, and packing writes the magic, the count
+  and 64-byte aligned entry data. All 615 shipped archives unpack and repack byte for byte.
+  The `Unpack` facade takes the container type as an optional argument for the same reason;
+  callers that omit it keep unpacking headerless archives as before.
+- **ReFrontier**: `--validate` read the entry count and entry table one field too far along
+  for both archive shapes, reporting every MOMO archive as invalid and headerless archives
+  as an unrecognised format. In the PC client's `dat` directory this moves 615 files from
+  invalid to valid and 30 from unrecognised to valid.
+- **ReFrontier**: `--validate` accepts an empty MHA archive. Six files in `dat/extend` are
+  well-formed archives whose 24-byte header is the whole file, with a zero entry count and
+  both pointers at its end; they were reported as invalid.
+
+- **ReFrontier**: `--pack` no longer leaves a truncated archive at the output path when it
+  cannot complete. Entries named by the log are now all checked before anything is written,
+  and packing goes through a temporary file that is only promoted once it has fully
+  succeeded, so a failed pack leaves any earlier output untouched.
+- **ReFrontier**: `--pack` now explains why an entry is missing instead of reporting a bare
+  "Could not find file". Unpacking is recursive by default, which replaces a nested
+  `entry.jkr` with `entry.jkr.bin` while the log keeps naming the original; the error now
+  lists every missing entry at once, says what each one became, and names the two ways out
+  (rebuild the entry, or extract with `--nonRecursive`).
+- **ReFrontier**: `--pack` reports a truncated or corrupt log file rather than failing with
+  an index error.
+
+### Notes
+
+- Compression level is still not recoverable from a game file (it is an encoder-side
+  parameter absent from the JKR header). `--restore` defaults to level 80 and accepts
+  `--level` as an override; this affects output size only, not correctness.
+- `--pack` remains available for repacking a directory on its own; it requires the entries
+  to still be in the form the log names, which means extracting with `--nonRecursive`.
+  `--restore` is the equivalent for a normal recursive extraction.
+- Restoring a container rebuilds its entries in place, under the names the log uses, so the
+  unpacked directory is modified. Rebuilding is idempotent.
+
 ## [2.1.0] - 2026-02-22
 
 ### Added
