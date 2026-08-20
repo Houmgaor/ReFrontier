@@ -143,6 +143,67 @@ namespace ReFrontier.Tests
             Assert.Equal(0, packed.Length % FileFormatConstants.MomoEntryAlignment);
         }
 
+        [Fact]
+        public void UnpackFacade_Momo_RecordsMomoInTheLog()
+        {
+            // The Unpack facade is a separate public surface from UnpackingService, and
+            // packing decides how to write the header from what the log says.
+            byte[] archive = BuildMomo(2, out _);
+            _fileSystem.AddFile("/test/arc.snd", archive);
+            var facade = new Unpack(_fileSystem, _logger, _codecFactory, _config);
+
+            using var reader = new BinaryReader(new MemoryStream(archive));
+            facade.UnpackSimpleArchive(
+                "/test/arc.snd", reader, FileFormatConstants.MomoHeaderSize,
+                createLog: true, cleanUp: false, autoStage: false, containerType: "MOMO"
+            );
+
+            Assert.Equal("MOMO", _fileSystem.ReadAllLines("/test/arc.snd.log")[0]);
+        }
+
+        [Fact]
+        public void UnpackFacade_Momo_RoundTripsThroughTheFacade()
+        {
+            byte[] archive = BuildMomo(3, out _);
+            _fileSystem.AddFile("/test/arc.snd", archive);
+            var facade = new Unpack(_fileSystem, _logger, _codecFactory, _config);
+
+            using (var reader = new BinaryReader(new MemoryStream(archive)))
+            {
+                facade.UnpackSimpleArchive(
+                    "/test/arc.snd", reader, FileFormatConstants.MomoHeaderSize,
+                    createLog: true, cleanUp: false, autoStage: false, containerType: "MOMO"
+                );
+            }
+
+            _packing.ProcessPackInput("/test/arc.snd.unpacked");
+
+            Assert.Equal(archive, _fileSystem.ReadAllBytes("output/arc.snd"));
+        }
+
+        [Fact]
+        public void UnpackFacade_WithoutContainerType_StaysHeaderless()
+        {
+            // Existing callers that omit the argument keep the previous behaviour.
+            byte[] payload = CreateTestData(32);
+            using var ms = new MemoryStream();
+            using (var bw = new BinaryWriter(ms, System.Text.Encoding.UTF8, leaveOpen: true))
+            {
+                bw.Write(1);
+                bw.Write(12);
+                bw.Write(payload.Length);
+                bw.Write(payload);
+            }
+            byte[] archive = ms.ToArray();
+            _fileSystem.AddFile("/test/plain.bin", archive);
+            var facade = new Unpack(_fileSystem, _logger, _codecFactory, _config);
+
+            using var reader = new BinaryReader(new MemoryStream(archive));
+            facade.UnpackSimpleArchive("/test/plain.bin", reader, 4, createLog: true, cleanUp: false, autoStage: false);
+
+            Assert.Equal("SimpleArchive", _fileSystem.ReadAllLines("/test/plain.bin.log")[0]);
+        }
+
         #region Helpers
 
         private string Unpack(byte[] archive)

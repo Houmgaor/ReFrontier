@@ -48,6 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ReFrontier**: MOMO archives are repacked as MOMO rather than as headerless archives.
   Unpacking records `MOMO` as the container type, and packing writes the magic, the count
   and 64-byte aligned entry data. All 615 shipped archives unpack and repack byte for byte.
+  The `Unpack` facade takes the container type as an optional argument for the same reason;
+  callers that omit it keep unpacking headerless archives as before.
 - **ReFrontier**: `--validate` read the entry count and entry table one field too far along
   for both archive shapes, reporting every MOMO archive as invalid and headerless archives
   as an unrecognised format. In the PC client's `dat` directory this moves 615 files from
