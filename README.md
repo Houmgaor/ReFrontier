@@ -24,10 +24,11 @@ Key features:
 - **Reliability**: Fixed duplicate filename issues
 - **Security**: Removed memory-unsafe code and outdated libraries
 - **Text tools**: Improved CSV parsing and cleaner fulldump output
-- **Stateful round-trip**: Extraction records how a file was packed, so rebuilding it is one flag (`--restore`), with no setup to remember
+- **Stateful round-trip**: Extraction records how a file was packed, so rebuilding it is one command (`restore`), with no setup to remember
 - **Safe by default**: Nothing you supplied is deleted, and the metadata needed to rebuild is always written
-- **Validation**: Non-destructive integrity checking of game files (`--validate`)
-- **Diff**: Structural comparison of two game files through encryption/compression layers (`--diff`)
+- **Task-based commands**: Each job is a verb (`unpack`, `restore`, `compress`…) carrying only the options that apply to it
+- **Validation**: Non-destructive integrity checking of game files (`validate`)
+- **Diff**: Structural comparison of two game files through encryption/compression layers (`diff`)
 
 ## Installation
 
@@ -46,14 +47,14 @@ You can drag-and-drop files or folders onto the executable, or use the command l
 
 2. Decrypt and decompress the file:
     ```shell
-    ./ReFrontier mhfdat.bin
+    ./ReFrontier unpack mhfdat.bin
     ```
 
 3. Edit the extracted data (see [tools](#see-also) and [included utilities](#data-editing)).
 
 4. Rebuild the game file:
     ```shell
-    ./ReFrontier mhfdat.bin.decd.bin --restore
+    ./ReFrontier restore mhfdat.bin.decd.bin
     ```
 
     The compression algorithm and encryption key come from the recipe written in step 2,
@@ -67,16 +68,58 @@ For detailed command reference, see [ReFrontier/README.md](./ReFrontier/README.m
 ./ReFrontier --help
 ```
 
-### Common Options
+### Commands
 
-| Option | Description |
-|--------|-------------|
-| `--help` | Display CLI help |
-| `--noMeta` | Skip the metadata that makes rebuilding possible |
-| `--restore` | Rebuild a file using the recipe saved during extraction |
-| `--cleanUp` | Delete intermediate files |
-| `--validate` | Check file integrity without writing output |
-| `--diff <file>` | Structural comparison with another file |
+Each task is a command, and `--help` on a command lists only the options that apply to it:
+
+| Command | Description |
+|---------|-------------|
+| `unpack <path>` | Decrypt, decompress and unpack a file or directory |
+| `decrypt <file>` | Decrypt an ECD or EXF file without unpacking it |
+| `pack <dir>` | Repack a directory produced by `unpack` |
+| `restore <path>` | Rebuild a file using the recipe saved during extraction |
+| `compress <file> --type <type>` | Compress a file with a JPK algorithm |
+| `encrypt <file>` | Encrypt a file with the ECD algorithm |
+| `validate <path>` | Check file integrity without writing output |
+| `diff <a> <b>` | Structural comparison of two files |
+
+```shell
+./ReFrontier --help           # list the commands
+./ReFrontier unpack --help    # options for one command
+```
+
+`--quiet`, `--verbose` and `--parallelism` work with every command.
+
+Running `./ReFrontier mhfdat.bin` with no command still unpacks, as before.
+
+<details>
+<summary>Older flag-based form</summary>
+
+Before 2.3.0 every task was a flag on a single command (`./ReFrontier mhfdat.bin --restore`).
+Those flags still work, so existing scripts keep running, but the ones that select a task
+now print the command to use instead and will be removed in a future release:
+
+| Deprecated | Use |
+|------------|-----|
+| `--decryptOnly` | `decrypt` |
+| `--pack` | `pack` |
+| `--restore` | `restore` |
+| `--validate` | `validate` |
+| `--diff <file>` | `diff <a> <b>` |
+| `--compress <type> --level <n>` | `compress --type <type> --level <n>` |
+| `--encrypt` | `encrypt` |
+| `--nonRecursive` | `unpack --flat` |
+| `--ignoreJPK` | `unpack --keep-compressed` |
+| `--noDecryption` | `unpack --keep-encrypted` |
+| `--stageContainer` | `unpack --stage` |
+| `--autoStage` | `unpack --auto-stage` |
+| `--cleanUp` | `--clean` |
+| `--noMeta` | `--no-meta` |
+
+The renamed options are also accepted under their old spelling by the commands that take
+them, so a script can move to the commands without renaming every option at once.
+
+</details>
 
 ### Decryption
 
@@ -84,18 +127,18 @@ ReFrontier decrypts (ECD → JPK) and decompresses files by default.
 
 Metadata needed for re-encryption is written automatically:
 ```shell
-./ReFrontier mhfdat.bin --decryptOnly
+./ReFrontier decrypt mhfdat.bin
 ```
 
 ### Decompression
 
 Decompression writes a new file beside the original and leaves the original in place.
-Pass `--cleanUp` to remove it instead.
+Pass `--clean` to remove it instead.
 
 Compressed files are identified by their `JKR` header (first bytes of the file).
 
 ```shell
-./ReFrontier mhfdat.bin  # Decompress if already decrypted
+./ReFrontier unpack mhfdat.bin  # Decompress if already decrypted
 ```
 
 ### Data Editing
@@ -131,15 +174,15 @@ The `.meta` file is still written, because `--encrypt`,
 Recipes written before this (version 1) are still accepted; they take the header from the
 `.meta` file named alongside.
 
-`--restore` reads it and reverses those layers, so you do not have to know that
+`restore` reads it and reverses those layers, so you do not have to know that
 `mhfdat.bin` happens to be ECD-encrypted and HFI-compressed:
 
 ```shell
-./ReFrontier mhfdat.bin.decd.bin --restore
+./ReFrontier restore mhfdat.bin.decd.bin
 ```
 
 The rebuilt file is written to `output/` under its original name. You can point
-`--restore` at either the edited file or the original name; ReFrontier finds the
+`restore` at either the edited file or the original name; ReFrontier finds the
 recipe either way, and refuses to run if you point it at a file that is still packed.
 
 #### Container archives
@@ -150,13 +193,13 @@ one rebuilds every entry that was itself unpacked, packs the directory back thro
 log file, and then applies whatever compression and encryption sat above it:
 
 ```shell
-./ReFrontier em001_b.pac                # ECD > SimpleArchive, entries unpacked too
+./ReFrontier unpack em001_b.pac         # ECD > SimpleArchive, entries unpacked too
 # edit anything inside em001_b.pac.decd.unpacked/
-./ReFrontier em001_b.pac --restore      # writes output/em001_b.pac
+./ReFrontier restore em001_b.pac        # writes output/em001_b.pac
 ```
 
 Nesting is followed to the bottom and rebuilt depth first, so a model file whose entries
-are archives of compressed streams comes back in one command. Point `--restore` at either
+are archives of compressed streams comes back in one command. Point `restore` at either
 the original file or the unpacked directory.
 
 Entries are rebuilt in place, under the names their log uses, so the unpacked directory is
@@ -169,18 +212,18 @@ algorithm. Two notes on what they can and cannot capture:
   header does not store, so it cannot be recovered from a game file. Restoring defaults
   to level 80; override it with `--level`. This affects output size only, not
   correctness — the game reads any valid level.
-- **Stage containers need `--stageContainer` to extract**, but restore reverses them from
+- **Stage containers need `unpack --stage` to extract**, but restore reverses them from
   the recipe like any other container.
 
 If you prefer to drive it manually, or have no recipe, the explicit route still works:
 
 ```shell
-./ReFrontier mhfdat.bin.decd.bin --compress hfi --level 80 --encrypt
+./ReFrontier compress mhfdat.bin.decd.bin --type hfi --level 80 --encrypt
 ```
 
 ### Compression
 
-Compress files using `--compress <type> --level <level>`:
+Compress files using `compress --type <type> --level <level>`:
 
 | Type | Alias | Algorithm | Ratio |
 |------|-------|-----------|-------|
@@ -192,7 +235,7 @@ Compress files using `--compress <type> --level <level>`:
 The `--level` parameter (1-100) controls compression aggressiveness for `lz` and `hfi` only (ignored by `rw` and `hfirw`). Diminishing returns above ~80.
 
 ```shell
-./ReFrontier mhfdat.bin --compress hfi --level 80
+./ReFrontier compress mhfdat.bin --type hfi --level 80
 ```
 
 Output is written to the `output/` directory.
@@ -204,38 +247,43 @@ For technical details on compression algorithms, see [docs/ARCHIVE_FORMATS.md](.
 Encrypt a compressed file with `--encrypt`:
 
 ```shell
-./ReFrontier mhfdat.bin --encrypt
+./ReFrontier encrypt mhfdat.bin.decd.bin
 ```
 
 If a `.meta` file exists (e.g., `mhfdat.bin.meta` created during [decryption](#decryption)), it will be used.
 Otherwise, the default ECD key index (4) is used automatically. This works for all known MHF files, but may not match other game versions or regions.
 
+`encrypt` on its own drops one extension to derive both its input and its output, and
+writes beside the input rather than into `output/`: the command above reads
+`mhfdat.bin.decd` and writes `mhfdat.bin`, overwriting that name in place. It prints which
+file it picked. Prefer `compress --encrypt` or `restore`, which depend on none of this and
+write to `output/`. See the [CLI reference](./ReFrontier/README.md#encrypt) for details.
+
 You can compress and encrypt in a single command:
 
 ```shell
-./ReFrontier mhfdat.bin --compress hfi --level 80 --encrypt
+./ReFrontier compress mhfdat.bin --type hfi --level 80 --encrypt
 ```
 
 Both ECD and EXF encryption formats are fully supported for round-trip editing.
 
 ### Text File Editing (FTXT)
 
-FTXT text files can be extracted and repacked:
+ReFrontier extracts FTXT text files to a `.txt` beside the original:
 
 ```shell
-# Extract text with metadata
-./ReFrontier text.ftxt
-
-# Edit the generated .txt file, then repack
-./ReFrontier text.ftxt.txt --pack
+./ReFrontier unpack text.ftxt
 ```
+
+Writing text back into a game file is done with
+[FrontierTextTool](./FrontierTextTool/README.md), which round-trips through CSV.
 
 ### Validation
 
 Check the structural integrity of a game file without writing any output:
 
 ```shell
-./ReFrontier mhfdat.bin --validate
+./ReFrontier validate mhfdat.bin
 ```
 
 Recursively validates encryption, compression, and archive layers (ECD, EXF, JPK, MOMO, MHA, FTXT) with CRC32 verification and bounds checking.
@@ -245,7 +293,7 @@ Recursively validates encryption, compression, and archive layers (ECD, EXF, JPK
 Compare two game files structurally, peeling through encryption and compression layers:
 
 ```shell
-./ReFrontier original.bin --diff modified.bin
+./ReFrontier diff original.bin modified.bin
 ```
 
 Useful for verifying round-trip correctness (unpack, edit, repack), comparing game versions, or catching regressions. Exit code 0 means identical, 1 means differences found.

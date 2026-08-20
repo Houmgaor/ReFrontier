@@ -170,8 +170,9 @@ namespace ReFrontier
             var cliSchema = new CliSchema();
             var rootCommand = cliSchema.CreateRootCommand(fileVersionAttribute, productName, description);
 
-            // Set handler
-            rootCommand.SetAction(parseResult =>
+            // Set handler. The same action serves the root (legacy flat form) and every
+            // verb; CliSchema decides which shape it was given.
+            Func<System.CommandLine.ParseResult, int> handler = parseResult =>
             {
                 int exitCode = 0;
                 CliArguments cliArgs;
@@ -206,7 +207,19 @@ namespace ReFrontier
                     exitCode = 1;
                 }
                 return exitCode;
-            });
+            };
+
+            rootCommand.SetAction(handler);
+            foreach (var subcommand in rootCommand.Subcommands)
+            {
+                subcommand.SetAction(handler);
+            }
+
+            string? collision = CliSchema.DescribeVerbPathCollision(args, new RealFileSystem());
+            if (collision != null)
+            {
+                Console.Error.WriteLine(collision);
+            }
 
             int result = rootCommand.Parse(args).Invoke();
 
@@ -329,17 +342,22 @@ namespace ReFrontier
         /// <param name="inputArguments">Configuration arguments from CLI.</param>
         public void StartProcessingFile(string filePath, InputArguments inputArguments)
         {
+            string? compressedFilePath = null;
             if (inputArguments.compression.Level != 0)
             {
                 // From mhfdat.bin.decd.bin to output/mhfdat.bin.decd
+                compressedFilePath = $"{_config.OutputDirectory}/{Path.GetFileNameWithoutExtension(filePath)}";
                 _packingService.JPKEncode(
-                    inputArguments.compression, filePath, $"{_config.OutputDirectory}/{Path.GetFileNameWithoutExtension(filePath)}"
+                    inputArguments.compression, filePath, compressedFilePath
                 );
             }
 
             if (inputArguments.encrypt)
             {
-                string decompressedFilePath = Path.Join(
+                // Compressing and encrypting in one pass has to encrypt what compression
+                // just wrote, which is in the output directory. Looking for it beside the
+                // input made the combined form fail with a missing file every time.
+                string decompressedFilePath = compressedFilePath ?? Path.Join(
                     Path.GetDirectoryName(filePath),
                     Path.GetFileNameWithoutExtension(filePath)
                 );
@@ -347,6 +365,16 @@ namespace ReFrontier
                     Path.GetDirectoryName(filePath),
                     Path.GetFileNameWithoutExtension(decompressedFilePath) + _config.MetaSuffix
                 );
+                // Encrypting on its own drops the last extension to pick its input, so the
+                // file acted on is not the one named on the command line. Say so: pointing
+                // it at mhfjmp.bin.decd silently encrypts mhfjmp.bin otherwise.
+                if (compressedFilePath == null
+                    && !string.Equals(decompressedFilePath, filePath, StringComparison.Ordinal))
+                {
+                    _logger.WriteLine(
+                        $"Note: encrypting '{decompressedFilePath}', derived from '{filePath}' by dropping its extension."
+                    );
+                }
                 _fileProcessingService.EncryptEcdFile(decompressedFilePath, metaFilePath, inputArguments.cleanUp, inputArguments.quiet);
             }
 

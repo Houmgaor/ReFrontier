@@ -120,52 +120,75 @@ Files are identified by magic headers:
 
 ## CLI Usage
 
+Each task is a command; `--help` on a command lists only its options.
+
 ```bash
 # Basic unpacking; metadata for repacking is written automatically
+./ReFrontier unpack mhfdat.bin
+
+# A bare path still unpacks, as in earlier versions
 ./ReFrontier mhfdat.bin
 
 # Use 8 parallel threads
-./ReFrontier directory/ --parallelism 8
+./ReFrontier unpack directory/ --parallelism 8
 
 # Single-threaded processing
-./ReFrontier file.bin --parallelism 1
+./ReFrontier unpack file.bin --parallelism 1
 
 # Suppress progress bar (for scripts or logs)
-./ReFrontier directory/ --quiet
+./ReFrontier unpack directory/ --quiet
 
 # Show per-file processing messages
-./ReFrontier directory/ --verbose
+./ReFrontier unpack directory/ --verbose
 
 # Decrypt only
-./ReFrontier file.bin --decryptOnly
+./ReFrontier decrypt file.bin
 
 # Compress and encrypt
-./ReFrontier file.bin --compress hfi --level 80 --encrypt
+./ReFrontier compress file.bin --type hfi --level 80 --encrypt
 
 # Repack directory
-./ReFrontier file.bin --pack
+./ReFrontier pack directory.unpacked/
 
 # Rebuild a file from the recipe written during extraction
-./ReFrontier mhfdat.bin.decd.bin --restore
+./ReFrontier restore mhfdat.bin.decd.bin
+
+# Check integrity, or compare two files
+./ReFrontier validate mhfdat.bin
+./ReFrontier diff original.bin modified.bin
 ```
 
-Key options:
+Commands:
+- `unpack <path>` - Decrypt, decompress and unpack a file or directory
+- `decrypt <file>` - Decrypt without decompressing
+- `pack <dir>` - Repack a directory produced by `unpack`
+- `restore <path>` - Rebuild a file or unpacked directory from its `.recipe.json` (reverses recorded encryption, compression and container layers, recursing into nested containers)
+- `compress <file> --type <type>` - Compression type: `rw`, `hfirw`, `lz`, `hfi` (or `0`, `2`, `3`, `4`)
+- `encrypt <file>` - Encrypt output (uses `.meta` file if available, otherwise default key index 4)
+- `validate <path>` - Check integrity without writing output
+- `diff <a> <b>` - Structural comparison of two files
+
+Options for every command:
 - `--parallelism` - Number of parallel threads (0=auto-detect using CPU cores, default: 0)
 - `--quiet` - Suppress the progress bar during processing
 - `--verbose` - Show per-file processing messages (off by default for cleaner output)
-- `--noMeta` - Skip metadata (`.meta`, `.log`, `.recipe.json`); rebuilding becomes impossible. Metadata is written by default.
-- `--nonRecursive` - Disable recursive unpacking (recursive is the default)
-- `--compress <type>` - Compression type: `rw`, `hfirw`, `lz`, `hfi` (or `0`, `2`, `3`, `4`)
-- `--level <n>` - Compression level (1-100, diminishing returns above ~80)
-- `--encrypt` - Encrypt output (uses `.meta` file if available, otherwise default key index 4)
-- `--decryptOnly` - Decrypt without decompressing
-- `--noDecryption` - Skip decryption entirely
-- `--stageContainer` - Treat file as stage-specific container
-- `--autoStage` - Auto-detect stage-specific containers
-- `--ignoreJPK` - Skip JPK decompression
-- `--pack` - Repack directory
-- `--restore` - Rebuild a file or unpacked directory from its `.recipe.json` (reverses recorded encryption, compression and container layers, recursing into nested containers; `--level` overrides the level)
-- `--cleanUp` - Delete source files after processing
+
+Options for `unpack` (and, where they apply, `decrypt` and `pack`):
+- `--no-meta` - Skip metadata (`.meta`, `.log`, `.recipe.json`); rebuilding becomes impossible. Metadata is written by default.
+- `--flat` - Disable recursive unpacking (recursive is the default)
+- `--keep-encrypted` - Skip decryption entirely
+- `--keep-compressed` - Skip JPK decompression
+- `--stage` / `--auto-stage` - Treat file as, or detect, a stage-specific container
+- `--clean` - Delete source files after processing
+
+Options for `compress` and `restore`:
+- `--level <n>` - Compression level (1-100, diminishing returns above ~80). `compress` defaults to 80; on `restore` it overrides the level in the recipe.
+- `compress --encrypt` - Encrypt the compressed output in the same pass
+
+The pre-2.3.0 flat flags (`--decryptOnly`, `--pack`, `--restore`, `--validate`, `--diff`,
+`--compress`, `--encrypt`, and the camelCase modifier spellings) are still accepted. The
+task-selecting ones warn and name the command to use. `CliSchema.ExtractArguments` routes
+both shapes into the same `CliArguments` DTO, so nothing downstream knows the difference.
 
 ## Testing
 

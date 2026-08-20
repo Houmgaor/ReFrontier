@@ -93,6 +93,31 @@ namespace ReFrontier.Tests
         }
 
         [Fact]
+        public void StartProcessingFile_CompressAndEncrypt_EncryptsWhatCompressionWrote()
+        {
+            // Compression writes to the output directory, so encrypting in the same pass
+            // has to read it from there. It used to look beside the input instead, which
+            // made the documented one-step 'compress --encrypt' fail every time.
+            byte[] testData = new byte[100];
+            for (int i = 0; i < testData.Length; i++)
+                testData[i] = (byte)(i % 256);
+            _fileSystem.AddFile("/test/mhfdat.bin.decd.bin", testData);
+            _fileSystem.AddFile("/test/mhfdat.bin.meta", new byte[] { 0x65, 0x63, 0x64, 0x1A, 0x04, 0x00, 0x00, 0x00 });
+
+            var args = new InputArguments
+            {
+                compression = new Compression(CompressionType.LZ, 10),
+                encrypt = true
+            };
+
+            _program.StartProcessingFile("/test/mhfdat.bin.decd.bin", args);
+
+            // The compressed intermediate and the encrypted result both land in output/.
+            Assert.True(_fileSystem.FileExists("output/mhfdat.bin.decd"));
+            Assert.True(_fileSystem.FileExists("output/mhfdat.bin"));
+        }
+
+        [Fact]
         public void StartProcessingFile_WithEncrypt_RequiresMetaFile()
         {
             // Arrange

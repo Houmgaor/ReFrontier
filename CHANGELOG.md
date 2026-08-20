@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **ReFrontier**: Every task is now a command: `unpack`, `decrypt`, `pack`, `restore`,
+  `compress`, `encrypt`, `validate` and `diff`. The 20 options were a flat list in which
+  seven selected a task and the rest modified one particular task, with nothing to say
+  which was which, so `--help` presented twenty equal peers and combinations like
+  `--validate --stageContainer` parsed happily and ignored half of what was asked. Each
+  command now carries only the options that apply to it: `ReFrontier --help` lists eight
+  commands, and `ReFrontier unpack --help` lists six options instead of twenty.
+  `ReFrontier <file>` with no command still unpacks.
+- **ReFrontier**: Options are named in kebab-case: `--flat`, `--keep-compressed`,
+  `--keep-encrypted`, `--stage`, `--auto-stage`, `--clean`, `--no-meta`. The four previous
+  spellings for "don't" (`--nonRecursive`, `--noDecryption`, `--noMeta`, `--ignoreJPK`)
+  were hard to guess, and `--decryptOnly` versus `--noDecryption` differed in a way that
+  could not be read off the names. The old spellings are still accepted, hidden from help,
+  so a script can adopt the commands without renaming every option on the same line.
+- **ReFrontier**: `compress` defaults to level 80 rather than rejecting a missing `--level`.
 - **ReFrontier**: Extraction recipes carry the encryption header themselves (`Header`, Base64,
   recipe version 2). A recipe is now self-contained: it can be moved or renamed without its
   `.meta` file and still rebuild the original byte for byte, including the ECD header fields
@@ -19,12 +34,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The task-selecting flags are deprecated in favour of the commands and warn with the
+  command to use: `--decryptOnly`, `--pack`, `--restore`, `--validate`, `--diff`,
+  `--compress` and `--encrypt`. They still work, so existing scripts keep running, and
+  will be removed in a future major release. The bare form `ReFrontier <file>` is not
+  deprecated.
 - `.meta` files are still written and still read. `--encrypt`, FrontierTextTool and older
   versions of ReFrontier all use them, and a version 2 recipe read by an older build falls
   back to the `.meta` file and rebuilds correctly. Version 1 recipes are read unchanged.
-
-### Changed
-
 - **BREAKING**: Metadata is written by default. `.meta`, `.log` and `.recipe.json` were only
   produced with `--saveMeta`, so the common case of extracting a file and then trying to
   rebuild it failed, and on a bare JPK file the original was deleted with nothing recording
@@ -63,6 +80,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **ReFrontier**: Compressing and encrypting in one pass works. `JPKEncode` writes to the
+  output directory, but the encryption step then looked for its input beside the input
+  file, so the documented one-step form failed with `Could not find file` every time and
+  only the compressed intermediate was produced. It now encrypts what compression just
+  wrote. The result validates through both layers and round-trips to the original payload.
+- **ReFrontier**: Encrypting on its own reports which file it acts on. The path is derived
+  by dropping the last extension, so `encrypt mhfjmp.bin.decd` encrypts `mhfjmp.bin` — the
+  original, already encrypted file — and reported nothing but `Done.`. The derivation is
+  unchanged, but it is no longer silent. Prefer `compress --encrypt` or `restore`, neither
+  of which depends on that layout.
+- **Documentation**: The README described repacking FTXT text with
+  `./ReFrontier text.ftxt.txt --pack`, which never worked: `--pack` takes a directory and
+  ReFrontier has no FTXT writer at all. Writing text back is FrontierTextTool's job, and
+  the README now says so.
 - **ReFrontier**: MHA archives are repacked with their entry padding intact. `PackMHA` laid
   entries out consecutively and wrote the entry size as the padded size, so a repacked
   archive was smaller than the original and every entry offset moved. Entry padding is a
