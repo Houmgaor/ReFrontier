@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **ReFrontier**: Extraction recipes carry the encryption header themselves (`Header`, Base64,
+  recipe version 2). A recipe is now self-contained: it can be moved or renamed without its
+  `.meta` file and still rebuild the original byte for byte, including the ECD header fields
+  that the default key cannot reproduce.
+- **ReFrontier**: `FileProcessingService` gained overloads that take the encryption header as
+  bytes rather than a file path (`EncryptEcdFile`, `EncryptExfFile`), and that report the
+  header when decrypting (`DecryptEcdFile`, `DecryptExfFile`).
+
+### Changed
+
+- `.meta` files are still written and still read. `--encrypt`, FrontierTextTool and older
+  versions of ReFrontier all use them, and a version 2 recipe read by an older build falls
+  back to the `.meta` file and rebuilds correctly. Version 1 recipes are read unchanged.
+
 ### Changed
 
 - **BREAKING**: Metadata is written by default. `.meta`, `.log` and `.recipe.json` were only

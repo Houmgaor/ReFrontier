@@ -113,15 +113,23 @@ recording every transformation that was undone:
 
 ```json
 {
-  "Version": 1,
+  "Version": 2,
   "SourceFile": "mhfdat.bin",
   "ExtractedFile": "mhfdat.bin.decd.bin",
   "Layers": [
-    { "Kind": "Ecd", "MetaFile": "mhfdat.bin.meta", "OriginalSize": 7383160 },
+    { "Kind": "Ecd", "MetaFile": "mhfdat.bin.meta",
+      "Header": "ZWNkGgQA2YVlCAAAms5C4Q==", "OriginalSize": 7383160 },
     { "Kind": "Jpk", "Algorithm": "HFI", "OriginalSize": 7383144 }
   ]
 }
 ```
+
+The `Header` field carries the original encryption header, so the recipe is self-contained:
+it can be moved or renamed without its `.meta` file and still rebuild the original exactly.
+The `.meta` file is still written, because `--encrypt`,
+[FrontierTextTool](./FrontierTextTool/README.md) and older versions of ReFrontier read it.
+Recipes written before this (version 1) are still accepted; they take the header from the
+`.meta` file named alongside.
 
 `--restore` reads it and reverses those layers, so you do not have to know that
 `mhfdat.bin` happens to be ECD-encrypted and HFI-compressed:

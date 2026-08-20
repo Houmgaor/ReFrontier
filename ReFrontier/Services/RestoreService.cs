@@ -302,19 +302,68 @@ namespace ReFrontier.Services
 
             if (encryption != null)
             {
-                string metaPath = Path.Combine(recipeDir, encryption.MetaFile ?? $"{sourceName}{_config.MetaSuffix}");
+                byte[]? header = ReadEncryptionHeader(encryption, recipeDir, sourceName, verbose);
 
                 // cleanUp is false on purpose: it would delete the user's .meta file,
                 // which they need for every later rebuild.
-                finalPath = encryption.Kind == RecipeLayerKind.Exf
-                    ? _fileProcessingService.EncryptExfFile(intermediatePath, metaPath, cleanUp: false, verbose)
-                    : _fileProcessingService.EncryptEcdFile(intermediatePath, metaPath, cleanUp: false, verbose);
+                if (encryption.Kind == RecipeLayerKind.Exf)
+                {
+                    finalPath = header != null
+                        ? _fileProcessingService.EncryptExfFile(intermediatePath, header, cleanUp: false, verbose)
+                        : throw new ReFrontierException(
+                            $"Cannot rebuild {sourceName}: EXF encryption needs the original header, " +
+                            $"and neither {recipePath} nor its meta file has it. Extract the original again.",
+                            inputPath
+                        );
+                }
+                else
+                {
+                    finalPath = _fileProcessingService.EncryptEcdFile(intermediatePath, header, cleanUp: false, verbose);
+                }
 
                 _fileSystem.DeleteFile(intermediatePath);
             }
 
             ReportResult(finalPath, recipe);
             return finalPath;
+        }
+
+        /// <summary>
+        /// Obtain the encryption header for a layer.
+        ///
+        /// <para>Recipes carry it from version 2 on, which keeps them usable on their own.
+        /// Version 1 recipes name a meta file instead, so fall back to reading that.</para>
+        /// </summary>
+        /// <param name="encryption">The encryption layer being reversed.</param>
+        /// <param name="recipeDir">Directory holding the recipe.</param>
+        /// <param name="sourceName">Name of the file being rebuilt.</param>
+        /// <param name="verbose">Show per-file processing messages.</param>
+        /// <returns>The header, or null when neither source has one.</returns>
+        private byte[]? ReadEncryptionHeader(
+            RecipeLayer encryption, string recipeDir, string sourceName, bool verbose)
+        {
+            if (!string.IsNullOrEmpty(encryption.Header))
+            {
+                try
+                {
+                    return Convert.FromBase64String(encryption.Header);
+                }
+                catch (FormatException)
+                {
+                    _logger.WriteLine(
+                        "Warning: the encryption header recorded in the recipe is not readable, " +
+                        "falling back to the meta file."
+                    );
+                }
+            }
+
+            string metaPath = Path.Combine(recipeDir, encryption.MetaFile ?? $"{sourceName}{_config.MetaSuffix}");
+            if (_fileSystem.FileExists(metaPath))
+                return _fileSystem.ReadAllBytes(metaPath);
+
+            if (verbose)
+                _logger.WriteLine($"No encryption header in the recipe and no meta file at {metaPath}.");
+            return null;
         }
 
         /// <summary>
