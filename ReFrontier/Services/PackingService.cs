@@ -16,6 +16,12 @@ namespace ReFrontier.Services
     /// </summary>
     public class PackingService
     {
+        /// <summary>
+        /// Suffix of the temporary file an archive is packed into before being promoted
+        /// to its final name, so a failed pack cannot leave a truncated archive behind.
+        /// </summary>
+        private const string PackingSuffix = ".packing";
+
         private readonly IFileSystem _fileSystem;
         private readonly ILogger _logger;
         private readonly ICodecFactory _codecFactory;
@@ -129,21 +135,132 @@ namespace ReFrontier.Services
             }
             string[] logContent = _fileSystem.ReadAllLines(logFile);
 
-            switch (logContent[0])
+            if (logContent.Length < 2)
             {
-                case "SimpleArchive":
-                    PackSimpleArchive(logContent, inputDir);
-                    break;
-                case "MHA":
-                    PackMHA(logContent, inputDir);
-                    break;
-                case "StageContainer":
-                    PackStageContainer(logContent, inputDir);
-                    break;
-                default:
-                    throw new PackingException("Unknown container type: " + logContent[0], inputDir);
+                throw new PackingException(
+                    $"Log file {logFile} is too short to describe a container. " +
+                    "Extract the original file again with --saveMeta to regenerate it.",
+                    inputDir
+                );
             }
+
+            string containerType = logContent[0];
+            _fileSystem.CreateDirectory(_config.OutputDirectory);
+            string outputPath = $"{_config.OutputDirectory}/{logContent[1]}";
+
+            // Pack into a temporary file and only promote it once packing has fully
+            // succeeded. Writing straight to the output path would leave a truncated
+            // archive behind on failure, which reads as a result rather than a failure.
+            string workingPath = $"{outputPath}{PackingSuffix}";
+            try
+            {
+                switch (containerType)
+                {
+                    case "SimpleArchive":
+                        PackSimpleArchive(logContent, inputDir, workingPath);
+                        break;
+                    case "MHA":
+                        PackMHA(logContent, inputDir, workingPath);
+                        break;
+                    case "StageContainer":
+                        PackStageContainer(logContent, inputDir, workingPath);
+                        break;
+                    default:
+                        throw new PackingException("Unknown container type: " + containerType, inputDir);
+                }
+
+                _fileSystem.Copy(workingPath, outputPath);
+            }
+            finally
+            {
+                if (_fileSystem.FileExists(workingPath))
+                    _fileSystem.DeleteFile(workingPath);
+            }
+
+            if (containerType != "StageContainer")
+                _fileOperations.GetUpdateEntryInstance(outputPath);
             _logger.WriteSeparator();
+        }
+
+        /// <summary>
+        /// Check that every entry the log names is present before any output is written.
+        ///
+        /// <para>Extraction unpacks nested entries by default, which renames them
+        /// (<c>entry.jkr</c> becomes <c>entry.jkr.bin</c>) and leaves the log pointing at
+        /// the original names. Packing then failed part way through the archive, so this
+        /// reports the whole picture up front instead.</para>
+        /// </summary>
+        /// <param name="entryNames">Entry names taken from the log.</param>
+        /// <param name="expectedCount">How many entries the packer will write.</param>
+        /// <param name="input">Input directory being packed.</param>
+        /// <param name="containerType">Container type, for the error message.</param>
+        /// <exception cref="PackingException">Thrown if the log is truncated or entries are missing.</exception>
+        private void EnsureEntriesArePackable(
+            IReadOnlyList<string> entryNames, int expectedCount, string input, string containerType)
+        {
+            if (expectedCount > entryNames.Count)
+            {
+                throw new PackingException(
+                    $"Cannot pack {containerType} {input}: the log declares {expectedCount} entries " +
+                    $"but lists only {entryNames.Count}. The log file is truncated or corrupt.",
+                    input
+                );
+            }
+
+            var missing = new List<string>();
+            for (int i = 0; i < expectedCount; i++)
+            {
+                string name = entryNames[i];
+                if (name == "null" || string.IsNullOrEmpty(name))
+                    continue;
+                if (_fileSystem.FileExists($"{input}/{name}"))
+                    continue;
+
+                string? detail = DescribeMissingEntry(input, name);
+                missing.Add(detail == null ? $"  {name}" : $"  {name} - {detail}");
+            }
+
+            if (missing.Count == 0)
+                return;
+
+            throw new PackingException(
+                $"Cannot pack {containerType} {input}: {missing.Count} of {expectedCount} entries " +
+                $"named by the log are missing.\n" +
+                string.Join("\n", missing) +
+                "\n\nUnpacking is recursive by default, which replaces nested entries with their " +
+                "unpacked form and leaves the log naming the originals. Rebuild each entry under the " +
+                "name the log uses, or extract the container again with --nonRecursive so its entries " +
+                "stay packed.",
+                input
+            );
+        }
+
+        /// <summary>
+        /// Explain what became of an entry the log names but that is no longer on disk.
+        /// </summary>
+        /// <param name="input">Input directory being packed.</param>
+        /// <param name="name">Entry name as it appears in the log.</param>
+        /// <returns>A short explanation, or null if nothing recognisable was found.</returns>
+        private string? DescribeMissingEntry(string input, string name)
+        {
+            // A recipe means extraction decrypted or decompressed this entry in place,
+            // and records exactly what it became.
+            string recipePath = $"{input}/{name}{ExtractionRecipe.FileSuffix}";
+            if (_fileSystem.FileExists(recipePath))
+            {
+                var recipe = ExtractionRecipe.Deserialize(_fileSystem.ReadAllBytes(recipePath));
+                if (recipe != null && !string.IsNullOrEmpty(recipe.ExtractedFile))
+                    return $"unpacked to {recipe.ExtractedFile}, rebuild it with --restore";
+            }
+
+            if (_fileSystem.DirectoryExists($"{input}/{name}{_config.UnpackedSuffix}"))
+                return $"unpacked into {name}{_config.UnpackedSuffix}/, repack that directory first";
+
+            string[] candidates = _fileSystem.GetFiles(input, $"{name}.*", SearchOption.TopDirectoryOnly);
+            if (candidates.Length > 0)
+                return $"found {Path.GetFileName(candidates[0])} instead";
+
+            return null;
         }
 
         /// <summary>
@@ -151,9 +268,9 @@ namespace ReFrontier.Services
         /// </summary>
         /// <param name="logContent">Content of the log file.</param>
         /// <param name="input">Input directory to pack.</param>
-        private void PackSimpleArchive(string[] logContent, string input)
+        /// <param name="outputPath">Path to write the packed archive to.</param>
+        private void PackSimpleArchive(string[] logContent, string input, string outputPath)
         {
-            string fileName = logContent[1];
             int count = ParseOrThrow<int>(logContent[2], "entry count", "Check the log file format.");
             _logger.WriteLine($"Simple archive with {count} entries.");
 
@@ -166,9 +283,9 @@ namespace ReFrontier.Services
                 listFileNames.Add(columns[0]);
             }
 
-            _fileSystem.CreateDirectory(_config.OutputDirectory);
-            fileName = $"{_config.OutputDirectory}/{fileName}";
-            using (var stream = _fileSystem.OpenWrite(fileName))
+            EnsureEntriesArePackable(listFileNames, count, input, "simple archive");
+
+            using (var stream = _fileSystem.OpenWrite(outputPath))
             using (BinaryWriter bwOutput = new(stream))
             {
                 bwOutput.Write(count);
@@ -184,7 +301,6 @@ namespace ReFrontier.Services
                     offset = WriteFileEntry(bwOutput, 0x04 + i * 0x08, offset, fileData);
                 }
             }
-            _fileOperations.GetUpdateEntryInstance(fileName);
         }
 
         /// <summary>
@@ -194,9 +310,9 @@ namespace ReFrontier.Services
         /// </summary>
         /// <param name="logContent">Content of the log file.</param>
         /// <param name="input">Input directory to pack.</param>
-        private void PackMHA(string[] logContent, string input)
+        /// <param name="outputPath">Path to write the packed archive to.</param>
+        private void PackMHA(string[] logContent, string input, string outputPath)
         {
-            string fileName = logContent[1];
             int count = ParseOrThrow<int>(logContent[2], "entry count", "Check the MHA log file format.");
             short unk1 = ParseOrThrow<short>(logContent[3], "unk1", "Check the MHA log file format.");
             short unk2 = ParseOrThrow<short>(logContent[4], "unk2", "Check the MHA log file format.");
@@ -213,13 +329,13 @@ namespace ReFrontier.Services
                 listFileIds.Add(ParseOrThrow<int>(columns[1], "file ID", $"Entry {i + 1} in MHA log file."));
             }
 
+            EnsureEntriesArePackable(listFileNames, count, input, "MHA archive");
+
             // Set up memory streams for segments
             MemoryStream entryMetaBlock = new();
             MemoryStream entryNamesBlock = new();
 
-            _fileSystem.CreateDirectory(_config.OutputDirectory);
-            fileName = $"{_config.OutputDirectory}/{fileName}";
-            using var stream = _fileSystem.OpenWrite(fileName);
+            using var stream = _fileSystem.OpenWrite(outputPath);
             using BinaryWriter bwOutput = new(stream);
             // Header
             bwOutput.Write(23160941);    // MHA magic
@@ -269,10 +385,9 @@ namespace ReFrontier.Services
         /// </summary>
         /// <param name="logContent">Content of the log file.</param>
         /// <param name="input">Input directory to pack.</param>
-        private void PackStageContainer(string[] logContent, string input)
+        /// <param name="outputPath">Path to write the packed container to.</param>
+        private void PackStageContainer(string[] logContent, string input, string outputPath)
         {
-            string fileName = logContent[1];
-
             // Entries
             List<string> listFileNames = [];
 
@@ -296,9 +411,9 @@ namespace ReFrontier.Services
 
             _logger.WriteLine($"Stage Container with {listFileNames.Count} entries.");
 
-            _fileSystem.CreateDirectory(_config.OutputDirectory);
-            fileName = $"{_config.OutputDirectory}/{fileName}";
-            using var stream = _fileSystem.OpenWrite(fileName);
+            EnsureEntriesArePackable(listFileNames, listFileNames.Count, input, "stage container");
+
+            using var stream = _fileSystem.OpenWrite(outputPath);
             using BinaryWriter bwOutput = new(stream);
             // Write temp dir
             // + 8 = rest count and unk header int

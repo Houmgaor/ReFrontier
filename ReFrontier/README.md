@@ -125,6 +125,20 @@ everything else comes from the recipe. See the [main README](../README.md#rebuil
 ./ReFrontier unpacked_folder/ --pack
 ```
 
+Repacking rebuilds the archive from its `.log` file, which names each entry as it was
+inside the container. Unpacking is recursive by default, so a nested `entry.jkr` is
+replaced by its decompressed `entry.jkr.bin` and the log no longer matches what is on
+disk. Extract with `--nonRecursive` when you intend to repack:
+
+```shell
+./ReFrontier em001_b.pac --saveMeta --nonRecursive   # entries stay packed
+# edit the entries in em001_b.pac.decd.unpacked/
+./ReFrontier em001_b.pac.decd.unpacked --pack        # writes output/em001_b.pac.decd
+```
+
+If entries are missing, `--pack` reports all of them and what each became, and writes
+nothing rather than leaving a partial archive.
+
 ## Compression Performance
 
 Compression efficiency varies by level. Testing HFI compression on vanilla `mhfdat.bin` (26.5 MB decompressed):

@@ -20,6 +20,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   file the game rejects, with no error. `--restore` accepts either the original file name
   or the extracted one, and refuses to run on a file that is still packed.
 
+### Fixed
+
+- **ReFrontier**: `--pack` no longer leaves a truncated archive at the output path when it
+  cannot complete. Entries named by the log are now all checked before anything is written,
+  and packing goes through a temporary file that is only promoted once it has fully
+  succeeded, so a failed pack leaves any earlier output untouched.
+- **ReFrontier**: `--pack` now explains why an entry is missing instead of reporting a bare
+  "Could not find file". Unpacking is recursive by default, which replaces a nested
+  `entry.jkr` with `entry.jkr.bin` while the log keeps naming the original; the error now
+  lists every missing entry at once, says what each one became, and names the two ways out
+  (rebuild the entry, or extract with `--nonRecursive`).
+- **ReFrontier**: `--pack` reports a truncated or corrupt log file rather than failing with
+  an index error.
+
 ### Notes
 
 - Compression level is still not recoverable from a game file (it is an encoder-side
