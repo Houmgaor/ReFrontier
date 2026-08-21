@@ -75,8 +75,8 @@ namespace FrontierTextTool.CLI
         public bool Close { get; init; }
 
         /// <summary>
-        /// Whether to write CSV files in Shift-JIS instead of UTF-8 with BOM.
+        /// Whether to write CSV files in CP932 (Windows-31J) instead of UTF-8 with BOM.
         /// </summary>
-        public bool ShiftJis { get; init; }
+        public bool Cp932 { get; init; }
     }
 }

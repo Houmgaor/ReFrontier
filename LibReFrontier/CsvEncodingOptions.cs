@@ -16,15 +16,15 @@ public enum OutputFormat
 /// <summary>
 /// Options for CSV file encoding.
 /// By default, CSV files are written in UTF-8 with BOM for easier editing.
-/// Game binary files always use Shift-JIS.
+/// Game binary files always use CP932 (Windows-31J).
 /// </summary>
 public class CsvEncodingOptions
 {
     /// <summary>
-    /// If true, output CSV files in Shift-JIS encoding.
+    /// If true, output CSV files in CP932 encoding.
     /// If false (default), output in UTF-8 with BOM.
     /// </summary>
-    public bool UseShiftJisOutput { get; set; } = false;
+    public bool UseCp932Output { get; set; } = false;
 
     /// <summary>
     /// Output format (CSV or JSON).
@@ -34,9 +34,9 @@ public class CsvEncodingOptions
     /// <summary>
     /// Get the encoding to use for CSV output based on current settings.
     /// </summary>
-    /// <returns>UTF-8 with BOM (default) or Shift-JIS encoding.</returns>
-    public Encoding GetOutputEncoding() => UseShiftJisOutput
-        ? TextFileConfiguration.ShiftJisEncoding
+    /// <returns>UTF-8 with BOM (default) or CP932 encoding.</returns>
+    public Encoding GetOutputEncoding() => UseCp932Output
+        ? TextFileConfiguration.Cp932Encoding
         : TextFileConfiguration.Utf8WithBomEncoding;
 
     /// <summary>
@@ -47,5 +47,5 @@ public class CsvEncodingOptions
     /// <summary>
     /// Options for Shift-JIS output (legacy behavior).
     /// </summary>
-    public static CsvEncodingOptions ShiftJis => new() { UseShiftJisOutput = true };
+    public static CsvEncodingOptions Cp932 => new() { UseCp932Output = true };
 }

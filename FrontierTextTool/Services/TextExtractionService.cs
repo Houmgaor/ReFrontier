@@ -118,7 +118,7 @@ namespace FrontierTextTool.Services
                     brInput.BaseStream.Seek(strPos, SeekOrigin.Begin);
                 }
 
-                string str = FileOperations.ReadNullterminatedString(brInput, TextFileConfiguration.ShiftJisEncoding);
+                string str = FileOperations.ReadNullterminatedString(brInput, TextFileConfiguration.Cp932Encoding);
 
                 if (trueOffsets)
                 {
@@ -131,7 +131,7 @@ namespace FrontierTextTool.Services
                 stringsDatabase.Add(new StringDatabase
                 {
                     Offset = (uint)offset,
-                    Hash = Crypto.GetCrc32(TextFileConfiguration.ShiftJisEncoding.GetBytes(str)),
+                    Hash = Crypto.GetCrc32(TextFileConfiguration.Cp932Encoding.GetBytes(str)),
                     Original = str
                 });
             }

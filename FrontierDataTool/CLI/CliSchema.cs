@@ -40,6 +40,7 @@ namespace FrontierDataTool.CLI
 
         // Options shared by every command.
         private readonly Option<bool> _closeOption;
+        private readonly Option<bool> _cp932Option;
         private readonly Option<bool> _shiftJisOption;
         private readonly Option<bool> _jsonOption;
 
@@ -105,10 +106,20 @@ namespace FrontierDataTool.CLI
                 Recursive = true
             };
 
+            _cp932Option = new Option<bool>("--cp932")
+            {
+                Description = "Output CSV files in CP932 (Windows-31J) encoding (default: UTF-8 with BOM)",
+                Recursive = true
+            };
+
+            // The flag was called --shift-jis, which named a narrower encoding than the one
+            // it selected. Still accepted, hidden from help, and silent: it is a renamed
+            // option rather than a task, so nothing about a command line changes meaning.
             _shiftJisOption = new Option<bool>("--shift-jis")
             {
-                Description = "Output CSV files in Shift-JIS encoding (default: UTF-8 with BOM)",
-                Recursive = true
+                Description = "Output CSV files in CP932 (Windows-31J) encoding (default: UTF-8 with BOM)",
+                Recursive = true,
+                Hidden = true
             };
 
             _jsonOption = new Option<bool>("--json")
@@ -174,6 +185,7 @@ namespace FrontierDataTool.CLI
                 _rengokuLegacyOption,
                 _csvOption,
                 _closeOption,
+                _cp932Option,
                 _shiftJisOption,
                 _jsonOption,
                 _dumpCommand,
@@ -263,7 +275,7 @@ namespace FrontierDataTool.CLI
             {
                 Action = action,
                 Close = parseResult.GetValue(_closeOption),
-                ShiftJis = parseResult.GetValue(_shiftJisOption),
+                Cp932 = parseResult.GetValue(_cp932Option) || parseResult.GetValue(_shiftJisOption),
                 Json = parseResult.GetValue(_jsonOption)
             };
         }

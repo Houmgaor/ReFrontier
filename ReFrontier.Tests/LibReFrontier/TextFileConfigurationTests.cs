@@ -143,76 +143,76 @@ namespace ReFrontier.Tests.LibReFrontierTests
 
         #endregion
 
-        #region ValidateShiftJisCompatibility Tests
+        #region ValidateCp932Compatibility Tests
 
         [Fact]
-        public void ValidateShiftJisCompatibility_AsciiText_ReturnsTrue()
+        public void ValidateCp932Compatibility_AsciiText_ReturnsTrue()
         {
             // Arrange
             string text = "Hello World 123!";
 
             // Act
-            bool result = TextFileConfiguration.ValidateShiftJisCompatibility(text);
+            bool result = TextFileConfiguration.ValidateCp932Compatibility(text);
 
             // Assert
             Assert.True(result);
         }
 
         [Fact]
-        public void ValidateShiftJisCompatibility_JapaneseText_ReturnsTrue()
+        public void ValidateCp932Compatibility_JapaneseText_ReturnsTrue()
         {
             // Arrange
             string text = "こんにちは世界";
 
             // Act
-            bool result = TextFileConfiguration.ValidateShiftJisCompatibility(text);
+            bool result = TextFileConfiguration.ValidateCp932Compatibility(text);
 
             // Assert
             Assert.True(result);
         }
 
         [Fact]
-        public void ValidateShiftJisCompatibility_EmptyString_ReturnsTrue()
+        public void ValidateCp932Compatibility_EmptyString_ReturnsTrue()
         {
             // Act
-            bool result = TextFileConfiguration.ValidateShiftJisCompatibility("");
+            bool result = TextFileConfiguration.ValidateCp932Compatibility("");
 
             // Assert
             Assert.True(result);
         }
 
         [Fact]
-        public void ValidateShiftJisCompatibility_NullString_ReturnsTrue()
+        public void ValidateCp932Compatibility_NullString_ReturnsTrue()
         {
             // Act
-            bool result = TextFileConfiguration.ValidateShiftJisCompatibility(null!);
+            bool result = TextFileConfiguration.ValidateCp932Compatibility(null!);
 
             // Assert
             Assert.True(result);
         }
 
         [Fact]
-        public void ValidateShiftJisCompatibility_EmojiText_ReturnsFalse()
+        public void ValidateCp932Compatibility_EmojiText_ReturnsFalse()
         {
             // Arrange - emoji characters are not in Shift-JIS
             string text = "Hello \U0001F600 World"; // Contains grinning face emoji
 
             // Act
-            bool result = TextFileConfiguration.ValidateShiftJisCompatibility(text);
+            bool result = TextFileConfiguration.ValidateCp932Compatibility(text);
 
             // Assert
             Assert.False(result);
         }
 
         [Fact]
-        public void ValidateShiftJisCompatibility_ChineseOnlyCharacters_ReturnsFalse()
+        public void ValidateCp932Compatibility_ChineseOnlyCharacters_ReturnsFalse()
         {
             // Arrange - Some Chinese characters are not in Shift-JIS
             // Using a character that exists in GB2312 but not Shift-JIS
             string text = "\u4E2D\u6587"; // Common Chinese, should be in Shift-JIS
 
             // Act
-            bool result = TextFileConfiguration.ValidateShiftJisCompatibility(text);
+            bool result = TextFileConfiguration.ValidateCp932Compatibility(text);
 
             // Assert - these common characters should be valid
             Assert.True(result);
@@ -298,28 +298,28 @@ namespace ReFrontier.Tests.LibReFrontierTests
 
             // Assert
             Assert.Equal("utf-8", encoding.WebName);
-            Assert.False(options.UseShiftJisOutput);
+            Assert.False(options.UseCp932Output);
         }
 
         [Fact]
         public void CsvEncodingOptions_ShiftJis_UsesShiftJis()
         {
             // Arrange
-            var options = CsvEncodingOptions.ShiftJis;
+            var options = CsvEncodingOptions.Cp932;
 
             // Act
             var encoding = options.GetOutputEncoding();
 
             // Assert
             Assert.Equal("shift_jis", encoding.WebName);
-            Assert.True(options.UseShiftJisOutput);
+            Assert.True(options.UseCp932Output);
         }
 
         [Fact]
-        public void CsvEncodingOptions_SetUseShiftJisOutput_ChangesEncoding()
+        public void CsvEncodingOptions_SetUseCp932Output_ChangesEncoding()
         {
             // Arrange
-            var options = new CsvEncodingOptions { UseShiftJisOutput = true };
+            var options = new CsvEncodingOptions { UseCp932Output = true };
 
             // Act
             var encoding = options.GetOutputEncoding();

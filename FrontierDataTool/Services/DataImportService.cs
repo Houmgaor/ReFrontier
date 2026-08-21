@@ -376,7 +376,7 @@ namespace FrontierDataTool.Services
                 {
                     if (entry.TitlePtrFileOffset != 0)
                     {
-                        byte[] encoded = BinaryReaderService.EncodeStringToShiftJis(entry.Title);
+                        byte[] encoded = BinaryReaderService.EncodeStringToCp932(entry.Title);
                         int offset = (int)ms.Position;
                         bw.Write(encoded);
                         stringOffsets.Add((entry.TitlePtrFileOffset, offset));
@@ -384,7 +384,7 @@ namespace FrontierDataTool.Services
 
                     if (entry.TextMainPtrFileOffset != 0)
                     {
-                        byte[] encoded = BinaryReaderService.EncodeStringToShiftJis(entry.TextMain);
+                        byte[] encoded = BinaryReaderService.EncodeStringToCp932(entry.TextMain);
                         int offset = (int)ms.Position;
                         bw.Write(encoded);
                         stringOffsets.Add((entry.TextMainPtrFileOffset, offset));
@@ -392,7 +392,7 @@ namespace FrontierDataTool.Services
 
                     if (entry.TextSubAPtrFileOffset != 0)
                     {
-                        byte[] encoded = BinaryReaderService.EncodeStringToShiftJis(entry.TextSubA);
+                        byte[] encoded = BinaryReaderService.EncodeStringToCp932(entry.TextSubA);
                         int offset = (int)ms.Position;
                         bw.Write(encoded);
                         stringOffsets.Add((entry.TextSubAPtrFileOffset, offset));
@@ -400,7 +400,7 @@ namespace FrontierDataTool.Services
 
                     if (entry.TextSubBPtrFileOffset != 0)
                     {
-                        byte[] encoded = BinaryReaderService.EncodeStringToShiftJis(entry.TextSubB);
+                        byte[] encoded = BinaryReaderService.EncodeStringToCp932(entry.TextSubB);
                         int offset = (int)ms.Position;
                         bw.Write(encoded);
                         stringOffsets.Add((entry.TextSubBPtrFileOffset, offset));

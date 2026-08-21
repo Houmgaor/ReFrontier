@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **FrontierTextTool, FrontierDataTool**: The CSV output flag is `--cp932`. The tools read
+  and write **CP932** (Windows-31J), Microsoft's extension of Shift_JIS: it adds the NEC and
+  IBM rows and maps some code points differently, notably `0x8160`, which is FULLWIDTH TILDE
+  in CP932 and WAVE DASH in JIS X 0208. .NET resolves `"shift-jis"` to codepage 932, so the
+  behaviour was always CP932 and only the name claimed otherwise. `--shift-jis` is still
+  accepted, hidden from help and silent, since it selects the same encoding it always did.
+- **LibReFrontier**: `TextFileConfiguration.ShiftJisEncoding` is now `Cp932Encoding` and
+  pins codepage 932 by number rather than resolving an alias string. `UseShiftJisOutput`,
+  `CsvEncodingOptions.ShiftJis` and `ValidateShiftJisCompatibility` are renamed to match.
+  Verified as a pure rename: a full text dump and a game-file write-back are byte-identical
+  to the previous build under both flag spellings.
+
 ### Fixed
 
 - **FrontierDataTool**: Quest data reads correctly. Every offset in

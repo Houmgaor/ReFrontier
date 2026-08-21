@@ -1,5 +1,7 @@
 using System.Text;
 
+using LibReFrontier;
+
 namespace ReFrontier.Tests
 {
     /// <summary>
@@ -44,13 +46,13 @@ namespace ReFrontier.Tests
             foreach (var name in skillNames)
             {
                 bw.Write(currentStringOffset);
-                currentStringOffset += Encoding.GetEncoding("shift-jis").GetBytes(name).Length + 1;
+                currentStringOffset += TextFileConfiguration.Cp932Encoding.GetBytes(name).Length + 1;
             }
 
             // Write string section
             foreach (var name in skillNames)
             {
-                byte[] nameBytes = Encoding.GetEncoding("shift-jis").GetBytes(name);
+                byte[] nameBytes = TextFileConfiguration.Cp932Encoding.GetBytes(name);
                 bw.Write(nameBytes);
                 bw.Write((byte)0); // Null terminator
             }
@@ -159,7 +161,7 @@ namespace ReFrontier.Tests
             foreach (var (offset, jString, eString) in entries)
             {
                 // Calculate CRC32 hash
-                uint hash = LibReFrontier.Crypto.GetCrc32(Encoding.GetEncoding("shift-jis").GetBytes(jString));
+                uint hash = LibReFrontier.Crypto.GetCrc32(TextFileConfiguration.Cp932Encoding.GetBytes(jString));
                 sb.AppendLine($"{offset},{hash},{jString},{eString}");
             }
 
@@ -178,7 +180,7 @@ namespace ReFrontier.Tests
 
             foreach (var str in strings)
             {
-                byte[] bytes = Encoding.GetEncoding("shift-jis").GetBytes(str);
+                byte[] bytes = TextFileConfiguration.Cp932Encoding.GetBytes(str);
                 bw.Write(bytes);
                 bw.Write((byte)0); // Null terminator
             }
@@ -213,7 +215,7 @@ namespace ReFrontier.Tests
             for (int i = 0; i < strings.Length; i++)
             {
                 stringOffsets[i] = currentOffset;
-                stringBytes[i] = Encoding.GetEncoding("shift-jis").GetBytes(strings[i]);
+                stringBytes[i] = TextFileConfiguration.Cp932Encoding.GetBytes(strings[i]);
                 currentOffset += stringBytes[i].Length + 1; // +1 for null terminator
             }
 

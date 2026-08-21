@@ -18,14 +18,20 @@ public static class TextFileConfiguration
     private static readonly byte[] Utf8Bom = [0xEF, 0xBB, 0xBF];
 
     /// <summary>
-    /// Shift-JIS encoding used for Japanese game text files.
+    /// CP932 (Windows-31J) encoding used for Japanese game text files.
+    /// <para>Codepage 932 is Microsoft's extension of Shift_JIS: it adds the NEC and IBM
+    /// rows and maps a handful of code points differently, notably <c>0x8160</c>, which is
+    /// FULLWIDTH TILDE here and WAVE DASH in JIS X 0208. The game files use the extended
+    /// set, so the codepage is named by number rather than through an alias: .NET resolves
+    /// "shift-jis", "shift_jis" and "sjis" to 932 as well, but those names claim a narrower
+    /// encoding than what is actually read and written.</para>
     /// </summary>
-    public static Encoding ShiftJisEncoding
+    public static Encoding Cp932Encoding
     {
         get
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            return Encoding.GetEncoding("shift-jis");
+            return Encoding.GetEncoding(932);
         }
     }
 
@@ -69,7 +75,7 @@ public static class TextFileConfiguration
             return Utf8WithBomEncoding;
         }
 
-        return ShiftJisEncoding;
+        return Cp932Encoding;
     }
 
     /// <summary>
@@ -93,7 +99,7 @@ public static class TextFileConfiguration
             return Utf8WithBomEncoding;
         }
 
-        return ShiftJisEncoding;
+        return Cp932Encoding;
     }
 
     /// <summary>
@@ -103,14 +109,14 @@ public static class TextFileConfiguration
     /// </summary>
     /// <param name="text">The text to validate.</param>
     /// <returns>True if the text can be fully represented in Shift-JIS.</returns>
-    public static bool ValidateShiftJisCompatibility(string text)
+    public static bool ValidateCp932Compatibility(string text)
     {
         if (string.IsNullOrEmpty(text))
             return true;
 
         try
         {
-            var encoding = ShiftJisEncoding;
+            var encoding = Cp932Encoding;
             byte[] encoded = encoding.GetBytes(text);
             string decoded = encoding.GetString(encoded);
             return text == decoded;
@@ -132,7 +138,7 @@ public static class TextFileConfiguration
         if (string.IsNullOrEmpty(text))
             return [];
 
-        var encoding = ShiftJisEncoding;
+        var encoding = Cp932Encoding;
         var incompatible = new System.Collections.Generic.List<char>();
 
         foreach (char c in text)

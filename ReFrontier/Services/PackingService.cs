@@ -671,7 +671,7 @@ namespace ReFrontier.Services
         public string PackFTXT(string inputFile, string metaFile, bool cleanUp, bool verbose = false)
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            Encoding shiftJis = Encoding.GetEncoding("shift-jis");
+            Encoding shiftJis = TextFileConfiguration.Cp932Encoding;
 
             if (!_fileSystem.FileExists(metaFile))
             {

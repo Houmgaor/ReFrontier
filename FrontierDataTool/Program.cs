@@ -94,7 +94,7 @@ namespace FrontierDataTool
         /// <returns>Exit code (0 for success).</returns>
         internal int Run(CliArguments arguments)
         {
-            var encodingOptions = arguments.ShiftJis ? CsvEncodingOptions.ShiftJis : CsvEncodingOptions.Default;
+            var encodingOptions = arguments.Cp932 ? CsvEncodingOptions.Cp932 : CsvEncodingOptions.Default;
             if (arguments.Json)
                 encodingOptions.Format = OutputFormat.Json;
             UpdateExtractionServiceWithEncoding(encodingOptions);

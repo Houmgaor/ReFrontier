@@ -36,6 +36,7 @@ namespace FrontierTextTool.CLI
         // Options shared by every command.
         private readonly Option<bool> _verboseOption;
         private readonly Option<bool> _closeOption;
+        private readonly Option<bool> _cp932Option;
         private readonly Option<bool> _shiftJisOption;
 
         // Verb symbols. Each verb names its files after what they hold, so that
@@ -161,10 +162,20 @@ namespace FrontierTextTool.CLI
                 Recursive = true
             };
 
+            _cp932Option = new Option<bool>("--cp932")
+            {
+                Description = "Output CSV files in CP932 (Windows-31J) encoding (default: UTF-8 with BOM)",
+                Recursive = true
+            };
+
+            // The flag was called --shift-jis, which named a narrower encoding than the one
+            // it selected. Still accepted, hidden from help, and silent: it is a renamed
+            // option rather than a task, so nothing about a command line changes meaning.
             _shiftJisOption = new Option<bool>("--shift-jis")
             {
-                Description = "Output CSV files in Shift-JIS encoding (default: UTF-8 with BOM)",
-                Recursive = true
+                Description = "Output CSV files in CP932 (Windows-31J) encoding (default: UTF-8 with BOM)",
+                Recursive = true,
+                Hidden = true
             };
 
             _dumpInputArgument = new Argument<string>("file")
@@ -296,6 +307,7 @@ namespace FrontierTextTool.CLI
                 _csvOption,
                 _verboseOption,
                 _closeOption,
+                _cp932Option,
                 _shiftJisOption,
                 _dumpCommand,
                 _insertCommand,
@@ -392,7 +404,7 @@ namespace FrontierTextTool.CLI
                 CsvPath = csv,
                 Verbose = parseResult.GetValue(_verboseOption),
                 Close = parseResult.GetValue(_closeOption),
-                ShiftJis = parseResult.GetValue(_shiftJisOption)
+                Cp932 = parseResult.GetValue(_cp932Option) || parseResult.GetValue(_shiftJisOption)
             };
         }
 
@@ -508,7 +520,7 @@ namespace FrontierTextTool.CLI
                 NullStrings = parseResult.GetValue(_nullStringsOption),
                 Verbose = parseResult.GetValue(_verboseOption),
                 Close = parseResult.GetValue(_closeOption),
-                ShiftJis = parseResult.GetValue(_shiftJisOption)
+                Cp932 = parseResult.GetValue(_cp932Option) || parseResult.GetValue(_shiftJisOption)
             };
         }
 

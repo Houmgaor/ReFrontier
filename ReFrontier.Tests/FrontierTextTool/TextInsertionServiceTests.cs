@@ -4,6 +4,8 @@ using FrontierTextTool.Services;
 
 using ReFrontier.Tests.Mocks;
 
+using LibReFrontier;
+
 namespace ReFrontier.Tests.TextToolTests
 {
     /// <summary>
@@ -37,7 +39,7 @@ namespace ReFrontier.Tests.TextToolTests
                 (0, "Japanese1", "English1"),
                 (10, "Japanese2", "English2")
             );
-            _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+            _fileSystem.AddFile("/test/strings.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csv));
 
             // Act
             var result = _service.LoadCsvToStringDatabase("/test/strings.csv");
@@ -55,7 +57,7 @@ namespace ReFrontier.Tests.TextToolTests
         {
             // Arrange - RFC 4180 CSV with tab character in quoted field
             string csv = "Offset,Hash,Original,Translation\n0,123,Test,\"Hello\tWorld\"\n";
-            _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+            _fileSystem.AddFile("/test/strings.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csv));
 
             // Act
             var result = _service.LoadCsvToStringDatabase("/test/strings.csv");
@@ -70,7 +72,7 @@ namespace ReFrontier.Tests.TextToolTests
         {
             // Arrange - RFC 4180 CSV with newline in quoted field
             string csv = "Offset,Hash,Original,Translation\n0,123,Test,\"Line1\nLine2\"\n";
-            _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+            _fileSystem.AddFile("/test/strings.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csv));
 
             // Act
             var result = _service.LoadCsvToStringDatabase("/test/strings.csv");
@@ -85,7 +87,7 @@ namespace ReFrontier.Tests.TextToolTests
         {
             // Arrange - RFC 4180 CSV with CRLF in quoted field
             string csv = "Offset,Hash,Original,Translation\n0,123,Test,\"Line1\r\nLine2\"\n";
-            _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+            _fileSystem.AddFile("/test/strings.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csv));
 
             // Act
             var result = _service.LoadCsvToStringDatabase("/test/strings.csv");
@@ -120,8 +122,8 @@ namespace ReFrontier.Tests.TextToolTests
             int helloOffset = originalData.Length;
             int worldOffset = helloOffset + 6; // "Hello" + null
 
-            string extractedHello = Encoding.GetEncoding("shift-jis").GetString(result, helloOffset, 5);
-            string extractedWorld = Encoding.GetEncoding("shift-jis").GetString(result, worldOffset, 5);
+            string extractedHello = TextFileConfiguration.Cp932Encoding.GetString(result, helloOffset, 5);
+            string extractedWorld = TextFileConfiguration.Cp932Encoding.GetString(result, worldOffset, 5);
 
             Assert.Equal("Hello", extractedHello);
             Assert.Equal("World", extractedWorld);
@@ -178,12 +180,12 @@ namespace ReFrontier.Tests.TextToolTests
             byte[] result = _service.UpdateBinaryStrings(stringDb, originalData, false, false);
 
             // Assert
-            int japaneseLength = Encoding.GetEncoding("shift-jis").GetBytes("日本語テスト").Length;
+            int japaneseLength = TextFileConfiguration.Cp932Encoding.GetBytes("日本語テスト").Length;
             int expectedSize = originalData.Length + japaneseLength + 1;
             Assert.Equal(expectedSize, result.Length);
 
             // Extract and verify
-            string extracted = Encoding.GetEncoding("shift-jis").GetString(
+            string extracted = TextFileConfiguration.Cp932Encoding.GetString(
                 result, originalData.Length, japaneseLength);
             Assert.Equal("日本語テスト", extracted);
         }
@@ -276,7 +278,7 @@ namespace ReFrontier.Tests.TextToolTests
         {
             // Arrange - backslash is just regular text in RFC 4180
             string csv = "Offset,Hash,Original,Translation\n0,123,Test,Path\\File\n";
-            _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+            _fileSystem.AddFile("/test/strings.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csv));
 
             // Act
             var result = _service.LoadCsvToStringDatabase("/test/strings.csv");
@@ -311,7 +313,7 @@ namespace ReFrontier.Tests.TextToolTests
         {
             // Arrange
             string csv = "Offset,Hash,Original,Translation\n0,123,Test,\n";
-            _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+            _fileSystem.AddFile("/test/strings.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csv));
 
             // Act
             var result = _service.LoadCsvToStringDatabase("/test/strings.csv");
@@ -326,7 +328,7 @@ namespace ReFrontier.Tests.TextToolTests
         {
             // Arrange
             string csv = "Offset,Hash,Original,Translation\n0,4294967295,Test,English\n";
-            _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+            _fileSystem.AddFile("/test/strings.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csv));
 
             // Act
             var result = _service.LoadCsvToStringDatabase("/test/strings.csv");
@@ -403,9 +405,9 @@ namespace ReFrontier.Tests.TextToolTests
             int secondOffset = firstOffset + 6; // "First" + null
             int thirdOffset = secondOffset + 7; // "Second" + null
 
-            string first = Encoding.GetEncoding("shift-jis").GetString(result, firstOffset, 5);
-            string second = Encoding.GetEncoding("shift-jis").GetString(result, secondOffset, 6);
-            string third = Encoding.GetEncoding("shift-jis").GetString(result, thirdOffset, 5);
+            string first = TextFileConfiguration.Cp932Encoding.GetString(result, firstOffset, 5);
+            string second = TextFileConfiguration.Cp932Encoding.GetString(result, secondOffset, 6);
+            string third = TextFileConfiguration.Cp932Encoding.GetString(result, thirdOffset, 5);
 
             Assert.Equal("First", first);
             Assert.Equal("Second", second);
@@ -556,7 +558,7 @@ namespace ReFrontier.Tests.TextToolTests
         {
             // Arrange - Only Shift-JIS compatible characters
             string csv = "Offset,Hash,Original,Translation\n0,123,テスト,English text\n";
-            _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+            _fileSystem.AddFile("/test/strings.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csv));
 
             // Act
             _service.LoadCsvToStringDatabase("/test/strings.csv");

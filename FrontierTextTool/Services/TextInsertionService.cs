@@ -62,7 +62,7 @@ namespace FrontierTextTool.Services
                 string translation = csv.GetField("Translation") ?? string.Empty;
 
                 // Validate Shift-JIS compatibility for non-empty strings
-                if (!string.IsNullOrEmpty(translation) && !TextFileConfiguration.ValidateShiftJisCompatibility(translation))
+                if (!string.IsNullOrEmpty(translation) && !TextFileConfiguration.ValidateCp932Compatibility(translation))
                 {
                     var incompatible = TextFileConfiguration.GetIncompatibleCharacters(translation);
                     _logger.Error($"Warning: String at offset {csv.GetField<uint>("Offset")} contains characters that cannot be encoded to Shift-JIS: {string.Join(", ", incompatible.Select(c => $"'{c}' (U+{(int)c:X4})"))}");
@@ -128,7 +128,7 @@ namespace FrontierTextTool.Services
                     if (verbose)
                         _logger.WriteLine($"String: '{stringDatabase[i].Translation}', Length: {translationLengths[j] - 1}");
 
-                    byte[] translationBytes = Encoding.GetEncoding("shift-jis").GetBytes(stringDatabase[i].Translation!);
+                    byte[] translationBytes = TextFileConfiguration.Cp932Encoding.GetBytes(stringDatabase[i].Translation!);
                     Array.Copy(translationBytes, 0, translationsArray, translationLengths.Take(j).Sum(), translationLengths[j] - 1);
                     j++;
                 }
@@ -266,7 +266,7 @@ namespace FrontierTextTool.Services
         /// <returns>Length of string in SHIFT-JIS + 1 for null terminator.</returns>
         public static int GetNullterminatedStringLength(string input)
         {
-            return Encoding.GetEncoding("shift-jis").GetBytes(input).Length + 1;
+            return TextFileConfiguration.Cp932Encoding.GetBytes(input).Length + 1;
         }
     }
 }
