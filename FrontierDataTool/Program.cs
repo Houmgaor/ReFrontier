@@ -1,14 +1,18 @@
 using System;
-using System.CommandLine;
 using System.IO;
 using System.Text;
 
+using FrontierDataTool.CLI;
 using FrontierDataTool.Services;
 
 using LibReFrontier;
+using LibReFrontier.Abstractions;
 
 namespace FrontierDataTool
 {
+    /// <summary>
+    /// Utility program for game data extraction and edition.
+    /// </summary>
     public class Program
     {
         private DataExtractionService _extractionService;
@@ -37,8 +41,8 @@ namespace FrontierDataTool
         private void UpdateExtractionServiceWithEncoding(CsvEncodingOptions encodingOptions)
         {
             _extractionService = new DataExtractionService(
-                new LibReFrontier.Abstractions.RealFileSystem(),
-                new LibReFrontier.Abstractions.ConsoleLogger(),
+                new RealFileSystem(),
+                new ConsoleLogger(),
                 encodingOptions);
             // ImportService only reads CSVs, auto-detects encoding, doesn't need options
         }
@@ -52,356 +56,203 @@ namespace FrontierDataTool
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             var program = new Program();
+            var schema = new CliSchema();
+            var rootCommand = schema.CreateRootCommand();
 
-            // Action options
-            Option<bool> dumpOption = new("--dump")
+            // The same action serves the root (legacy flat form) and every verb;
+            // CliSchema decides which shape it was given.
+            Func<System.CommandLine.ParseResult, int> handler = parseResult =>
             {
-                Description = "Extract weapon/armor/skill/quest data (requires --suffix, --mhfpac, --mhfdat, --mhfinf)"
-            };
-
-            Option<bool> modshopOption = new("--modshop")
-            {
-                Description = "Modify shop prices (requires --mhfdat)"
-            };
-
-            Option<bool> importOption = new("--import")
-            {
-                Description = "Import modified CSV back into game files. Auto-detects CSV type from filename: Armor.csv (requires --mhfdat, --mhfpac), Melee.csv (requires --mhfdat), Ranged.csv (requires --mhfdat), InfQuests.csv (requires --mhfinf)"
-            };
-
-            // Parameter options
-            Option<string?> suffixOption = new("--suffix")
-            {
-                Description = "Output suffix for files"
-            };
-
-            Option<string?> mhfpacOption = new("--mhfpac")
-            {
-                Description = "Path to mhfpac.bin"
-            };
-
-            Option<string?> mhfdatOption = new("--mhfdat")
-            {
-                Description = "Path to mhfdat.bin"
-            };
-
-            Option<string?> mhfinfOption = new("--mhfinf")
-            {
-                Description = "Path to mhfinf.bin"
-            };
-
-            Option<string?> rengokuOption = new("--rengoku")
-            {
-                Description = "Path to rengoku_data.bin (Hunting Road data)"
-            };
-
-            Option<string?> csvOption = new("--csv")
-            {
-                Description = "Path to the CSV file to import (e.g., Armor.csv)"
-            };
-
-            Option<bool> closeOption = new("--close")
-            {
-                Description = "Close terminal after command"
-            };
-
-            Option<bool> shiftJisOption = new("--shift-jis")
-            {
-                Description = "Output CSV files in Shift-JIS encoding (default: UTF-8 with BOM)"
-            };
-
-            Option<bool> jsonOption = new("--json")
-            {
-                Description = "Output JSON files instead of CSV"
-            };
-
-            // Root command
-            RootCommand rootCommand = new("FrontierDataTool - Extract and edit Monster Hunter Frontier game data")
-            {
-                dumpOption,
-                modshopOption,
-                importOption,
-                suffixOption,
-                mhfpacOption,
-                mhfdatOption,
-                mhfinfOption,
-                rengokuOption,
-                csvOption,
-                closeOption,
-                shiftJisOption,
-                jsonOption
-            };
-
-            // Set handler
-            rootCommand.SetAction(parseResult =>
-            {
-                var dump = parseResult.GetValue(dumpOption);
-                var modshop = parseResult.GetValue(modshopOption);
-                var import = parseResult.GetValue(importOption);
-                var suffix = parseResult.GetValue(suffixOption);
-                var mhfpac = parseResult.GetValue(mhfpacOption);
-                var mhfdat = parseResult.GetValue(mhfdatOption);
-                var mhfinf = parseResult.GetValue(mhfinfOption);
-                var rengoku = parseResult.GetValue(rengokuOption);
-                var csv = parseResult.GetValue(csvOption);
-                var close = parseResult.GetValue(closeOption);
-                var shiftJis = parseResult.GetValue(shiftJisOption);
-                var json = parseResult.GetValue(jsonOption);
-
-                // Configure encoding options
-                var encodingOptions = shiftJis ? CsvEncodingOptions.ShiftJis : CsvEncodingOptions.Default;
-                if (json)
-                    encodingOptions.Format = LibReFrontier.OutputFormat.Json;
-                program.UpdateExtractionServiceWithEncoding(encodingOptions);
-
-                // Count how many actions are specified
-                int actionCount = (dump ? 1 : 0) + (modshop ? 1 : 0) + (import ? 1 : 0);
-
-                if (actionCount == 0)
-                {
-                    Console.Error.WriteLine("Error: No action specified. Use --dump, --modshop, or --import.");
-                    FinishCommand(close);
-                    return 1;
-                }
-
-                if (actionCount > 1)
-                {
-                    Console.Error.WriteLine("Error: Only one action can be specified at a time.");
-                    FinishCommand(close);
-                    return 1;
-                }
-
+                CliArguments arguments;
                 try
                 {
-                    if (dump)
-                    {
-                        // Rengoku-only dump (doesn't require mhfpac/mhfdat/mhfinf)
-                        if (!string.IsNullOrEmpty(rengoku))
-                        {
-                            if (!File.Exists(rengoku))
-                            {
-                                Console.Error.WriteLine($"Error: File '{rengoku}' does not exist.");
-                                FinishCommand(close);
-                                return 1;
-                            }
-
-                            program._extractionService.DumpRengokuData(rengoku);
-
-                            // If no other files specified, we're done
-                            if (string.IsNullOrEmpty(mhfpac) && string.IsNullOrEmpty(mhfdat) && string.IsNullOrEmpty(mhfinf))
-                            {
-                                FinishCommand(close);
-                                return 0;
-                            }
-                        }
-
-                        // Validate required parameters for full dump
-                        if (string.IsNullOrEmpty(suffix))
-                        {
-                            Console.Error.WriteLine("Error: --dump requires --suffix.");
-                            FinishCommand(close);
-                            return 1;
-                        }
-                        if (string.IsNullOrEmpty(mhfpac))
-                        {
-                            Console.Error.WriteLine("Error: --dump requires --mhfpac.");
-                            FinishCommand(close);
-                            return 1;
-                        }
-                        if (string.IsNullOrEmpty(mhfdat))
-                        {
-                            Console.Error.WriteLine("Error: --dump requires --mhfdat.");
-                            FinishCommand(close);
-                            return 1;
-                        }
-                        if (string.IsNullOrEmpty(mhfinf))
-                        {
-                            Console.Error.WriteLine("Error: --dump requires --mhfinf.");
-                            FinishCommand(close);
-                            return 1;
-                        }
-
-                        // Validate files exist
-                        if (!File.Exists(mhfpac))
-                        {
-                            Console.Error.WriteLine($"Error: File '{mhfpac}' does not exist.");
-                            FinishCommand(close);
-                            return 1;
-                        }
-                        if (!File.Exists(mhfdat))
-                        {
-                            Console.Error.WriteLine($"Error: File '{mhfdat}' does not exist.");
-                            FinishCommand(close);
-                            return 1;
-                        }
-                        if (!File.Exists(mhfinf))
-                        {
-                            Console.Error.WriteLine($"Error: File '{mhfinf}' does not exist.");
-                            FinishCommand(close);
-                            return 1;
-                        }
-
-                        program._extractionService.DumpData(suffix, mhfpac, mhfdat, mhfinf);
-                    }
-                    else if (modshop)
-                    {
-                        if (string.IsNullOrEmpty(mhfdat))
-                        {
-                            Console.Error.WriteLine("Error: --modshop requires --mhfdat.");
-                            FinishCommand(close);
-                            return 1;
-                        }
-
-                        if (!File.Exists(mhfdat))
-                        {
-                            Console.Error.WriteLine($"Error: File '{mhfdat}' does not exist.");
-                            FinishCommand(close);
-                            return 1;
-                        }
-
-                        program._importService.ModShop(mhfdat);
-                    }
-                    else if (import)
-                    {
-                        if (string.IsNullOrEmpty(csv))
-                        {
-                            Console.Error.WriteLine("Error: --import requires --csv.");
-                            FinishCommand(close);
-                            return 1;
-                        }
-
-                        if (!File.Exists(csv))
-                        {
-                            Console.Error.WriteLine($"Error: File '{csv}' does not exist.");
-                            FinishCommand(close);
-                            return 1;
-                        }
-
-                        // Auto-detect CSV type from filename
-                        string csvFilename = Path.GetFileName(csv).ToLowerInvariant();
-
-                        if (csvFilename.StartsWith("armor"))
-                        {
-                            // Armor import requires mhfdat and mhfpac
-                            if (string.IsNullOrEmpty(mhfdat))
-                            {
-                                Console.Error.WriteLine("Error: Armor.csv import requires --mhfdat.");
-                                FinishCommand(close);
-                                return 1;
-                            }
-                            if (string.IsNullOrEmpty(mhfpac))
-                            {
-                                Console.Error.WriteLine("Error: Armor.csv import requires --mhfpac.");
-                                FinishCommand(close);
-                                return 1;
-                            }
-                            if (!File.Exists(mhfdat))
-                            {
-                                Console.Error.WriteLine($"Error: File '{mhfdat}' does not exist.");
-                                FinishCommand(close);
-                                return 1;
-                            }
-                            if (!File.Exists(mhfpac))
-                            {
-                                Console.Error.WriteLine($"Error: File '{mhfpac}' does not exist.");
-                                FinishCommand(close);
-                                return 1;
-                            }
-
-                            program._importService.ImportArmorData(mhfdat, csv, mhfpac);
-                        }
-                        else if (csvFilename.StartsWith("melee"))
-                        {
-                            // Melee import requires mhfdat
-                            if (string.IsNullOrEmpty(mhfdat))
-                            {
-                                Console.Error.WriteLine("Error: Melee.csv import requires --mhfdat.");
-                                FinishCommand(close);
-                                return 1;
-                            }
-                            if (!File.Exists(mhfdat))
-                            {
-                                Console.Error.WriteLine($"Error: File '{mhfdat}' does not exist.");
-                                FinishCommand(close);
-                                return 1;
-                            }
-
-                            program._importService.ImportMeleeData(mhfdat, csv);
-                        }
-                        else if (csvFilename.StartsWith("ranged"))
-                        {
-                            // Ranged import requires mhfdat
-                            if (string.IsNullOrEmpty(mhfdat))
-                            {
-                                Console.Error.WriteLine("Error: Ranged.csv import requires --mhfdat.");
-                                FinishCommand(close);
-                                return 1;
-                            }
-                            if (!File.Exists(mhfdat))
-                            {
-                                Console.Error.WriteLine($"Error: File '{mhfdat}' does not exist.");
-                                FinishCommand(close);
-                                return 1;
-                            }
-
-                            program._importService.ImportRangedData(mhfdat, csv);
-                        }
-                        else if (csvFilename.StartsWith("infquest"))
-                        {
-                            // Quest import requires mhfinf
-                            if (string.IsNullOrEmpty(mhfinf))
-                            {
-                                Console.Error.WriteLine("Error: InfQuests.csv import requires --mhfinf.");
-                                FinishCommand(close);
-                                return 1;
-                            }
-                            if (!File.Exists(mhfinf))
-                            {
-                                Console.Error.WriteLine($"Error: File '{mhfinf}' does not exist.");
-                                FinishCommand(close);
-                                return 1;
-                            }
-
-                            program._importService.ImportQuestData(mhfinf, csv);
-                        }
-                        else if (csvFilename.StartsWith("rengoku"))
-                        {
-                            // Rengoku import requires --rengoku
-                            if (string.IsNullOrEmpty(rengoku))
-                            {
-                                Console.Error.WriteLine("Error: Rengoku CSV import requires --rengoku.");
-                                FinishCommand(close);
-                                return 1;
-                            }
-                            if (!File.Exists(rengoku))
-                            {
-                                Console.Error.WriteLine($"Error: File '{rengoku}' does not exist.");
-                                FinishCommand(close);
-                                return 1;
-                            }
-
-                            program._importService.ImportRengokuData(rengoku, csv);
-                        }
-                        else
-                        {
-                            Console.Error.WriteLine($"Error: Unknown CSV type '{csvFilename}'. Expected Armor.csv, Melee.csv, Ranged.csv, InfQuests.csv, RengokuFloors.csv, or RengokuSpawns.csv.");
-                            FinishCommand(close);
-                            return 1;
-                        }
-                    }
+                    arguments = schema.ExtractArguments(parseResult);
                 }
-                catch (Exception ex)
+                catch (InvalidOperationException ex)
                 {
-                    Console.Error.WriteLine($"Error: {ex.Message}");
-                    FinishCommand(close);
+                    Console.Error.WriteLine(ex.Message);
+                    FinishCommand(schema.WantsClose(parseResult));
                     return 1;
                 }
 
-                FinishCommand(close);
-                return 0;
-            });
+                return program.Run(arguments);
+            };
+
+            rootCommand.SetAction(handler);
+            foreach (var subcommand in rootCommand.Subcommands)
+            {
+                subcommand.SetAction(handler);
+            }
 
             return rootCommand.Parse(args).Invoke();
+        }
+
+        /// <summary>
+        /// Run the task the command line selected.
+        /// </summary>
+        /// <param name="arguments">Parsed command line.</param>
+        /// <returns>Exit code (0 for success).</returns>
+        internal int Run(CliArguments arguments)
+        {
+            var encodingOptions = arguments.ShiftJis ? CsvEncodingOptions.ShiftJis : CsvEncodingOptions.Default;
+            if (arguments.Json)
+                encodingOptions.Format = OutputFormat.Json;
+            UpdateExtractionServiceWithEncoding(encodingOptions);
+
+            try
+            {
+                return arguments.Action switch
+                {
+                    DataToolAction.Dump => RunDump(arguments),
+                    DataToolAction.ModShop => RunModShop(arguments),
+                    DataToolAction.Import => RunImport(arguments),
+                    _ => Fail($"Error: Unknown command '{arguments.Action}'.")
+                };
+            }
+            catch (Exception ex)
+            {
+                return Fail($"Error: {ex.Message}");
+            }
+            finally
+            {
+                FinishCommand(arguments.Close);
+            }
+        }
+
+        private int RunDump(CliArguments arguments)
+        {
+            // Rengoku-only dump (doesn't require mhfpac/mhfdat/mhfinf)
+            if (!string.IsNullOrEmpty(arguments.Rengoku))
+            {
+                if (!File.Exists(arguments.Rengoku))
+                    return Fail($"Error: File '{arguments.Rengoku}' does not exist.");
+
+                _extractionService.DumpRengokuData(arguments.Rengoku);
+
+                // If no other files specified, we're done
+                if (string.IsNullOrEmpty(arguments.MhfPac)
+                    && string.IsNullOrEmpty(arguments.MhfDat)
+                    && string.IsNullOrEmpty(arguments.MhfInf))
+                {
+                    return 0;
+                }
+            }
+
+            if (string.IsNullOrEmpty(arguments.Suffix))
+                return Fail("Error: 'dump' requires --suffix.");
+            if (string.IsNullOrEmpty(arguments.MhfPac))
+                return Fail("Error: 'dump' requires --mhfpac.");
+            if (string.IsNullOrEmpty(arguments.MhfDat))
+                return Fail("Error: 'dump' requires --mhfdat.");
+            if (string.IsNullOrEmpty(arguments.MhfInf))
+                return Fail("Error: 'dump' requires --mhfinf.");
+
+            if (!File.Exists(arguments.MhfPac))
+                return Fail($"Error: File '{arguments.MhfPac}' does not exist.");
+            if (!File.Exists(arguments.MhfDat))
+                return Fail($"Error: File '{arguments.MhfDat}' does not exist.");
+            if (!File.Exists(arguments.MhfInf))
+                return Fail($"Error: File '{arguments.MhfInf}' does not exist.");
+
+            _extractionService.DumpData(arguments.Suffix, arguments.MhfPac, arguments.MhfDat, arguments.MhfInf);
+            return 0;
+        }
+
+        private int RunModShop(CliArguments arguments)
+        {
+            if (string.IsNullOrEmpty(arguments.MhfDat))
+                return Fail("Error: 'modshop' requires mhfdat.bin. Usage: FrontierDataTool modshop <mhfdat.bin>");
+            if (!File.Exists(arguments.MhfDat))
+                return Fail($"Error: File '{arguments.MhfDat}' does not exist.");
+
+            _importService.ModShop(arguments.MhfDat);
+            return 0;
+        }
+
+        private int RunImport(CliArguments arguments)
+        {
+            if (string.IsNullOrEmpty(arguments.CsvPath))
+                return Fail("Error: 'import' requires a CSV file. Usage: FrontierDataTool import <file.csv>");
+            if (!File.Exists(arguments.CsvPath))
+                return Fail($"Error: File '{arguments.CsvPath}' does not exist.");
+
+            // Auto-detect CSV type from filename
+            string csvFilename = Path.GetFileName(arguments.CsvPath).ToLowerInvariant();
+
+            if (csvFilename.StartsWith("armor", StringComparison.Ordinal))
+            {
+                // Armor import requires mhfdat and mhfpac
+                if (string.IsNullOrEmpty(arguments.MhfDat))
+                    return Fail("Error: Armor.csv import requires --mhfdat.");
+                if (string.IsNullOrEmpty(arguments.MhfPac))
+                    return Fail("Error: Armor.csv import requires --mhfpac.");
+                if (!File.Exists(arguments.MhfDat))
+                    return Fail($"Error: File '{arguments.MhfDat}' does not exist.");
+                if (!File.Exists(arguments.MhfPac))
+                    return Fail($"Error: File '{arguments.MhfPac}' does not exist.");
+
+                _importService.ImportArmorData(arguments.MhfDat, arguments.CsvPath, arguments.MhfPac);
+                return 0;
+            }
+
+            if (csvFilename.StartsWith("melee", StringComparison.Ordinal))
+            {
+                if (string.IsNullOrEmpty(arguments.MhfDat))
+                    return Fail("Error: Melee.csv import requires --mhfdat.");
+                if (!File.Exists(arguments.MhfDat))
+                    return Fail($"Error: File '{arguments.MhfDat}' does not exist.");
+
+                _importService.ImportMeleeData(arguments.MhfDat, arguments.CsvPath);
+                return 0;
+            }
+
+            if (csvFilename.StartsWith("ranged", StringComparison.Ordinal))
+            {
+                if (string.IsNullOrEmpty(arguments.MhfDat))
+                    return Fail("Error: Ranged.csv import requires --mhfdat.");
+                if (!File.Exists(arguments.MhfDat))
+                    return Fail($"Error: File '{arguments.MhfDat}' does not exist.");
+
+                _importService.ImportRangedData(arguments.MhfDat, arguments.CsvPath);
+                return 0;
+            }
+
+            if (csvFilename.StartsWith("infquest", StringComparison.Ordinal))
+            {
+                if (string.IsNullOrEmpty(arguments.MhfInf))
+                    return Fail("Error: InfQuests.csv import requires --mhfinf.");
+                if (!File.Exists(arguments.MhfInf))
+                    return Fail($"Error: File '{arguments.MhfInf}' does not exist.");
+
+                _importService.ImportQuestData(arguments.MhfInf, arguments.CsvPath);
+                return 0;
+            }
+
+            if (csvFilename.StartsWith("rengoku", StringComparison.Ordinal))
+            {
+                if (string.IsNullOrEmpty(arguments.Rengoku))
+                    return Fail("Error: Rengoku CSV import requires --rengoku.");
+                if (!File.Exists(arguments.Rengoku))
+                    return Fail($"Error: File '{arguments.Rengoku}' does not exist.");
+
+                _importService.ImportRengokuData(arguments.Rengoku, arguments.CsvPath);
+                return 0;
+            }
+
+            return Fail(
+                $"Error: Unknown CSV type '{csvFilename}'. Expected Armor.csv, Melee.csv, Ranged.csv, InfQuests.csv, RengokuFloors.csv, or RengokuSpawns.csv.");
+        }
+
+        /// <summary>
+        /// Report an error and give the exit code that goes with it. The keypress wait
+        /// happens in Run's finally block, so every path reaches it.
+        /// </summary>
+        /// <param name="message">Message to print on standard error.</param>
+        /// <returns>Always 1.</returns>
+        private static int Fail(string message)
+        {
+            Console.Error.WriteLine(message);
+            return 1;
         }
 
         /// <summary>

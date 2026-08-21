@@ -2,6 +2,7 @@ using System;
 using System.CommandLine;
 
 using LibReFrontier;
+using LibReFrontier.CLI;
 
 namespace ReFrontier.CLI
 {
@@ -431,20 +432,7 @@ namespace ReFrontier.CLI
         /// <returns>A message to show, or null when there is no ambiguity.</returns>
         public static string? DescribeVerbPathCollision(string[] args, LibReFrontier.Abstractions.IFileSystem fileSystem)
         {
-            ArgumentNullException.ThrowIfNull(args);
-            ArgumentNullException.ThrowIfNull(fileSystem);
-
-            if (args.Length != 1)
-                return null;
-
-            string candidate = args[0];
-            if (Array.IndexOf(VerbNames, candidate) < 0)
-                return null;
-            if (!fileSystem.FileExists(candidate) && !fileSystem.DirectoryExists(candidate))
-                return null;
-
-            return $"Note: '{candidate}' is both a command and a path that exists here; the command wins.\n"
-                 + $"  To act on the path, name it explicitly: ReFrontier unpack .{System.IO.Path.DirectorySeparatorChar}{candidate}";
+            return CliDeprecation.DescribeVerbPathCollision("ReFrontier unpack", VerbNames, args, fileSystem);
         }
 
         /// <summary>
@@ -733,31 +721,26 @@ namespace ReFrontier.CLI
             bool encrypt)
         {
             if (decryptOnly)
-                WarnFlag("--decryptOnly", $"ReFrontier decrypt {file}");
+                CliDeprecation.WarnFlag("--decryptOnly", $"ReFrontier decrypt {file}");
             if (pack)
-                WarnFlag("--pack", $"ReFrontier pack {file}");
+                CliDeprecation.WarnFlag("--pack", $"ReFrontier pack {file}");
             if (restore)
-                WarnFlag("--restore", $"ReFrontier restore {file}");
+                CliDeprecation.WarnFlag("--restore", $"ReFrontier restore {file}");
             if (validate)
-                WarnFlag("--validate", $"ReFrontier validate {file}");
+                CliDeprecation.WarnFlag("--validate", $"ReFrontier validate {file}");
             if (!string.IsNullOrEmpty(diffPath))
-                WarnFlag("--diff", $"ReFrontier diff {file} {diffPath}");
+                CliDeprecation.WarnFlag("--diff", $"ReFrontier diff {file} {diffPath}");
             if (!string.IsNullOrEmpty(compressType))
             {
                 string level = compressLevel > 0 ? $" --level {compressLevel}" : "";
                 string encryptSuffix = encrypt ? " --encrypt" : "";
-                WarnFlag("--compress", $"ReFrontier compress {file} --type {compressType}{level}{encryptSuffix}");
+                CliDeprecation.WarnFlag("--compress", $"ReFrontier compress {file} --type {compressType}{level}{encryptSuffix}");
             }
             else if (encrypt)
             {
-                WarnFlag("--encrypt", $"ReFrontier encrypt {file}");
+                CliDeprecation.WarnFlag("--encrypt", $"ReFrontier encrypt {file}");
             }
         }
 
-        private static void WarnFlag(string flag, string replacement)
-        {
-            Console.Error.WriteLine($"Warning: {flag} is deprecated and will be removed in a future release.");
-            Console.Error.WriteLine($"  Use: {replacement}");
-        }
     }
 }

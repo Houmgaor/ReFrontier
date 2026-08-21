@@ -190,6 +190,33 @@ The pre-2.3.0 flat flags (`--decryptOnly`, `--pack`, `--restore`, `--validate`, 
 task-selecting ones warn and name the command to use. `CliSchema.ExtractArguments` routes
 both shapes into the same `CliArguments` DTO, so nothing downstream knows the difference.
 
+### FrontierTextTool and FrontierDataTool
+
+Both follow the same shape as ReFrontier: `CLI/CliSchema.cs` builds the commands and
+`ExtractArguments` funnels every shape into a `CLI/CliArguments.cs` DTO, which
+`Program.Run` acts on. `LibReFrontier/CLI/CliDeprecation.cs` holds the wording all three
+share.
+
+```bash
+# FrontierTextTool: dump, insert, merge, clean-trados, insert-cat
+./FrontierTextTool dump mhfdat.bin --true-offsets --null-strings
+./FrontierTextTool dump mhfdat.bin --start-index 3040 --end-index 3328506
+./FrontierTextTool insert mhfdat.bin mhfdat.csv
+./FrontierTextTool merge old.csv new.csv
+./FrontierTextTool insert-cat catfile.txt target.csv
+
+# FrontierDataTool: dump, modshop, import
+./FrontierDataTool dump --suffix demo --mhfpac mhfpac.bin --mhfdat mhfdat.bin --mhfinf mhfinf.bin
+./FrontierDataTool dump --rengoku rengoku_data.bin
+./FrontierDataTool import Armor.csv --mhfdat mhfdat.bin --mhfpac mhfpac.bin
+./FrontierDataTool modshop mhfdat.bin
+```
+
+Their pre-2.4.0 flat flags (`--fulldump`, `--dump`, `--insert`, `--merge`, `--cleanTrados`,
+`--insertCAT`, `--modshop`, `--import`, and the camelCase modifier spellings) are still
+accepted; the task-selecting ones warn and name the command to use. Both tools wait for a
+keypress when they finish unless `--close` is given.
+
 ## Testing
 
 Tests are in `ReFrontier.Tests/` using xUnit. The main project uses `InternalsVisibleTo` to expose internals to the test project.
@@ -197,7 +224,7 @@ Tests are in `ReFrontier.Tests/` using xUnit. The main project uses `InternalsVi
 ### Test Organization
 
 - `ReFrontier.Tests/Mocks/` - Test doubles (`InMemoryFileSystem`, `TestLogger`)
-- `ReFrontier.Tests/CLI/` - CLI schema and argument parsing tests
+- `ReFrontier.Tests/CLI/` - CLI schema and argument parsing tests for all three tools
 - `ReFrontier.Tests/Orchestration/` - Application orchestrator tests
 - `ReFrontier.Tests/Routing/` - File router tests
 - `ReFrontier.Tests/Routing/Handlers/` - Individual handler tests
