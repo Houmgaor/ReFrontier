@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Build**: The assembly version lives in `Directory.Build.props` alone. The four shipped
+  projects each carried their own `<Version>`/`<FileVersion>` pair, eight lines that had to
+  be edited in lockstep at every release; they now inherit one definition. `<Nullable>` was
+  likewise declared in the props *and* re-declared in all five projects, and is now set once.
+- **Build**: Implicit usings are off everywhere, tests included. `ReFrontier.Tests` was the
+  one project that enabled them, so a file meant different things depending on which side of
+  the solution it sat on; 49 test files gained the usings they had been getting for free.
+- **Build**: XML documentation is still generated, for the IDE and for IDE0005, but no longer
+  published. Nothing reads it at runtime and it was ~280 KB of every release zip
+  (`ReFrontier.xml` alone was 133 KB).
 - **FrontierTextTool, FrontierDataTool**: The CSV output flag is `--cp932`. The tools read
   and write **CP932** (Windows-31J), Microsoft's extension of Shift_JIS: it adds the NEC and
   IBM rows and maps some code points differently, notably `0x8160`, which is FULLWIDTH TILDE

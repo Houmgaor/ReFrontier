@@ -2,12 +2,9 @@
   <PropertyGroup>
     <ProjectGuid>{65DFE92C-FED7-419A-9732-854BA5E9D162}</ProjectGuid>
     <TargetFramework>net8.0</TargetFramework>
-    <Nullable>enable</Nullable>
     <AssemblyTitle>LibReFrontier</AssemblyTitle>
     <Product>LibReFrontier</Product>
     <Copyright>Copyright ©  2019</Copyright>
-    <Version>2.3.0</Version>
-    <FileVersion>2.3.0</FileVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CsvHelper" Version="33.0.1" />

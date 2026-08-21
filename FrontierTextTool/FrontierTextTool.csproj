@@ -3,14 +3,11 @@
     <ProjectGuid>{DE2AB100-24C7-4176-9FDB-E979A97045DE}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
-    <Nullable>enable</Nullable>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <AssemblyTitle>FrontierTextTool</AssemblyTitle>
     <Product>FrontierTextTool</Product>
     <Description>Extract and edit Monster Hunter Frontier game texts</Description>
     <Copyright>Copyright ©  2019</Copyright>
-    <Version>2.3.0</Version>
-    <FileVersion>2.3.0</FileVersion>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <Authors>Vuze</Authors>
     <RepositoryUrl>https://github.com/Houmgaor/ReFrontier</RepositoryUrl>
