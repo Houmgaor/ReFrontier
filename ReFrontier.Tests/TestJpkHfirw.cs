@@ -1,3 +1,5 @@
+using System.IO;
+
 using ReFrontier.Jpk;
 
 namespace ReFrontier.Tests

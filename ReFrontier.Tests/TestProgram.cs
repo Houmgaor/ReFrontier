@@ -1,3 +1,5 @@
+using System.IO;
+
 namespace ReFrontier.Tests;
 
 public class TestProgram

@@ -1,5 +1,13 @@
 <Project>
   <PropertyGroup>
+    <!--
+      Version for every assembly in the solution. Bump it here and nowhere else:
+      the four shipped projects used to carry their own copy, which had to be kept
+      in sync by hand at each release.
+    -->
+    <Version>2.3.0</Version>
+    <FileVersion>2.3.0</FileVersion>
+
     <!-- Enable .NET analyzers -->
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
@@ -13,13 +21,21 @@
     <!-- Enforce code style on build -->
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
 
-    <!-- Generate documentation XML -->
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-
-    <!-- Suppress missing XML doc warnings for now (can enable later) -->
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
-
-    <!-- Implicit usings -->
+    <!--
+      Every using is written out, in tests as well as in the shipped projects, so
+      that a file means the same thing wherever it is moved.
+    -->
     <ImplicitUsings>disable</ImplicitUsings>
+
+    <!--
+      XML documentation is generated for the IDE but deliberately not published:
+      nothing reads it at runtime, and the four files were ~280 KB of every
+      release zip. CS1591 stays suppressed because the data-describing types in
+      FrontierDataTool (the game's skill and struct definitions) would need ~1000
+      comments restating their own names.
+    -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PublishDocumentationFiles>false</PublishDocumentationFiles>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 </Project>

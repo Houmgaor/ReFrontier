@@ -1,3 +1,6 @@
+using System;
+using System.IO;
+
 using LibReFrontier;
 
 namespace ReFrontier.Tests
