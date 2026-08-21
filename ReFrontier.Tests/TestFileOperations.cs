@@ -93,7 +93,7 @@ namespace ReFrontier.Tests
         {
             // Register encoding provider for Shift-JIS
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            Encoding shiftJis = Encoding.GetEncoding("shift_jis");
+            Encoding shiftJis = TextFileConfiguration.Cp932Encoding;
 
             // Shift-JIS encoded "あ" is 0x82 0xA0
             byte[] data = [0x82, 0xA0, 0x00];

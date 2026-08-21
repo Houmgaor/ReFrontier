@@ -217,6 +217,10 @@ Their pre-2.3.0 flat flags (`--fulldump`, `--dump`, `--insert`, `--merge`, `--cl
 accepted; the task-selecting ones warn and name the command to use. Both tools wait for a
 keypress when they finish unless `--close` is given.
 
+Japanese text is **CP932** (Windows-31J), not the narrower Shift_JIS the old names implied:
+`TextFileConfiguration.Cp932Encoding` pins codepage 932 rather than going through an alias
+string. The CLI flag is `--cp932`; `--shift-jis` is still accepted, hidden and silent.
+
 ## Testing
 
 Tests are in `ReFrontier.Tests/` using xUnit. The main project uses `InternalsVisibleTo` to expose internals to the test project.
@@ -247,5 +251,5 @@ This allows both backward-compatible instantiation and fully testable code with 
 
 - Spectre.Console 0.49.1 (CLI interface)
 - CsvHelper 33.0.1 (FrontierTextTool, FrontierDataTool)
-- System.Text.Encoding.CodePages 9.0.0 (Shift-JIS support)
+- System.Text.Encoding.CodePages 9.0.0 (CP932 / Windows-31J support)
 - System.IO.Hashing 9.0.0 (CRC32)

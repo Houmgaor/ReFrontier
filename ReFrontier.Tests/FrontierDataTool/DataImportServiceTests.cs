@@ -4,6 +4,8 @@ using FrontierDataTool.Services;
 
 using ReFrontier.Tests.Mocks;
 
+using LibReFrontier;
+
 namespace ReFrontier.Tests.DataToolTests
 {
     /// <summary>
@@ -70,7 +72,7 @@ namespace ReFrontier.Tests.DataToolTests
         {
             // Arrange
             string csv = TestDataFactory.CreateArmorCsv(2);
-            _fileSystem.AddFile("/test/Armor.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+            _fileSystem.AddFile("/test/Armor.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csv));
 
             // Act
             var entries = _service.LoadArmorCsv("/test/Armor.csv");
@@ -91,7 +93,7 @@ namespace ReFrontier.Tests.DataToolTests
         {
             // Arrange
             string csv = TestDataFactory.CreateArmorCsv(1);
-            _fileSystem.AddFile("/test/Armor.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+            _fileSystem.AddFile("/test/Armor.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csv));
 
             // Act
             var entries = _service.LoadArmorCsv("/test/Armor.csv");
@@ -143,7 +145,7 @@ namespace ReFrontier.Tests.DataToolTests
 
             _fileSystem.AddFile("/test/mhfpac.bin", mhfpac);
             _fileSystem.AddFile("/test/mhfdat.bin", mhfdat);
-            _fileSystem.AddFile("/test/Armor.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+            _fileSystem.AddFile("/test/Armor.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csv));
 
             // Act
             _service.ImportArmorDataInternal("/test/mhfdat.bin", "/test/Armor.csv", "/test/mhfpac.bin");
@@ -164,7 +166,7 @@ namespace ReFrontier.Tests.DataToolTests
 
             _fileSystem.AddFile("/test/mhfpac.bin", mhfpac);
             _fileSystem.AddFile("/test/mhfdat.bin", mhfdat);
-            _fileSystem.AddFile("/test/Armor.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+            _fileSystem.AddFile("/test/Armor.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csv));
 
             // Act
             _service.ImportArmorDataInternal("/test/mhfdat.bin", "/test/Armor.csv", "/test/mhfpac.bin");
@@ -185,7 +187,7 @@ namespace ReFrontier.Tests.DataToolTests
             string csv = CreateMeleeCsv(3);
 
             _fileSystem.AddFile("/test/mhfdat.bin", mhfdat);
-            _fileSystem.AddFile("/test/Melee.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+            _fileSystem.AddFile("/test/Melee.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csv));
 
             // Act
             _service.ImportMeleeDataInternal("/test/mhfdat.bin", "/test/Melee.csv");
@@ -203,7 +205,7 @@ namespace ReFrontier.Tests.DataToolTests
             string csv = CreateMeleeCsv(3); // Only 3 CSV entries
 
             _fileSystem.AddFile("/test/mhfdat.bin", mhfdat);
-            _fileSystem.AddFile("/test/Melee.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+            _fileSystem.AddFile("/test/Melee.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csv));
 
             // Act
             _service.ImportMeleeDataInternal("/test/mhfdat.bin", "/test/Melee.csv");
@@ -225,7 +227,7 @@ namespace ReFrontier.Tests.DataToolTests
             string csv = CreateRangedCsv(2); // CSV only has 2 entries
 
             _fileSystem.AddFile("/test/mhfdat.bin", mhfdat);
-            _fileSystem.AddFile("/test/Ranged.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+            _fileSystem.AddFile("/test/Ranged.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csv));
 
             // Act
             _service.ImportRangedDataInternal("/test/mhfdat.bin", "/test/Ranged.csv");
@@ -239,7 +241,7 @@ namespace ReFrontier.Tests.DataToolTests
         {
             // Arrange
             string csv = CreateRangedCsv(3);
-            _fileSystem.AddFile("/test/Ranged.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+            _fileSystem.AddFile("/test/Ranged.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csv));
 
             // Act
             var entries = _service.LoadRangedCsv("/test/Ranged.csv");
@@ -262,7 +264,7 @@ namespace ReFrontier.Tests.DataToolTests
             string csv = CreateQuestCsv(5); // Much less than expected
 
             _fileSystem.AddFile("/test/mhfinf.bin", mhfinf);
-            _fileSystem.AddFile("/test/InfQuests.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+            _fileSystem.AddFile("/test/InfQuests.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csv));
 
             // Act
             _service.ImportQuestDataInternal("/test/mhfinf.bin", "/test/InfQuests.csv");
@@ -281,7 +283,7 @@ namespace ReFrontier.Tests.DataToolTests
             string csv = CreateQuestCsv(totalCount, withPointerOffsets: false);
 
             _fileSystem.AddFile("/test/mhfinf.bin", mhfinf);
-            _fileSystem.AddFile("/test/InfQuests.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+            _fileSystem.AddFile("/test/InfQuests.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csv));
 
             // Act
             _service.ImportQuestDataInternal("/test/mhfinf.bin", "/test/InfQuests.csv");
@@ -300,7 +302,7 @@ namespace ReFrontier.Tests.DataToolTests
             string csv = CreateQuestCsv(totalCount, withPointerOffsets: true);
 
             _fileSystem.AddFile("/test/mhfinf.bin", mhfinf);
-            _fileSystem.AddFile("/test/InfQuests.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+            _fileSystem.AddFile("/test/InfQuests.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csv));
 
             // Act
             _service.ImportQuestDataInternal("/test/mhfinf.bin", "/test/InfQuests.csv");
@@ -404,7 +406,7 @@ namespace ReFrontier.Tests.DataToolTests
             string csv = CreateRangedCsv(3);
 
             _fileSystem.AddFile("/test/mhfdat.bin", mhfdat);
-            _fileSystem.AddFile("/test/Ranged.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+            _fileSystem.AddFile("/test/Ranged.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csv));
 
             // Act
             _service.ImportRangedDataInternal("/test/mhfdat.bin", "/test/Ranged.csv");

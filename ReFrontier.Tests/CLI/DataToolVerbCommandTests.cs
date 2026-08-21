@@ -38,7 +38,7 @@ namespace ReFrontier.Tests.CLI
             Assert.Equal(fromLegacy.Rengoku, fromVerb.Rengoku);
             Assert.Equal(fromLegacy.CsvPath, fromVerb.CsvPath);
             Assert.Equal(fromLegacy.Close, fromVerb.Close);
-            Assert.Equal(fromLegacy.ShiftJis, fromVerb.ShiftJis);
+            Assert.Equal(fromLegacy.Cp932, fromVerb.Cp932);
             Assert.Equal(fromLegacy.Json, fromVerb.Json);
         }
 
@@ -93,7 +93,7 @@ namespace ReFrontier.Tests.CLI
             var args = Parse("dump", "--rengoku", "rengoku_data.bin", "--close", "--shift-jis", "--json");
 
             Assert.True(args.Close);
-            Assert.True(args.ShiftJis);
+            Assert.True(args.Cp932);
             Assert.True(args.Json);
         }
 
@@ -104,6 +104,15 @@ namespace ReFrontier.Tests.CLI
 
             Assert.True(args.Json);
             Assert.Equal("Armor.csv", args.CsvPath);
+        }
+
+        [Fact]
+        public void Cp932_AcceptsTheOldShiftJisSpelling()
+        {
+            // The flag was renamed because it named a narrower encoding than it selected.
+            Assert.True(Parse("import", "Armor.csv", "--cp932").Cp932);
+            Assert.True(Parse("import", "Armor.csv", "--shift-jis").Cp932);
+            Assert.False(Parse("import", "Armor.csv").Cp932);
         }
 
         [Fact]

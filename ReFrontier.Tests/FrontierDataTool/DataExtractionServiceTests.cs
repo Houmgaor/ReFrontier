@@ -5,6 +5,8 @@ using FrontierDataTool.Services;
 
 using ReFrontier.Tests.Mocks;
 
+using LibReFrontier;
+
 namespace ReFrontier.Tests.DataToolTests
 {
     /// <summary>
@@ -189,9 +191,9 @@ namespace ReFrontier.Tests.DataToolTests
         }
 
         [Fact]
-        public void DataExtractionService_WithShiftJisEncodingOptions_CreatesService()
+        public void DataExtractionService_WithCp932EncodingOptions_CreatesService()
         {
-            var encodingOptions = LibReFrontier.CsvEncodingOptions.ShiftJis;
+            var encodingOptions = LibReFrontier.CsvEncodingOptions.Cp932;
             var service = new DataExtractionService(_fileSystem, _logger, encodingOptions);
             Assert.NotNull(service);
         }
@@ -431,13 +433,13 @@ namespace ReFrontier.Tests.DataToolTests
             foreach (var name in skillNames)
             {
                 bw.Write(currentOffset);
-                currentOffset += Encoding.GetEncoding("shift-jis").GetBytes(name).Length + 1;
+                currentOffset += TextFileConfiguration.Cp932Encoding.GetBytes(name).Length + 1;
             }
 
             // Write string data
             foreach (var name in skillNames)
             {
-                byte[] nameBytes = Encoding.GetEncoding("shift-jis").GetBytes(name);
+                byte[] nameBytes = TextFileConfiguration.Cp932Encoding.GetBytes(name);
                 bw.Write(nameBytes);
                 bw.Write((byte)0);
             }
@@ -472,7 +474,7 @@ namespace ReFrontier.Tests.DataToolTests
             bw.Write(activateStringStart); // Pointer 1
             bw.Write(activateStringStart + 10); // Pointer 2
 
-            byte[] activeSkill1 = Encoding.GetEncoding("shift-jis").GetBytes("活性スキル");
+            byte[] activeSkill1 = TextFileConfiguration.Cp932Encoding.GetBytes("活性スキル");
             ms.Seek(activateStringStart, SeekOrigin.Begin);
             bw.Write(activeSkill1);
             bw.Write((byte)0);
@@ -490,7 +492,7 @@ namespace ReFrontier.Tests.DataToolTests
             bw.Write(descStringStart);
 
             ms.Seek(descStringStart, SeekOrigin.Begin);
-            byte[] descBytes = Encoding.GetEncoding("shift-jis").GetBytes("説明");
+            byte[] descBytes = TextFileConfiguration.Cp932Encoding.GetBytes("説明");
             bw.Write(descBytes);
             bw.Write((byte)0);
 
@@ -507,7 +509,7 @@ namespace ReFrontier.Tests.DataToolTests
             bw.Write(zStringStart);
 
             ms.Seek(zStringStart, SeekOrigin.Begin);
-            byte[] zBytes = Encoding.GetEncoding("shift-jis").GetBytes("Z技");
+            byte[] zBytes = TextFileConfiguration.Cp932Encoding.GetBytes("Z技");
             bw.Write(zBytes);
             bw.Write((byte)0);
 
@@ -541,12 +543,12 @@ namespace ReFrontier.Tests.DataToolTests
             foreach (var name in itemNames)
             {
                 bw.Write(currentOffset);
-                currentOffset += Encoding.GetEncoding("shift-jis").GetBytes(name).Length + 1;
+                currentOffset += TextFileConfiguration.Cp932Encoding.GetBytes(name).Length + 1;
             }
 
             foreach (var name in itemNames)
             {
-                byte[] nameBytes = Encoding.GetEncoding("shift-jis").GetBytes(name);
+                byte[] nameBytes = TextFileConfiguration.Cp932Encoding.GetBytes(name);
                 bw.Write(nameBytes);
                 bw.Write((byte)0);
             }
@@ -565,12 +567,12 @@ namespace ReFrontier.Tests.DataToolTests
             foreach (var name in itemNames)
             {
                 bw.Write(currentOffset);
-                currentOffset += Encoding.GetEncoding("shift-jis").GetBytes(name + "説明").Length + 1;
+                currentOffset += TextFileConfiguration.Cp932Encoding.GetBytes(name + "説明").Length + 1;
             }
 
             foreach (var name in itemNames)
             {
-                byte[] descBytes = Encoding.GetEncoding("shift-jis").GetBytes(name + "説明");
+                byte[] descBytes = TextFileConfiguration.Cp932Encoding.GetBytes(name + "説明");
                 bw.Write(descBytes);
                 bw.Write((byte)0);
             }
@@ -650,7 +652,7 @@ namespace ReFrontier.Tests.DataToolTests
             }
             for (int i = 0; i < rangedCount; i++)
             {
-                byte[] nameBytes = Encoding.GetEncoding("shift-jis").GetBytes($"遠距離{i}");
+                byte[] nameBytes = TextFileConfiguration.Cp932Encoding.GetBytes($"遠距離{i}");
                 bw.Write(nameBytes);
                 bw.Write((byte)0);
             }
@@ -665,7 +667,7 @@ namespace ReFrontier.Tests.DataToolTests
             }
             for (int i = 0; i < meleeCount; i++)
             {
-                byte[] nameBytes = Encoding.GetEncoding("shift-jis").GetBytes($"近接{i}");
+                byte[] nameBytes = TextFileConfiguration.Cp932Encoding.GetBytes($"近接{i}");
                 bw.Write(nameBytes);
                 bw.Write((byte)0);
             }
@@ -809,7 +811,7 @@ namespace ReFrontier.Tests.DataToolTests
                 }
                 for (int j = 0; j < entriesPerSlot; j++)
                 {
-                    byte[] nameBytes = Encoding.GetEncoding("shift-jis").GetBytes($"{slotNames[slot]}装備{j}");
+                    byte[] nameBytes = TextFileConfiguration.Cp932Encoding.GetBytes($"{slotNames[slot]}装備{j}");
                     bw.Write(nameBytes);
                     bw.Write((byte)0);
                 }

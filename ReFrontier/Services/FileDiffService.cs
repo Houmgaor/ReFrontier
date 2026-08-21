@@ -832,7 +832,7 @@ namespace ReFrontier.Services
                 if (nullPos < 0)
                     break;
 
-                string s = Encoding.GetEncoding("shift_jis").GetString(buffer, pos, nullPos - pos);
+                string s = TextFileConfiguration.Cp932Encoding.GetString(buffer, pos, nullPos - pos);
                 strings.Add(s);
                 pos = nullPos + 1;
             }

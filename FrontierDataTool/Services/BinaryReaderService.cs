@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 using FrontierDataTool.Structs;
 
@@ -347,7 +346,7 @@ namespace FrontierDataTool.Services
             }
 
             br.BaseStream.Seek(off, SeekOrigin.Begin);
-            string str = FileOperations.ReadNullterminatedString(br, Encoding.GetEncoding("shift-jis"))
+            string str = FileOperations.ReadNullterminatedString(br, TextFileConfiguration.Cp932Encoding)
                 .Replace("\\", "\\\\")
                 .Replace("\t", "\\t")
                 .Replace("\r\n", "\\r\\n")
@@ -755,7 +754,7 @@ namespace FrontierDataTool.Services
         /// </summary>
         /// <param name="str">String to encode (may contain escape sequences).</param>
         /// <returns>Shift-JIS encoded bytes with null terminator.</returns>
-        public static byte[] EncodeStringToShiftJis(string? str)
+        public static byte[] EncodeStringToCp932(string? str)
         {
             if (string.IsNullOrEmpty(str))
                 return new byte[] { 0 };
@@ -767,7 +766,7 @@ namespace FrontierDataTool.Services
                 .Replace("\\t", "\t")
                 .Replace("\\\\", "\\");
 
-            byte[] encoded = Encoding.GetEncoding("shift-jis").GetBytes(unescaped);
+            byte[] encoded = TextFileConfiguration.Cp932Encoding.GetBytes(unescaped);
             byte[] result = new byte[encoded.Length + 1];
             Array.Copy(encoded, result, encoded.Length);
             // Last byte is already 0 from array initialization

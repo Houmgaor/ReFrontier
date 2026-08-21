@@ -4,6 +4,8 @@ using FrontierTextTool.Services;
 
 using ReFrontier.Tests.Mocks;
 
+using LibReFrontier;
+
 namespace ReFrontier.Tests.Integration
 {
     /// <summary>
@@ -93,7 +95,7 @@ namespace ReFrontier.Tests.Integration
             byte[] resultData = insertionService.UpdateBinaryStrings(stringDb, originalData, false, false);
 
             // Assert - Result should contain the English translation
-            string resultString = Encoding.GetEncoding("shift-jis").GetString(
+            string resultString = TextFileConfiguration.Cp932Encoding.GetString(
                 resultData, originalData.Length, 7); // "English" is 7 bytes
             Assert.Equal("English", resultString);
         }
@@ -144,18 +146,18 @@ namespace ReFrontier.Tests.Integration
             // Old CSV has translations
             string oldCsv = "Offset,Hash,Original,Translation\n" +
                            "0,12345,Original,Translated\n";
-            _fileSystem.AddFile("/test/old.csv", Encoding.GetEncoding("shift-jis").GetBytes(oldCsv));
+            _fileSystem.AddFile("/test/old.csv", TextFileConfiguration.Cp932Encoding.GetBytes(oldCsv));
 
             // New CSV with same hash but different offset (simulating file update)
             string newCsv = "Offset,Hash,Original,Translation\n" +
                            "100,12345,Original,\n";
-            _fileSystem.AddFile("/test/new.csv", Encoding.GetEncoding("shift-jis").GetBytes(newCsv));
+            _fileSystem.AddFile("/test/new.csv", TextFileConfiguration.Cp932Encoding.GetBytes(newCsv));
 
             // Act
             mergeService.Merge("/test/old.csv", "/test/new.csv");
 
             // Assert
-            string result = _fileSystem.ReadAllText("csv/old.csv", Encoding.GetEncoding("shift-jis"));
+            string result = _fileSystem.ReadAllText("csv/old.csv", TextFileConfiguration.Cp932Encoding);
             Assert.Contains("Translated", result);
         }
 
@@ -187,7 +189,7 @@ namespace ReFrontier.Tests.Integration
             // Create string database with translations using RFC 4180 quoting for special characters
             var csv = "Offset,Hash,Original,Translation\n" +
                       "0,123,\"Tab\tTest\",\"New\tValue\"\n";
-            _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+            _fileSystem.AddFile("/test/strings.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csv));
 
             // Load and verify
             var loaded = insertionService.LoadCsvToStringDatabase("/test/strings.csv");
@@ -248,7 +250,7 @@ namespace ReFrontier.Tests.Integration
 
             // Verify translation is in result
             int translationStart = originalData.Length;
-            string resultTranslation = Encoding.GetEncoding("shift-jis").GetString(
+            string resultTranslation = TextFileConfiguration.Cp932Encoding.GetString(
                 resultData, translationStart, 27); // "Item: Item123 (Description)" length
             Assert.Equal("Item: Item123 (Description)", resultTranslation);
         }

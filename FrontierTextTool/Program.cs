@@ -113,7 +113,7 @@ namespace FrontierTextTool
         /// <returns>Exit code (0 for success).</returns>
         internal int Run(CliArguments arguments)
         {
-            UpdateServicesWithEncoding(arguments.ShiftJis ? CsvEncodingOptions.ShiftJis : CsvEncodingOptions.Default);
+            UpdateServicesWithEncoding(arguments.Cp932 ? CsvEncodingOptions.Cp932 : CsvEncodingOptions.Default);
 
             if (!File.Exists(arguments.InputPath))
             {

@@ -560,7 +560,7 @@ namespace ReFrontier.Services
             string outputPath = $"{input}{_config.TextSuffix}";
             if (_fileSystem.FileExists(outputPath))
                 _fileSystem.DeleteFile(outputPath);
-            using var txtOutput = _fileSystem.CreateStreamWriter(outputPath, true, Encoding.GetEncoding("shift-jis"));
+            using var txtOutput = _fileSystem.CreateStreamWriter(outputPath, true, TextFileConfiguration.Cp932Encoding);
 
             // Save the 16-byte header as meta if requested
             if (createLog)
@@ -578,7 +578,7 @@ namespace ReFrontier.Services
 
             for (int i = 0; i < stringCount; i++)
             {
-                string str = FileOperations.ReadNullterminatedString(brInput, Encoding.GetEncoding("shift-jis"));
+                string str = FileOperations.ReadNullterminatedString(brInput, TextFileConfiguration.Cp932Encoding);
                 // Escape special characters for text file storage
                 string escaped = str
                     .Replace("\\", "\\\\")

@@ -5,6 +5,8 @@ using System.Text;
 using FrontierDataTool.Services;
 using FrontierDataTool.Structs;
 
+using LibReFrontier;
+
 namespace ReFrontier.Tests.DataToolTests
 {
     /// <summary>
@@ -680,7 +682,7 @@ namespace ReFrontier.Tests.DataToolTests
         {
             // Create data with pointer to string
             string testString = "テスト文字列";
-            byte[] stringBytes = Encoding.GetEncoding("shift-jis").GetBytes(testString);
+            byte[] stringBytes = TextFileConfiguration.Cp932Encoding.GetBytes(testString);
 
             using var ms = new MemoryStream();
             using var bw = new BinaryWriter(ms);
@@ -706,7 +708,7 @@ namespace ReFrontier.Tests.DataToolTests
         public void StringFromPointer_ReplacesNewlines()
         {
             string testString = "Line1\nLine2";
-            byte[] stringBytes = Encoding.GetEncoding("shift-jis").GetBytes(testString);
+            byte[] stringBytes = TextFileConfiguration.Cp932Encoding.GetBytes(testString);
 
             using var ms = new MemoryStream();
             using var bw = new BinaryWriter(ms);
@@ -1034,50 +1036,50 @@ namespace ReFrontier.Tests.DataToolTests
 
         #endregion
 
-        #region EncodeStringToShiftJis Tests
+        #region EncodeStringToCp932 Tests
 
         [Fact]
-        public void EncodeStringToShiftJis_NullReturnsNullTerminator()
+        public void EncodeStringToCp932_NullReturnsNullTerminator()
         {
-            byte[] result = BinaryReaderService.EncodeStringToShiftJis(null);
+            byte[] result = BinaryReaderService.EncodeStringToCp932(null);
             Assert.Single(result);
             Assert.Equal(0, result[0]);
         }
 
         [Fact]
-        public void EncodeStringToShiftJis_EmptyReturnsNullTerminator()
+        public void EncodeStringToCp932_EmptyReturnsNullTerminator()
         {
-            byte[] result = BinaryReaderService.EncodeStringToShiftJis("");
+            byte[] result = BinaryReaderService.EncodeStringToCp932("");
             Assert.Single(result);
             Assert.Equal(0, result[0]);
         }
 
         [Fact]
-        public void EncodeStringToShiftJis_EncodesJapaneseText()
+        public void EncodeStringToCp932_EncodesJapaneseText()
         {
-            byte[] result = BinaryReaderService.EncodeStringToShiftJis("テスト");
-            byte[] expected = Encoding.GetEncoding("shift-jis").GetBytes("テスト");
+            byte[] result = BinaryReaderService.EncodeStringToCp932("テスト");
+            byte[] expected = TextFileConfiguration.Cp932Encoding.GetBytes("テスト");
             Assert.Equal(expected.Length + 1, result.Length);
             Assert.Equal(0, result[^1]); // Null terminator
         }
 
         [Fact]
-        public void EncodeStringToShiftJis_ReversesEscaping()
+        public void EncodeStringToCp932_ReversesEscaping()
         {
             // StringFromPointer escapes \n to \\n, this should reverse it
-            byte[] result = BinaryReaderService.EncodeStringToShiftJis("Line1\\nLine2");
-            byte[] expected = Encoding.GetEncoding("shift-jis").GetBytes("Line1\nLine2");
+            byte[] result = BinaryReaderService.EncodeStringToCp932("Line1\\nLine2");
+            byte[] expected = TextFileConfiguration.Cp932Encoding.GetBytes("Line1\nLine2");
             Assert.Equal(expected.Length + 1, result.Length);
             for (int i = 0; i < expected.Length; i++)
                 Assert.Equal(expected[i], result[i]);
         }
 
         [Fact]
-        public void EncodeStringToShiftJis_RoundTrips()
+        public void EncodeStringToCp932_RoundTrips()
         {
             // Create data with pointer to string
             string testString = "テスト\\n改行\\tタブ";
-            byte[] stringBytes = Encoding.GetEncoding("shift-jis").GetBytes("テスト\n改行\tタブ");
+            byte[] stringBytes = TextFileConfiguration.Cp932Encoding.GetBytes("テスト\n改行\tタブ");
 
             using var ms = new MemoryStream();
             using var bw = new BinaryWriter(ms);
@@ -1091,7 +1093,7 @@ namespace ReFrontier.Tests.DataToolTests
             Assert.Equal(testString, read);
 
             // Encode back
-            byte[] encoded = BinaryReaderService.EncodeStringToShiftJis(read);
+            byte[] encoded = BinaryReaderService.EncodeStringToCp932(read);
             Assert.Equal(stringBytes.Length + 1, encoded.Length);
             for (int i = 0; i < stringBytes.Length; i++)
                 Assert.Equal(stringBytes[i], encoded[i]);

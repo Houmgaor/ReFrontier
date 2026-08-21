@@ -4,6 +4,8 @@ using FrontierTextTool.Services;
 
 using ReFrontier.Tests.Mocks;
 
+using LibReFrontier;
+
 namespace ReFrontier.Tests.TextToolTests
 {
     /// <summary>
@@ -121,20 +123,20 @@ namespace ReFrontier.Tests.TextToolTests
             string oldCsv = "Offset,Hash,Original,Translation\n" +
                            "0,12345,Original1,Translated1\n" +
                            "10,67890,Original2,\n"; // No translation
-            _fileSystem.AddFile("/test/old.csv", Encoding.GetEncoding("shift-jis").GetBytes(oldCsv));
+            _fileSystem.AddFile("/test/old.csv", TextFileConfiguration.Cp932Encoding.GetBytes(oldCsv));
 
             // New CSV has different offsets but same hashes
             string newCsv = "Offset,Hash,Original,Translation\n" +
                            "100,12345,Original1,\n" +
                            "200,67890,Original2,\n";
-            _fileSystem.AddFile("/test/new.csv", Encoding.GetEncoding("shift-jis").GetBytes(newCsv));
+            _fileSystem.AddFile("/test/new.csv", TextFileConfiguration.Cp932Encoding.GetBytes(newCsv));
 
             // Act
             _service.Merge("/test/old.csv", "/test/new.csv");
 
             // Assert
             Assert.True(_fileSystem.FileExists("csv/old.csv"));
-            string result = _fileSystem.ReadAllText("csv/old.csv", Encoding.GetEncoding("shift-jis"));
+            string result = _fileSystem.ReadAllText("csv/old.csv", TextFileConfiguration.Cp932Encoding);
             Assert.Contains("Translated1", result);
         }
 
@@ -144,8 +146,8 @@ namespace ReFrontier.Tests.TextToolTests
             // Arrange
             string oldCsv = "Offset,Hash,Original,Translation\n0,123,Test,Trans\n";
             string newCsv = "Offset,Hash,Original,Translation\n0,123,Test,\n";
-            _fileSystem.AddFile("/test/old.csv", Encoding.GetEncoding("shift-jis").GetBytes(oldCsv));
-            _fileSystem.AddFile("/test/new.csv", Encoding.GetEncoding("shift-jis").GetBytes(newCsv));
+            _fileSystem.AddFile("/test/old.csv", TextFileConfiguration.Cp932Encoding.GetBytes(oldCsv));
+            _fileSystem.AddFile("/test/new.csv", TextFileConfiguration.Cp932Encoding.GetBytes(newCsv));
 
             // Act
             _service.Merge("/test/old.csv", "/test/new.csv");
@@ -160,8 +162,8 @@ namespace ReFrontier.Tests.TextToolTests
             // Arrange
             string oldCsv = "Offset,Hash,Original,Translation\n0,123,Test,\n";
             string newCsv = "Offset,Hash,Original,Translation\n0,123,Test,\n";
-            _fileSystem.AddFile("/test/old.csv", Encoding.GetEncoding("shift-jis").GetBytes(oldCsv));
-            _fileSystem.AddFile("/test/new.csv", Encoding.GetEncoding("shift-jis").GetBytes(newCsv));
+            _fileSystem.AddFile("/test/old.csv", TextFileConfiguration.Cp932Encoding.GetBytes(oldCsv));
+            _fileSystem.AddFile("/test/new.csv", TextFileConfiguration.Cp932Encoding.GetBytes(newCsv));
 
             // Act
             _service.Merge("/test/old.csv", "/test/new.csv");
@@ -186,14 +188,14 @@ namespace ReFrontier.Tests.TextToolTests
             string csvContent = "Offset,Hash,Original,Translation\n" +
                                "0,123,Original1,\n" +
                                "10,456,Original2,\n";
-            _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csvContent));
+            _fileSystem.AddFile("/test/strings.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csvContent));
 
             // Act
             _service.InsertCatFile("/test/cat.txt", "/test/strings.csv");
 
             // Assert
             Assert.True(_fileSystem.FileExists("csv/strings.csv"));
-            string result = _fileSystem.ReadAllText("csv/strings.csv", Encoding.GetEncoding("shift-jis"));
+            string result = _fileSystem.ReadAllText("csv/strings.csv", TextFileConfiguration.Cp932Encoding);
             Assert.Contains("Translation1", result);
             Assert.Contains("Translation2", result);
         }
@@ -206,7 +208,7 @@ namespace ReFrontier.Tests.TextToolTests
             _fileSystem.AddFile("/test/cat.txt", Encoding.UTF8.GetBytes(catContent));
 
             string csvContent = "Offset,Hash,Original,Translation\n0,123,Original,\n";
-            _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csvContent));
+            _fileSystem.AddFile("/test/strings.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csvContent));
 
             // Act
             _service.InsertCatFile("/test/cat.txt", "/test/strings.csv");
@@ -226,13 +228,13 @@ namespace ReFrontier.Tests.TextToolTests
 
             // CSV with existing translation
             string csvContent = "Offset,Hash,Original,Translation\n0,123,Original1,ExistingTrans\n";
-            _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csvContent));
+            _fileSystem.AddFile("/test/strings.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csvContent));
 
             // Act
             _service.InsertCatFile("/test/cat.txt", "/test/strings.csv");
 
             // Assert
-            string result = _fileSystem.ReadAllText("csv/strings.csv", Encoding.GetEncoding("shift-jis"));
+            string result = _fileSystem.ReadAllText("csv/strings.csv", TextFileConfiguration.Cp932Encoding);
             // Translation should be cleared (empty) because CAT = Original
             Assert.DoesNotContain("ExistingTrans", result);
         }
@@ -265,7 +267,7 @@ namespace ReFrontier.Tests.TextToolTests
         [Fact]
         public void Constructor_WithEncodingOptions_CreatesValidInstance()
         {
-            var encodingOptions = LibReFrontier.CsvEncodingOptions.ShiftJis;
+            var encodingOptions = LibReFrontier.CsvEncodingOptions.Cp932;
             var service = new CsvMergeService(_fileSystem, _logger, encodingOptions);
             Assert.NotNull(service);
         }
@@ -320,7 +322,7 @@ namespace ReFrontier.Tests.TextToolTests
             _fileSystem.AddFile("/test/old.csv", withBom);
 
             string newCsv = "Offset,Hash,Original,Translation\n0,123,Test,\n";
-            _fileSystem.AddFile("/test/new.csv", Encoding.GetEncoding("shift-jis").GetBytes(newCsv));
+            _fileSystem.AddFile("/test/new.csv", TextFileConfiguration.Cp932Encoding.GetBytes(newCsv));
 
             // Act
             _service.Merge("/test/old.csv", "/test/new.csv");
@@ -337,15 +339,15 @@ namespace ReFrontier.Tests.TextToolTests
 
             string oldCsv = "Offset,Hash,Original,Translation\n0,123,Test,Trans\n";
             string newCsv = "Offset,Hash,Original,Translation\n0,123,Test,\n";
-            _fileSystem.AddFile("/test/old.csv", Encoding.GetEncoding("shift-jis").GetBytes(oldCsv));
-            _fileSystem.AddFile("/test/new.csv", Encoding.GetEncoding("shift-jis").GetBytes(newCsv));
+            _fileSystem.AddFile("/test/old.csv", TextFileConfiguration.Cp932Encoding.GetBytes(oldCsv));
+            _fileSystem.AddFile("/test/new.csv", TextFileConfiguration.Cp932Encoding.GetBytes(newCsv));
 
             // Act
             _service.Merge("/test/old.csv", "/test/new.csv");
 
             // Assert
             Assert.True(_fileSystem.FileExists("csv/old.csv"));
-            string result = _fileSystem.ReadAllText("csv/old.csv", Encoding.GetEncoding("shift-jis"));
+            string result = _fileSystem.ReadAllText("csv/old.csv", TextFileConfiguration.Cp932Encoding);
             Assert.Contains("Trans", result);
         }
 
@@ -354,18 +356,18 @@ namespace ReFrontier.Tests.TextToolTests
         {
             // Arrange - multiple entries with same hash should all get the translation
             string oldCsv = "Offset,Hash,Original,Translation\n0,12345,Text,Translated\n";
-            _fileSystem.AddFile("/test/old.csv", Encoding.GetEncoding("shift-jis").GetBytes(oldCsv));
+            _fileSystem.AddFile("/test/old.csv", TextFileConfiguration.Cp932Encoding.GetBytes(oldCsv));
 
             string newCsv = "Offset,Hash,Original,Translation\n" +
                            "100,12345,Text,\n" +
                            "200,12345,Text,\n";
-            _fileSystem.AddFile("/test/new.csv", Encoding.GetEncoding("shift-jis").GetBytes(newCsv));
+            _fileSystem.AddFile("/test/new.csv", TextFileConfiguration.Cp932Encoding.GetBytes(newCsv));
 
             // Act
             _service.Merge("/test/old.csv", "/test/new.csv");
 
             // Assert - both entries should have the translation
-            string result = _fileSystem.ReadAllText("csv/old.csv", Encoding.GetEncoding("shift-jis"));
+            string result = _fileSystem.ReadAllText("csv/old.csv", TextFileConfiguration.Cp932Encoding);
             // Count occurrences of "Translated"
             int count = result.Split(new[] { "Translated" }, StringSplitOptions.None).Length - 1;
             Assert.Equal(2, count);
@@ -383,7 +385,7 @@ namespace ReFrontier.Tests.TextToolTests
             _fileSystem.AddFile("/test/cat.txt", Encoding.UTF8.GetBytes(catContent));
 
             string csvContent = "Offset,Hash,Original,Translation\n0,123,Original,\n";
-            _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csvContent));
+            _fileSystem.AddFile("/test/strings.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csvContent));
 
             // Act
             _service.InsertCatFile("/test/cat.txt", "/test/strings.csv");
@@ -402,13 +404,13 @@ namespace ReFrontier.Tests.TextToolTests
             _fileSystem.AddFile("/test/cat.txt", Encoding.UTF8.GetBytes(catContent));
 
             string csvContent = "Offset,Hash,Original,Translation\n0,123,Original,\n";
-            _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csvContent));
+            _fileSystem.AddFile("/test/strings.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csvContent));
 
             // Act
             _service.InsertCatFile("/test/cat.txt", "/test/strings.csv");
 
             // Assert
-            string result = _fileSystem.ReadAllText("csv/strings.csv", Encoding.GetEncoding("shift-jis"));
+            string result = _fileSystem.ReadAllText("csv/strings.csv", TextFileConfiguration.Cp932Encoding);
             Assert.Contains("NewTrans", result);
         }
 
@@ -443,13 +445,13 @@ namespace ReFrontier.Tests.TextToolTests
 
             // CSV where Original != CAT text, so translation should be updated
             string csvContent = "Offset,Hash,Original,Translation\n0,123,Original,\n";
-            _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csvContent));
+            _fileSystem.AddFile("/test/strings.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csvContent));
 
             // Act
             _service.InsertCatFile("/test/cat.txt", "/test/strings.csv");
 
             // Assert
-            string result = _fileSystem.ReadAllText("csv/strings.csv", Encoding.GetEncoding("shift-jis"));
+            string result = _fileSystem.ReadAllText("csv/strings.csv", TextFileConfiguration.Cp932Encoding);
             Assert.Contains("DifferentText", result);
         }
 
@@ -467,13 +469,13 @@ namespace ReFrontier.Tests.TextToolTests
 
             // CSV where Original == CAT and Translation is already empty
             string csvContent = "Offset,Hash,Original,Translation\n0,123,Original1,\n";
-            _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csvContent));
+            _fileSystem.AddFile("/test/strings.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csvContent));
 
             // Act
             _service.InsertCatFile("/test/cat.txt", "/test/strings.csv");
 
             // Assert - Translation should still be empty (no change made)
-            string result = _fileSystem.ReadAllText("csv/strings.csv", Encoding.GetEncoding("shift-jis"));
+            string result = _fileSystem.ReadAllText("csv/strings.csv", TextFileConfiguration.Cp932Encoding);
             // Count commas - if translation is empty, last field should be empty
             Assert.Contains("Original1,", result); // Original followed by comma
         }
@@ -489,13 +491,13 @@ namespace ReFrontier.Tests.TextToolTests
                                "0,123,Original1,\n" +
                                "10,456,Original2,ExistingTrans\n" +
                                "20,789,Original3,\n";
-            _fileSystem.AddFile("/test/strings.csv", Encoding.GetEncoding("shift-jis").GetBytes(csvContent));
+            _fileSystem.AddFile("/test/strings.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csvContent));
 
             // Act
             _service.InsertCatFile("/test/cat.txt", "/test/strings.csv");
 
             // Assert
-            string result = _fileSystem.ReadAllText("csv/strings.csv", Encoding.GetEncoding("shift-jis"));
+            string result = _fileSystem.ReadAllText("csv/strings.csv", TextFileConfiguration.Cp932Encoding);
             // First entry: Original1 != TranslatedLine1, so Translation = TranslatedLine1
             Assert.Contains("TranslatedLine1", result);
             // Second entry: Original2 == Original2 AND has existing translation, so clear it
@@ -515,12 +517,12 @@ namespace ReFrontier.Tests.TextToolTests
             string oldCsv = "Offset,Hash,Original,Translation\n" +
                            "0,12345,Text1,\n" +
                            "10,67890,Text2,\n";
-            _fileSystem.AddFile("/test/old.csv", Encoding.GetEncoding("shift-jis").GetBytes(oldCsv));
+            _fileSystem.AddFile("/test/old.csv", TextFileConfiguration.Cp932Encoding.GetBytes(oldCsv));
 
             string newCsv = "Offset,Hash,Original,Translation\n" +
                            "100,12345,Text1,\n" +
                            "200,67890,Text2,\n";
-            _fileSystem.AddFile("/test/new.csv", Encoding.GetEncoding("shift-jis").GetBytes(newCsv));
+            _fileSystem.AddFile("/test/new.csv", TextFileConfiguration.Cp932Encoding.GetBytes(newCsv));
 
             // Act
             _service.Merge("/test/old.csv", "/test/new.csv");
@@ -534,16 +536,16 @@ namespace ReFrontier.Tests.TextToolTests
         {
             // Arrange - Different hashes between old and new
             string oldCsv = "Offset,Hash,Original,Translation\n0,111,OldText,OldTrans\n";
-            _fileSystem.AddFile("/test/old.csv", Encoding.GetEncoding("shift-jis").GetBytes(oldCsv));
+            _fileSystem.AddFile("/test/old.csv", TextFileConfiguration.Cp932Encoding.GetBytes(oldCsv));
 
             string newCsv = "Offset,Hash,Original,Translation\n100,999,NewText,\n";
-            _fileSystem.AddFile("/test/new.csv", Encoding.GetEncoding("shift-jis").GetBytes(newCsv));
+            _fileSystem.AddFile("/test/new.csv", TextFileConfiguration.Cp932Encoding.GetBytes(newCsv));
 
             // Act
             _service.Merge("/test/old.csv", "/test/new.csv");
 
             // Assert - New structure preserved, no translation transferred
-            string result = _fileSystem.ReadAllText("csv/old.csv", Encoding.GetEncoding("shift-jis"));
+            string result = _fileSystem.ReadAllText("csv/old.csv", TextFileConfiguration.Cp932Encoding);
             Assert.Contains("NewText", result);
             Assert.DoesNotContain("OldText", result);
             Assert.DoesNotContain("OldTrans", result);

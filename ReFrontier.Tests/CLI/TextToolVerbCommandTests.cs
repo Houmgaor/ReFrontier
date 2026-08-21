@@ -41,7 +41,7 @@ namespace ReFrontier.Tests.CLI
             Assert.Equal(fromLegacy.NullStrings, fromVerb.NullStrings);
             Assert.Equal(fromLegacy.Verbose, fromVerb.Verbose);
             Assert.Equal(fromLegacy.Close, fromVerb.Close);
-            Assert.Equal(fromLegacy.ShiftJis, fromVerb.ShiftJis);
+            Assert.Equal(fromLegacy.Cp932, fromVerb.Cp932);
         }
 
         [Fact]
@@ -125,7 +125,7 @@ namespace ReFrontier.Tests.CLI
 
             Assert.True(args.Verbose);
             Assert.True(args.Close);
-            Assert.True(args.ShiftJis);
+            Assert.True(args.Cp932);
         }
 
         [Fact]
@@ -134,7 +134,7 @@ namespace ReFrontier.Tests.CLI
             var args = Parse("--close", "--shift-jis", "dump", "mhfdat.bin");
 
             Assert.True(args.Close);
-            Assert.True(args.ShiftJis);
+            Assert.True(args.Cp932);
             Assert.Equal("mhfdat.bin", args.InputPath);
         }
 
@@ -157,6 +157,15 @@ namespace ReFrontier.Tests.CLI
 
             Assert.IsType<System.InvalidOperationException>(exception);
             Assert.Contains("needs a CSV file", exception!.Message, System.StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void Cp932_AcceptsTheOldShiftJisSpelling()
+        {
+            // The flag was renamed because it named a narrower encoding than it selected.
+            Assert.True(Parse("dump", "mhfdat.bin", "--cp932").Cp932);
+            Assert.True(Parse("dump", "mhfdat.bin", "--shift-jis").Cp932);
+            Assert.False(Parse("dump", "mhfdat.bin").Cp932);
         }
 
         [Fact]

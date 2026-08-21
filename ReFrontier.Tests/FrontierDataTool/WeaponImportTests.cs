@@ -7,6 +7,8 @@ using FrontierDataTool.Structs;
 
 using ReFrontier.Tests.Mocks;
 
+using LibReFrontier;
+
 namespace ReFrontier.Tests.DataToolTests
 {
     /// <summary>
@@ -297,7 +299,7 @@ namespace ReFrontier.Tests.DataToolTests
         {
             // Arrange
             string csv = CreateMeleeCsv(3);
-            _fileSystem.AddFile("/test/Melee.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+            _fileSystem.AddFile("/test/Melee.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csv));
 
             // Act
             var entries = _importService.LoadMeleeCsv("/test/Melee.csv");
@@ -321,7 +323,7 @@ namespace ReFrontier.Tests.DataToolTests
         {
             // Arrange
             string csv = CreateRangedCsv(2);
-            _fileSystem.AddFile("/test/Ranged.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+            _fileSystem.AddFile("/test/Ranged.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csv));
 
             // Act
             var entries = _importService.LoadRangedCsv("/test/Ranged.csv");
@@ -343,7 +345,7 @@ namespace ReFrontier.Tests.DataToolTests
         {
             // Arrange
             string csv = CreateQuestCsv(2);
-            _fileSystem.AddFile("/test/InfQuests.csv", Encoding.GetEncoding("shift-jis").GetBytes(csv));
+            _fileSystem.AddFile("/test/InfQuests.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csv));
 
             // Act
             var entries = _importService.LoadQuestCsv("/test/InfQuests.csv");

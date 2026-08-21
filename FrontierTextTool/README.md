@@ -8,8 +8,8 @@ Extract, edit, and reinsert game text using CSV format.
 
 - Automatically handles encrypted (ECD/EXF) and compressed (JPK) files
 - Exports to CSV in UTF-8 with BOM (easy editing in Excel/text editors)
-- Auto-detects CSV encoding when reading (supports both UTF-8 and Shift-JIS)
-- Validates Shift-JIS compatibility when inserting text into game files
+- Auto-detects CSV encoding when reading (supports both UTF-8 and CP932)
+- Validates CP932 compatibility when inserting text into game files
 - Preserves metadata for re-encryption
 
 ## Quick Start
@@ -114,7 +114,7 @@ Imports translations from a CAT tool export file into your CSV:
 | Option | Description |
 |--------|-------------|
 | `--verbose` | Show detailed output |
-| `--shift-jis` | Output CSV in Shift-JIS encoding (default: UTF-8 with BOM) |
+| `--cp932` | Output CSV in CP932 / Windows-31J encoding (default: UTF-8 with BOM) |
 | `--close` | Return without waiting for a keypress |
 | `--help` | Show help |
 | `--version` | Show version |
@@ -138,6 +138,7 @@ and will be removed in a future release.
 | `--endIndex <n>` | `--end-index <n>` |
 | `--trueOffsets` | `--true-offsets` |
 | `--nullStrings` | `--null-strings` |
+| `--shift-jis` | `--cp932` |
 
 The renamed options are still accepted under their old spelling by the commands that take
 them, so `insert mhfdat.bin --csv mhfdat.csv` works and a script can move over in two steps.
@@ -163,8 +164,14 @@ By default, CSV files are written in **UTF-8 with BOM** for easier editing in Ex
 When reading CSV files (for `insert`, `merge`, `insert-cat`), the encoding is **auto-detected**:
 
 - Files starting with UTF-8 BOM (`EF BB BF`) are read as UTF-8
-- Other files are read as Shift-JIS (legacy format)
+- Other files are read as CP932 (legacy format)
 
-Use `--shift-jis` to output CSV files in Shift-JIS encoding for compatibility with older workflows.
+Use `--cp932` to output CSV files in CP932 for compatibility with older workflows.
 
-> **Note**: When inserting text into game files, strings must be compatible with Shift-JIS encoding. The tool will warn about any characters that cannot be encoded.
+> **Why CP932 and not Shift-JIS?** The game files use **CP932** (Windows-31J), Microsoft's
+> extension of Shift_JIS. It adds the NEC and IBM rows and maps a few code points
+> differently — `0x8160` is FULLWIDTH TILDE in CP932 and WAVE DASH in JIS X 0208.
+> The tools have always read and written codepage 932; only the name was imprecise.
+> `--shift-jis` is still accepted as a spelling of `--cp932`.
+
+> **Note**: When inserting text into game files, strings must be encodable in CP932. The tool will warn about any characters that cannot be.

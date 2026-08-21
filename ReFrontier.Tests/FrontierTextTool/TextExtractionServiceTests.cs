@@ -4,6 +4,8 @@ using FrontierTextTool.Services;
 
 using ReFrontier.Tests.Mocks;
 
+using LibReFrontier;
+
 namespace ReFrontier.Tests.TextToolTests
 {
     /// <summary>
@@ -62,7 +64,7 @@ namespace ReFrontier.Tests.TextToolTests
 
             // Assert
             Assert.Single(result);
-            uint expectedHash = LibReFrontier.Crypto.GetCrc32(Encoding.GetEncoding("shift-jis").GetBytes("Test"));
+            uint expectedHash = LibReFrontier.Crypto.GetCrc32(TextFileConfiguration.Cp932Encoding.GetBytes("Test"));
             Assert.Equal(expectedHash, result[0].Hash);
         }
 
@@ -217,7 +219,7 @@ namespace ReFrontier.Tests.TextToolTests
 
             // Assert - file should be recreated
             Assert.True(_fileSystem.FileExists("existing.csv"));
-            string content = _fileSystem.ReadAllText("existing.csv", Encoding.GetEncoding("shift-jis"));
+            string content = _fileSystem.ReadAllText("existing.csv", TextFileConfiguration.Cp932Encoding);
             Assert.Contains("New", content);
         }
 
@@ -249,7 +251,7 @@ namespace ReFrontier.Tests.TextToolTests
         [Fact]
         public void Constructor_WithEncodingOptions_CreatesValidInstance()
         {
-            var encodingOptions = LibReFrontier.CsvEncodingOptions.ShiftJis;
+            var encodingOptions = LibReFrontier.CsvEncodingOptions.Cp932;
             var service = new TextExtractionService(_fileSystem, _logger, encodingOptions);
             Assert.NotNull(service);
         }
@@ -285,7 +287,7 @@ namespace ReFrontier.Tests.TextToolTests
             // Write a valid pointer
             BitConverter.GetBytes(20).CopyTo(data, 4);
             // Write string at offset 20
-            Encoding.GetEncoding("shift-jis").GetBytes("Valid").CopyTo(data, 20);
+            TextFileConfiguration.Cp932Encoding.GetBytes("Valid").CopyTo(data, 20);
 
             using var ms = new MemoryStream(data);
             using var br = new BinaryReader(ms);
@@ -308,7 +310,7 @@ namespace ReFrontier.Tests.TextToolTests
             // Write a valid pointer
             BitConverter.GetBytes(20).CopyTo(data, 4);
             // Write string at offset 20
-            Encoding.GetEncoding("shift-jis").GetBytes("Valid").CopyTo(data, 20);
+            TextFileConfiguration.Cp932Encoding.GetBytes("Valid").CopyTo(data, 20);
 
             using var ms = new MemoryStream(data);
             using var br = new BinaryReader(ms);
@@ -337,7 +339,7 @@ namespace ReFrontier.Tests.TextToolTests
             data[18] = 0x00; // strPos-2 = 0, should fail first condition and skip
             data[19] = 0x00; // strPos-1 = 0, second condition check
             // Write string at offset 20
-            Encoding.GetEncoding("shift-jis").GetBytes("Test").CopyTo(data, 20);
+            TextFileConfiguration.Cp932Encoding.GetBytes("Test").CopyTo(data, 20);
 
             using var ms = new MemoryStream(data);
             using var br = new BinaryReader(ms);
@@ -360,7 +362,7 @@ namespace ReFrontier.Tests.TextToolTests
             data[20] = 0x41; // strPos-2 != 0 (passes first check)
             data[21] = 0x00; // strPos-1 == 0 (passes second check)
             // Write string at offset 22
-            Encoding.GetEncoding("shift-jis").GetBytes("Valid").CopyTo(data, 22);
+            TextFileConfiguration.Cp932Encoding.GetBytes("Valid").CopyTo(data, 22);
 
             using var ms = new MemoryStream(data);
             using var br = new BinaryReader(ms);
@@ -452,7 +454,7 @@ namespace ReFrontier.Tests.TextToolTests
             data[20] = 0x41; // strPos-2 = 'A' (non-zero, passes first check)
             data[21] = 0x42; // strPos-1 = 'B' (non-zero, fails second check - should skip)
             // Write string at offset 22
-            Encoding.GetEncoding("shift-jis").GetBytes("Test").CopyTo(data, 22);
+            TextFileConfiguration.Cp932Encoding.GetBytes("Test").CopyTo(data, 22);
 
             using var ms = new MemoryStream(data);
             using var br = new BinaryReader(ms);
@@ -486,7 +488,7 @@ namespace ReFrontier.Tests.TextToolTests
         public void DumpAndHashInternal_FiltersGarbageBinaryData()
         {
             // Arrange - mix of real text and garbage binary data separated by nulls
-            var shiftJis = Encoding.GetEncoding("shift-jis");
+            var shiftJis = TextFileConfiguration.Cp932Encoding;
             using var ms = new MemoryStream();
 
             // Real text
@@ -571,10 +573,10 @@ namespace ReFrontier.Tests.TextToolTests
         #region WriteCsv Encoding Tests
 
         [Fact]
-        public void WriteCsv_WithShiftJisEncoding_CreatesFile()
+        public void WriteCsv_WithCp932Encoding_CreatesFile()
         {
             // Arrange
-            var encodingOptions = LibReFrontier.CsvEncodingOptions.ShiftJis;
+            var encodingOptions = LibReFrontier.CsvEncodingOptions.Cp932;
             var service = new TextExtractionService(_fileSystem, _logger, encodingOptions);
 
             var stringsDb = new List<StringDatabase>
