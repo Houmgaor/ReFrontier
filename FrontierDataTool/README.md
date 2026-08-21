@@ -176,6 +176,9 @@ mhfDat.armor.stringPointers[0] runs from 0x251EA0 back to 0x1249C0.
 
 ### Adding a version
 
+See [docs/OFFSET_PROFILES.md](../docs/OFFSET_PROFILES.md) for what is known about each PC
+client's layout and the two scripts that find the offsets.
+
 Copy `zz.json`, change the offsets, and pass it with `--offsets my-version.json`. Offsets
 are written as hex strings (`"0x6BD40"`) because that is how every other tool in this
 ecosystem quotes them; plain numbers are accepted too. The file is checked when it loads —
