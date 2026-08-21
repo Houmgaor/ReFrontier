@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Docs**: `docs/OFFSET_PROFILES.md` records what every PC client in the ecosystem does
+  with its offsets, and `docs/tools/scan_string_tables.py` and
+  `docs/tools/scan_quest_sections.py` find them. Both scripts are validated against the
+  `zz` profile, whose armour, weapon and item pointers and quest sections they recover
+  exactly. Findings: the armour pointers ascend in GG and earlier but descend in G10-ZZ;
+  the version byte at `0x04` cannot tell the layouts apart, since `pc` and `pc-gg` share
+  `0x59` and run in opposite directions; and the quest entry is `0x160` bytes in G10-ZZ,
+  `0xC0` in GG and G2 and `0xA8` in Forward.4 and 5, so those versions' quests need a
+  reader per layout rather than offsets alone.
+
 - **FrontierDataTool**: Offsets are data, not constants. Where the tool looks for armor,
   weapons, items, skills and quests now comes from an *offset profile*: a JSON file under
   `FrontierDataTool/Offsets/Profiles/`, embedded in the executable. `--offsets <id|file>`
