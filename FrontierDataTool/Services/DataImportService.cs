@@ -6,6 +6,7 @@ using System.Linq;
 using CsvHelper;
 
 using FrontierDataTool.Enums;
+using FrontierDataTool.Offsets;
 using FrontierDataTool.Structs;
 
 using LibReFrontier;
@@ -20,13 +21,16 @@ namespace FrontierDataTool.Services
     /// </summary>
     public class DataImportService
     {
-        /// <summary>
-        /// Size of each quest entry in the binary file.
-        /// </summary>
-        internal const int QUEST_ENTRY_SIZE = 0x128;
         private readonly IFileSystem _fileSystem;
         private readonly ILogger _logger;
         private readonly BinaryReaderService _binaryReader;
+        /// <summary>Layout the caller insisted on, or null to work it out from the files.</summary>
+        private OffsetProfile? _pinnedOffsets;
+
+        /// <summary>
+        /// Layout used by the import in progress, settled once the files are readable.
+        /// </summary>
+        private OffsetProfile _offsets;
 
         /// <summary>
         /// Create a new DataImportService with default dependencies.
@@ -40,10 +44,57 @@ namespace FrontierDataTool.Services
         /// Create a new DataImportService with injectable dependencies.
         /// </summary>
         public DataImportService(IFileSystem fileSystem, ILogger logger)
+            : this(fileSystem, logger, OffsetProfiles.Default)
+        {
+        }
+
+        /// <summary>
+        /// Create a new DataImportService writing a particular game version's layout.
+        /// </summary>
+        /// <param name="fileSystem">File system to read and write through.</param>
+        /// <param name="logger">Where to report progress.</param>
+        /// <param name="offsets">Where the data sits in this version's files.</param>
+        public DataImportService(IFileSystem fileSystem, ILogger logger, OffsetProfile offsets)
         {
             _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _binaryReader = new BinaryReaderService();
+            _pinnedOffsets = offsets ?? throw new ArgumentNullException(nameof(offsets));
+            _offsets = _pinnedOffsets;
+        }
+
+        /// <summary>
+        /// Create a service that works out the game version from the files it is given.
+        /// </summary>
+        /// <param name="fileSystem">File system to read and write through.</param>
+        /// <param name="logger">Where to report progress.</param>
+        /// <returns>A service that detects the layout instead of assuming one.</returns>
+        public static DataImportService WithDetectedOffsets(IFileSystem fileSystem, ILogger logger)
+        {
+            var service = new DataImportService(fileSystem, logger, OffsetProfiles.Default);
+            service._pinnedOffsets = null;
+            return service;
+        }
+
+        /// <summary>
+        /// Settle on the layout to write these files with, detecting it unless one was pinned.
+        /// </summary>
+        /// <param name="mhfdat">Preprocessed mhfdat.bin, or null when this import does not touch it.</param>
+        /// <param name="mhfpac">Preprocessed mhfpac.bin, or null when this import does not touch it.</param>
+        /// <param name="mhfinf">Preprocessed mhfinf.bin, or null when this import does not touch it.</param>
+        private void ResolveOffsets(string? mhfdat, string? mhfpac, string? mhfinf)
+        {
+            if (_pinnedOffsets is not null)
+            {
+                _offsets = _pinnedOffsets;
+                return;
+            }
+
+            _offsets = OffsetProfileDetector.Detect(
+                mhfdat is null ? null : _fileSystem.ReadAllBytes(mhfdat),
+                mhfpac is null ? null : _fileSystem.ReadAllBytes(mhfpac),
+                mhfinf is null ? null : _fileSystem.ReadAllBytes(mhfinf));
+            _logger.WriteLine($"Offset profile: {_offsets.Id} ({_offsets.Description}).");
         }
 
         /// <summary>
@@ -75,6 +126,8 @@ namespace FrontierDataTool.Services
         /// </summary>
         public void ImportArmorDataInternal(string mhfdat, string csvPath, string mhfpac)
         {
+            ResolveOffsets(mhfdat, mhfpac, null);
+
             // Build skill name to ID lookup from mhfpac
             var skillLookup = BuildSkillLookup(mhfpac);
             _logger.WriteLine($"Loaded {skillLookup.Count} skill names for lookup.");
@@ -91,8 +144,8 @@ namespace FrontierDataTool.Services
             using var bw = new BinaryWriter(ms);
 
             // Process each armor class
-            var dataPointers = MhfDataOffsets.MhfDat.Armor.DataPointers;
-            var slotNames = MhfDataOffsets.MhfDat.Armor.SlotNames;
+            var dataPointers = _offsets.MhfDat.Armor.DataPointers;
+            var slotNames = _offsets.MhfDat.Armor.SlotNames;
 
             for (int i = 0; i < dataPointers.Count; i++)
             {
@@ -174,6 +227,8 @@ namespace FrontierDataTool.Services
         /// </summary>
         public void ImportMeleeDataInternal(string mhfdat, string csvPath)
         {
+            ResolveOffsets(mhfdat, null, null);
+
             // Read melee entries from CSV
             var meleeEntries = LoadMeleeCsv(csvPath);
             _logger.WriteLine($"Read {meleeEntries.Count} melee weapon entries from CSV.");
@@ -185,9 +240,9 @@ namespace FrontierDataTool.Services
             using var bw = new BinaryWriter(ms);
 
             // Get melee weapon data offsets
-            br.BaseStream.Seek(MhfDataOffsets.MhfDat.Weapons.MeleeStart, SeekOrigin.Begin);
+            br.BaseStream.Seek(_offsets.MhfDat.Weapons.MeleeStart, SeekOrigin.Begin);
             int sOffset = br.ReadInt32();
-            br.BaseStream.Seek(MhfDataOffsets.MhfDat.Weapons.MeleeEnd, SeekOrigin.Begin);
+            br.BaseStream.Seek(_offsets.MhfDat.Weapons.MeleeEnd, SeekOrigin.Begin);
             int eOffset = br.ReadInt32();
 
             int entryCount = (eOffset - sOffset) / BinaryReaderService.MELEE_WEAPON_ENTRY_SIZE;
@@ -252,6 +307,8 @@ namespace FrontierDataTool.Services
         /// </summary>
         public void ImportRangedDataInternal(string mhfdat, string csvPath)
         {
+            ResolveOffsets(mhfdat, null, null);
+
             // Read ranged entries from CSV
             var rangedEntries = LoadRangedCsv(csvPath);
             _logger.WriteLine($"Read {rangedEntries.Count} ranged weapon entries from CSV.");
@@ -263,9 +320,9 @@ namespace FrontierDataTool.Services
             using var bw = new BinaryWriter(ms);
 
             // Get ranged weapon data offsets
-            br.BaseStream.Seek(MhfDataOffsets.MhfDat.Weapons.RangedStart, SeekOrigin.Begin);
+            br.BaseStream.Seek(_offsets.MhfDat.Weapons.RangedStart, SeekOrigin.Begin);
             int sOffset = br.ReadInt32();
-            br.BaseStream.Seek(MhfDataOffsets.MhfDat.Weapons.RangedEnd, SeekOrigin.Begin);
+            br.BaseStream.Seek(_offsets.MhfDat.Weapons.RangedEnd, SeekOrigin.Begin);
             int eOffset = br.ReadInt32();
 
             int entryCount = (eOffset - sOffset) / BinaryReaderService.RANGED_WEAPON_ENTRY_SIZE;
@@ -332,13 +389,15 @@ namespace FrontierDataTool.Services
         /// </summary>
         public void ImportQuestDataInternal(string mhfinf, string csvPath)
         {
+            ResolveOffsets(null, null, mhfinf);
+
             // Read quest entries from CSV
             var questEntries = LoadQuestCsv(csvPath);
             _logger.WriteLine($"Read {questEntries.Count} quest entries from CSV.");
 
             // Calculate expected total count
-            var questSections = MhfDataOffsets.MhfInf.QuestSections;
-            int expectedCount = MhfDataOffsets.MhfInf.TotalQuestCount;
+            var questSections = _offsets.MhfInf.QuestSections;
+            int expectedCount = _offsets.MhfInf.TotalQuestCount;
 
             if (questEntries.Count != expectedCount)
             {
@@ -366,8 +425,9 @@ namespace FrontierDataTool.Services
                     _binaryReader.WriteQuestEntry(bw, questEntries[currentEntry]);
                     currentEntry++;
 
-                    // Skip to next entry (0x128 bytes per entry based on read structure)
-                    bw.BaseStream.Seek(entryStart + QUEST_ENTRY_SIZE, SeekOrigin.Begin);
+                    // Step over the whole entry, not just the fields written: the rest of
+                    // it holds values this tool does not model, which must survive untouched.
+                    bw.BaseStream.Seek(entryStart + _offsets.MhfInf.QuestEntrySize, SeekOrigin.Begin);
                 }
             }
 
@@ -468,9 +528,9 @@ namespace FrontierDataTool.Services
             using var ms = new MemoryStream(_fileSystem.ReadAllBytes(mhfpac));
             using var br = new BinaryReader(ms);
 
-            br.BaseStream.Seek(MhfDataOffsets.MhfPac.Skills.TreeNameStart, SeekOrigin.Begin);
+            br.BaseStream.Seek(_offsets.MhfPac.Skills.TreeNameStart, SeekOrigin.Begin);
             int sOffset = br.ReadInt32();
-            br.BaseStream.Seek(MhfDataOffsets.MhfPac.Skills.TreeNameEnd, SeekOrigin.Begin);
+            br.BaseStream.Seek(_offsets.MhfPac.Skills.TreeNameEnd, SeekOrigin.Begin);
             int eOffset = br.ReadInt32();
 
             br.BaseStream.Seek(sOffset, SeekOrigin.Begin);
@@ -726,7 +786,7 @@ namespace FrontierDataTool.Services
                 }
 
                 // Patch equip prices
-                var armorDataPointers = MhfDataOffsets.MhfDat.Armor.DataPointers;
+                var armorDataPointers = _offsets.MhfDat.Armor.DataPointers;
                 for (int i = 0; i < armorDataPointers.Count; i++)
                 {
                     brInput.BaseStream.Seek(armorDataPointers[i].Start, SeekOrigin.Begin);

@@ -7,6 +7,7 @@ using System.Text.Json;
 using CsvHelper;
 
 using FrontierDataTool.Enums;
+using FrontierDataTool.Offsets;
 using FrontierDataTool.Structs;
 
 using LibReFrontier;
@@ -25,6 +26,17 @@ namespace FrontierDataTool.Services
         private readonly ILogger _logger;
         private readonly BinaryReaderService _binaryReader;
         private readonly CsvEncodingOptions _encodingOptions;
+        /// <summary>
+        /// Layout the caller insisted on, or null to work it out from the files.
+        /// </summary>
+        private OffsetProfile? _pinnedOffsets;
+
+        /// <summary>
+        /// Layout used by the run in progress. When the caller pinned a profile this is
+        /// always it; otherwise <see cref="DumpData"/> replaces it with the one detected
+        /// from the files, which it can only do once they are decrypted and decompressed.
+        /// </summary>
+        private OffsetProfile _offsets;
 
         /// <summary>
         /// Create a new DataExtractionService with default dependencies.
@@ -46,11 +58,41 @@ namespace FrontierDataTool.Services
         /// Create a new DataExtractionService with injectable dependencies and encoding options.
         /// </summary>
         public DataExtractionService(IFileSystem fileSystem, ILogger logger, CsvEncodingOptions encodingOptions)
+            : this(fileSystem, logger, encodingOptions, OffsetProfiles.Default)
+        {
+        }
+
+        /// <summary>
+        /// Create a new DataExtractionService reading a particular game version's layout.
+        /// </summary>
+        /// <param name="fileSystem">File system to read and write through.</param>
+        /// <param name="logger">Where to report progress.</param>
+        /// <param name="encodingOptions">How to encode the CSV written.</param>
+        /// <param name="offsets">Where the data sits in this version's files.</param>
+        public DataExtractionService(
+            IFileSystem fileSystem, ILogger logger, CsvEncodingOptions encodingOptions, OffsetProfile offsets)
         {
             _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _binaryReader = new BinaryReaderService();
             _encodingOptions = encodingOptions ?? CsvEncodingOptions.Default;
+            _pinnedOffsets = offsets ?? throw new ArgumentNullException(nameof(offsets));
+            _offsets = _pinnedOffsets;
+        }
+
+        /// <summary>
+        /// Create a service that works out the game version from the files it is given.
+        /// </summary>
+        /// <param name="fileSystem">File system to read and write through.</param>
+        /// <param name="logger">Where to report progress.</param>
+        /// <param name="encodingOptions">How to encode the CSV written.</param>
+        /// <returns>A service that detects the layout instead of assuming one.</returns>
+        public static DataExtractionService WithDetectedOffsets(
+            IFileSystem fileSystem, ILogger logger, CsvEncodingOptions encodingOptions)
+        {
+            var service = new DataExtractionService(fileSystem, logger, encodingOptions, OffsetProfiles.Default);
+            service._pinnedOffsets = null;
+            return service;
         }
 
         #region Helper Methods
@@ -131,6 +173,8 @@ namespace FrontierDataTool.Services
 
             try
             {
+                _offsets = ResolveOffsets(processedMhfdat, processedMhfpac, processedMhfinf);
+
                 var skillId = DumpSkillSystem(processedMhfpac, suffix, englishSkillNames);
                 DumpSkillData(processedMhfpac, suffix);
                 DumpItemData(processedMhfdat, suffix);
@@ -144,6 +188,24 @@ namespace FrontierDataTool.Services
                 cleanupMhfdat();
                 cleanupMhfinf();
             }
+        }
+
+        /// <summary>
+        /// Settle on the layout to read these files with, detecting it unless one was pinned.
+        /// </summary>
+        private OffsetProfile ResolveOffsets(string mhfdat, string mhfpac, string mhfinf)
+        {
+            if (_pinnedOffsets is not null)
+            {
+                return _pinnedOffsets;
+            }
+
+            var detected = OffsetProfileDetector.Detect(
+                _fileSystem.ReadAllBytes(mhfdat),
+                _fileSystem.ReadAllBytes(mhfpac),
+                _fileSystem.ReadAllBytes(mhfinf));
+            _logger.WriteLine($"Offset profile: {detected.Id} ({detected.Description}).");
+            return detected;
         }
 
         /// <summary>
@@ -163,8 +225,8 @@ namespace FrontierDataTool.Services
             using var brInput = new BinaryReader(msInput);
 
             var skillNames = ReadStringRange(brInput,
-                MhfDataOffsets.MhfPac.Skills.TreeNameStart,
-                MhfDataOffsets.MhfPac.Skills.TreeNameEnd);
+                _offsets.MhfPac.Skills.TreeNameStart,
+                _offsets.MhfPac.Skills.TreeNameEnd);
 
             if (englishSkillNames)
             {
@@ -192,22 +254,22 @@ namespace FrontierDataTool.Services
             // Active skills
             _logger.WriteLine("Dumping active skill names.");
             var activeSkills = ReadStringRange(brInput,
-                MhfDataOffsets.MhfPac.Skills.ActiveNameStart,
-                MhfDataOffsets.MhfPac.Skills.ActiveNameEnd);
+                _offsets.MhfPac.Skills.ActiveNameStart,
+                _offsets.MhfPac.Skills.ActiveNameEnd);
             WriteStringsToTextFile($"mhsx_SkillActivate_{suffix}.txt", activeSkills);
 
             // Skill descriptions
             _logger.WriteLine("Dumping active skill descriptions.");
             var skillDescs = ReadStringRange(brInput,
-                MhfDataOffsets.MhfPac.Skills.DescriptionStart,
-                MhfDataOffsets.MhfPac.Skills.DescriptionEnd);
+                _offsets.MhfPac.Skills.DescriptionStart,
+                _offsets.MhfPac.Skills.DescriptionEnd);
             WriteStringsToTextFile($"mhsx_SkillDesc_{suffix}.txt", skillDescs);
 
             // Z skills
             _logger.WriteLine("Dumping Z skill names.");
             var zSkills = ReadStringRange(brInput,
-                MhfDataOffsets.MhfPac.Skills.ZSkillNameStart,
-                MhfDataOffsets.MhfPac.Skills.ZSkillNameEnd);
+                _offsets.MhfPac.Skills.ZSkillNameStart,
+                _offsets.MhfPac.Skills.ZSkillNameEnd);
             WriteStringsToTextFile($"mhsx_SkillZ_{suffix}.txt", zSkills);
         }
 
@@ -221,14 +283,14 @@ namespace FrontierDataTool.Services
 
             _logger.WriteLine("Dumping item names.");
             var items = ReadStringRange(brInput,
-                MhfDataOffsets.MhfDat.Items.StringStart,
-                MhfDataOffsets.MhfDat.Items.StringEnd);
+                _offsets.MhfDat.Items.StringStart,
+                _offsets.MhfDat.Items.StringEnd);
             WriteStringsToTextFile($"mhsx_Items_{suffix}.txt", items);
 
             _logger.WriteLine("Dumping item descriptions.");
             var itemDescs = ReadStringRange(brInput,
-                MhfDataOffsets.MhfDat.Items.DescriptionStart,
-                MhfDataOffsets.MhfDat.Items.DescriptionEnd);
+                _offsets.MhfDat.Items.DescriptionStart,
+                _offsets.MhfDat.Items.DescriptionEnd);
             WriteStringsToTextFile($"Items_Desc_{suffix}.txt", itemDescs);
         }
 
@@ -237,9 +299,9 @@ namespace FrontierDataTool.Services
         /// </summary>
         public void DumpEquipmentData(string mhfdat, string suffix, List<KeyValuePair<int, string>> skillId)
         {
-            var dataPointers = MhfDataOffsets.MhfDat.Armor.DataPointers;
-            var stringPointers = MhfDataOffsets.MhfDat.Armor.StringPointers;
-            var slotNames = MhfDataOffsets.MhfDat.Armor.SlotNames;
+            var dataPointers = _offsets.MhfDat.Armor.DataPointers;
+            var stringPointers = _offsets.MhfDat.Armor.StringPointers;
+            var slotNames = _offsets.MhfDat.Armor.SlotNames;
 
             using var msInput = new MemoryStream(_fileSystem.ReadAllBytes(mhfdat));
             using var brInput = new BinaryReader(msInput);
@@ -316,9 +378,9 @@ namespace FrontierDataTool.Services
             using var brInput = new BinaryReader(msInput);
 
             // Melee weapons
-            brInput.BaseStream.Seek(MhfDataOffsets.MhfDat.Weapons.MeleeStart, SeekOrigin.Begin);
+            brInput.BaseStream.Seek(_offsets.MhfDat.Weapons.MeleeStart, SeekOrigin.Begin);
             int sOffset = brInput.ReadInt32();
-            brInput.BaseStream.Seek(MhfDataOffsets.MhfDat.Weapons.MeleeEnd, SeekOrigin.Begin);
+            brInput.BaseStream.Seek(_offsets.MhfDat.Weapons.MeleeEnd, SeekOrigin.Begin);
             int eOffset = brInput.ReadInt32();
 
             int entryCountMelee = (eOffset - sOffset) / BinaryReaderService.MELEE_WEAPON_ENTRY_SIZE;
@@ -332,7 +394,7 @@ namespace FrontierDataTool.Services
             }
 
             // Get melee weapon strings
-            brInput.BaseStream.Seek(MhfDataOffsets.MhfDat.Weapons.MeleeStringStart, SeekOrigin.Begin);
+            brInput.BaseStream.Seek(_offsets.MhfDat.Weapons.MeleeStringStart, SeekOrigin.Begin);
             sOffset = brInput.ReadInt32();
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
             for (int j = 0; j < entryCountMelee - 1; j++)
@@ -353,9 +415,9 @@ namespace FrontierDataTool.Services
             }
 
             // Ranged weapons
-            brInput.BaseStream.Seek(MhfDataOffsets.MhfDat.Weapons.RangedStart, SeekOrigin.Begin);
+            brInput.BaseStream.Seek(_offsets.MhfDat.Weapons.RangedStart, SeekOrigin.Begin);
             sOffset = brInput.ReadInt32();
-            brInput.BaseStream.Seek(MhfDataOffsets.MhfDat.Weapons.RangedEnd, SeekOrigin.Begin);
+            brInput.BaseStream.Seek(_offsets.MhfDat.Weapons.RangedEnd, SeekOrigin.Begin);
             eOffset = brInput.ReadInt32();
 
             int entryCountRanged = (eOffset - sOffset) / BinaryReaderService.RANGED_WEAPON_ENTRY_SIZE;
@@ -369,7 +431,7 @@ namespace FrontierDataTool.Services
             }
 
             // Get ranged weapon strings
-            brInput.BaseStream.Seek(MhfDataOffsets.MhfDat.Weapons.RangedStringStart, SeekOrigin.Begin);
+            brInput.BaseStream.Seek(_offsets.MhfDat.Weapons.RangedStringStart, SeekOrigin.Begin);
             sOffset = brInput.ReadInt32();
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
             for (int j = 0; j < entryCountRanged - 1; j++)
@@ -512,12 +574,12 @@ namespace FrontierDataTool.Services
         /// </summary>
         public void DumpQuestData(string mhfinf)
         {
-            var questSections = MhfDataOffsets.MhfInf.QuestSections;
+            var questSections = _offsets.MhfInf.QuestSections;
 
             using var msInput = new MemoryStream(_fileSystem.ReadAllBytes(mhfinf));
             using var brInput = new BinaryReader(msInput);
 
-            var quests = new QuestData[MhfDataOffsets.MhfInf.TotalQuestCount];
+            var quests = new QuestData[_offsets.MhfInf.TotalQuestCount];
             int currentCount = 0;
 
             foreach (var section in questSections)

@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 
 using FrontierDataTool.CLI;
+using FrontierDataTool.Offsets;
 using FrontierDataTool.Services;
 
 using LibReFrontier;
@@ -16,7 +17,7 @@ namespace FrontierDataTool
     public class Program
     {
         private DataExtractionService _extractionService;
-        private readonly DataImportService _importService;
+        private DataImportService _importService;
 
         /// <summary>
         /// Create a new Program instance with default services.
@@ -38,13 +39,24 @@ namespace FrontierDataTool
         /// <summary>
         /// Update extraction service with encoding options.
         /// </summary>
-        private void UpdateExtractionServiceWithEncoding(CsvEncodingOptions encodingOptions)
+        private void UpdateExtractionServiceWithEncoding(CsvEncodingOptions encodingOptions, string? offsets)
         {
-            _extractionService = new DataExtractionService(
-                new RealFileSystem(),
-                new ConsoleLogger(),
-                encodingOptions);
-            // ImportService only reads CSVs, auto-detects encoding, doesn't need options
+            // No --offsets means the layout is worked out from the files themselves, which
+            // can only happen once they are decrypted and decompressed, so the service is
+            // told to detect rather than handed a profile here.
+            _extractionService = offsets is null
+                ? DataExtractionService.WithDetectedOffsets(new RealFileSystem(), new ConsoleLogger(), encodingOptions)
+                : new DataExtractionService(
+                    new RealFileSystem(),
+                    new ConsoleLogger(),
+                    encodingOptions,
+                    OffsetProfiles.Resolve(offsets));
+            // ImportService only reads CSVs, auto-detects encoding, doesn't need options.
+            // It does need the layout, though: writing zz offsets into another version's
+            // file would corrupt it exactly where the reader was told to look.
+            _importService = offsets is null
+                ? DataImportService.WithDetectedOffsets(new RealFileSystem(), new ConsoleLogger())
+                : new DataImportService(new RealFileSystem(), new ConsoleLogger(), OffsetProfiles.Resolve(offsets));
         }
 
         /// <summary>
@@ -97,7 +109,14 @@ namespace FrontierDataTool
             var encodingOptions = arguments.Cp932 ? CsvEncodingOptions.Cp932 : CsvEncodingOptions.Default;
             if (arguments.Json)
                 encodingOptions.Format = OutputFormat.Json;
-            UpdateExtractionServiceWithEncoding(encodingOptions);
+            try
+            {
+                UpdateExtractionServiceWithEncoding(encodingOptions, arguments.Offsets);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Fail($"Error: {ex.Message}");
+            }
 
             try
             {

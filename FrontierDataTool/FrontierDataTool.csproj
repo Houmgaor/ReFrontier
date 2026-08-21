@@ -14,6 +14,11 @@
     <InternalsVisibleTo Include="ReFrontier.Tests" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Offset profiles ship inside the executable, so a bare binary still reads the
+         versions it always could and the release zip stays a single folder. -->
+    <EmbeddedResource Include="Offsets\Profiles\*.json" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="CsvHelper" Version="33.0.1" />
     <PackageReference Include="System.Text.Encoding.CodePages" Version="9.0.0" />
   </ItemGroup>
