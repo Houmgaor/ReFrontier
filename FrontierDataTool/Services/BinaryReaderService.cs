@@ -319,14 +319,33 @@ namespace FrontierDataTool.Services
         }
 
         /// <summary>
-        /// Read a null-terminated Shift-JIS string by following a pointer.
+        /// Read a null-terminated CP932 string by following a pointer.
         /// </summary>
         /// <param name="br">Binary reader.</param>
         /// <returns>Decoded string with special characters escaped.</returns>
+        /// <exception cref="InvalidDataException">The pointer lies outside the file, which
+        /// means the bytes being read are not the structure they were taken for.</exception>
         public string StringFromPointer(BinaryReader br)
         {
+            ArgumentNullException.ThrowIfNull(br);
+
             int off = br.ReadInt32();
             long pos = br.BaseStream.Position;
+            long length = br.BaseStream.Length;
+
+            // Seeking past the end is legal and only fails on the read that follows, which
+            // reported nothing but "Unable to read beyond the end of the stream". A pointer
+            // this far out means the offsets used to find the entry do not fit this file,
+            // so say that instead. A pointer landing exactly at the end is left alone: that
+            // reads as the empty string and always has.
+            if (off < 0 || off > length)
+            {
+                throw new InvalidDataException(
+                    $"String pointer 0x{off:X} read at 0x{pos - 4:X} lies outside the file " +
+                    $"(size 0x{length:X}). The offsets used to locate this entry do not match " +
+                    "this file; it is probably from a different game version.");
+            }
+
             br.BaseStream.Seek(off, SeekOrigin.Begin);
             string str = FileOperations.ReadNullterminatedString(br, Encoding.GetEncoding("shift-jis"))
                 .Replace("\\", "\\\\")

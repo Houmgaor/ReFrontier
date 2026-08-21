@@ -210,7 +210,7 @@ namespace ReFrontier.Tests.DataToolTests
         public void MhfInf_FirstSection_HasExpectedValues()
         {
             var firstSection = MhfDataOffsets.MhfInf.QuestSections[0];
-            Assert.Equal(0x6BD60, firstSection.Offset);
+            Assert.Equal(0x6BD40, firstSection.Offset);
             Assert.Equal(95, firstSection.Count);
         }
 

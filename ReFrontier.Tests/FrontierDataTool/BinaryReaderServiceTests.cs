@@ -24,6 +24,58 @@ namespace ReFrontier.Tests.DataToolTests
             _service = new BinaryReaderService();
         }
 
+        #region StringFromPointer Tests
+
+        [Fact]
+        public void StringFromPointer_FollowsThePointerAndComesBack()
+        {
+            // 8 bytes of header, then the pointer, then the string it points at.
+            var bytes = new byte[32];
+            System.BitConverter.GetBytes(16).CopyTo(bytes, 8);
+            Encoding.GetEncoding(932).GetBytes("test").CopyTo(bytes, 16);
+
+            using var stream = new System.IO.MemoryStream(bytes);
+            using var reader = new System.IO.BinaryReader(stream);
+            stream.Seek(8, System.IO.SeekOrigin.Begin);
+
+            Assert.Equal("test", _service.StringFromPointer(reader));
+            // The reader is left just past the pointer, ready for the next field.
+            Assert.Equal(12, stream.Position);
+        }
+
+        [Fact]
+        public void StringFromPointer_OutOfRangePointer_SaysTheOffsetsDoNotFit()
+        {
+            // A pointer past the end used to surface as "Unable to read beyond the end of
+            // the stream" from the read that followed the seek, which named neither the
+            // pointer nor the reason.
+            var bytes = new byte[16];
+            System.BitConverter.GetBytes(0x524041).CopyTo(bytes, 0);
+
+            using var stream = new System.IO.MemoryStream(bytes);
+            using var reader = new System.IO.BinaryReader(stream);
+
+            var exception = Assert.Throws<System.IO.InvalidDataException>(
+                () => _service.StringFromPointer(reader));
+
+            Assert.Contains("0x524041", exception.Message, System.StringComparison.Ordinal);
+            Assert.Contains("different game version", exception.Message, System.StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void StringFromPointer_NegativePointer_IsRejected()
+        {
+            var bytes = new byte[16];
+            System.BitConverter.GetBytes(-1).CopyTo(bytes, 0);
+
+            using var stream = new System.IO.MemoryStream(bytes);
+            using var reader = new System.IO.BinaryReader(stream);
+
+            Assert.Throws<System.IO.InvalidDataException>(() => _service.StringFromPointer(reader));
+        }
+
+        #endregion
+
         #region ReadArmorEntry Tests
 
         [Fact]
