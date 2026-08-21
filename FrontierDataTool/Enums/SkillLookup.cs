@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace FrontierDataTool.Enums
 {
@@ -222,10 +223,67 @@ namespace FrontierDataTool.Enums
         }.ToFrozenDictionary();
 
         /// <summary>
+        /// English names by skill tree ID, made unique.
+        /// </summary>
+        /// <remarks>
+        /// Two skill trees can share an English name: 0x01 and 0x5F are both "Passive",
+        /// which is how the English client renders the distinct Japanese names 受身 and
+        /// 受け身. A name that is not unique cannot be read back to an ID, so the later of
+        /// a pair carries its ID: "Passive" and "Passive (0x5F)". Without this, importing a
+        /// dump made with --english-skills would silently rewrite every 0x5F skill to 0x01.
+        /// </remarks>
+        public static readonly FrozenDictionary<byte, string> EnglishNamesById = BuildEnglishNamesById();
+
+        /// <summary>
+        /// Reverse of <see cref="EnglishNamesById"/>: unique English name to skill tree ID.
+        /// </summary>
+        public static readonly FrozenDictionary<string, byte> IdsByEnglishName =
+            EnglishNamesById.ToFrozenDictionary(kvp => kvp.Value, kvp => kvp.Key, StringComparer.Ordinal);
+
+        private static FrozenDictionary<byte, string> BuildEnglishNamesById()
+        {
+            var byId = new Dictionary<byte, string>();
+            var used = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var (tree, name) in SkillTreeNames.OrderBy(kvp => (byte)kvp.Key))
+            {
+                byte id = (byte)tree;
+                byId[id] = used.Add(name) ? name : $"{name} (0x{id:X2})";
+                used.Add(byId[id]);
+            }
+            return byId.ToFrozenDictionary();
+        }
+
+        /// <summary>
+        /// Overlay the English skill tree names onto the names read from the game file.
+        /// </summary>
+        /// <remarks>
+        /// An index with no English name keeps the game's own string, so a dump stays
+        /// complete rather than gaining "Unknown_XX" placeholders: the table covers 205 of
+        /// the 232 trees the current client defines. The overlay is worth having even for an
+        /// English client, which leaves several names untranslated (0x13 広域回復,
+        /// 0x30 肉, 0xC1 採集の極み and others) and misspells 0x4A as "Deoderant".
+        /// </remarks>
+        /// <param name="gameNames">Skill tree names in ID order, as read from mhfpac.</param>
+        /// <returns>The same list with English names substituted where one is known.</returns>
+        public static List<string> ApplyEnglishNames(IReadOnlyList<string> gameNames)
+        {
+            ArgumentNullException.ThrowIfNull(gameNames);
+
+            var names = new List<string>(gameNames.Count);
+            for (int i = 0; i < gameNames.Count; i++)
+            {
+                names.Add(i <= byte.MaxValue && EnglishNamesById.TryGetValue((byte)i, out var english)
+                    ? english
+                    : gameNames[i]);
+            }
+            return names;
+        }
+
+        /// <summary>
         /// Reverse lookup: English name to SkillTree enum.
         /// </summary>
         public static readonly FrozenDictionary<string, SkillTree> SkillTreeByName =
-            SkillTreeNames.ToFrozenDictionary(kvp => kvp.Value, kvp => kvp.Key);
+            IdsByEnglishName.ToFrozenDictionary(kvp => kvp.Key, kvp => (SkillTree)kvp.Value, StringComparer.Ordinal);
 
         /// <summary>
         /// Get English name for a skill tree ID byte.

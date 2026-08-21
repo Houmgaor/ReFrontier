@@ -6,6 +6,7 @@ using System.Text.Json;
 
 using CsvHelper;
 
+using FrontierDataTool.Enums;
 using FrontierDataTool.Structs;
 
 using LibReFrontier;
@@ -117,7 +118,10 @@ namespace FrontierDataTool.Services
         /// <param name="mhfpac">Path to mhfpac.bin.</param>
         /// <param name="mhfdat">Path to mhfdat.bin.</param>
         /// <param name="mhfinf">Path to mhfinf.bin.</param>
-        public void DumpData(string suffix, string mhfpac, string mhfdat, string mhfinf)
+        /// <param name="englishSkillNames">
+        /// Replace the game's skill tree names with English ones where they are known.
+        /// </param>
+        public void DumpData(string suffix, string mhfpac, string mhfdat, string mhfinf, bool englishSkillNames = false)
         {
             var preprocessor = new FilePreprocessor();
 
@@ -127,7 +131,7 @@ namespace FrontierDataTool.Services
 
             try
             {
-                var skillId = DumpSkillSystem(processedMhfpac, suffix);
+                var skillId = DumpSkillSystem(processedMhfpac, suffix, englishSkillNames);
                 DumpSkillData(processedMhfpac, suffix);
                 DumpItemData(processedMhfdat, suffix);
                 DumpEquipmentData(processedMhfdat, suffix, skillId);
@@ -145,7 +149,13 @@ namespace FrontierDataTool.Services
         /// <summary>
         /// Dump skill system data and return skill lookup.
         /// </summary>
-        public List<KeyValuePair<int, string>> DumpSkillSystem(string mhfpac, string suffix)
+        /// <param name="mhfpac">Path to a decrypted, decompressed mhfpac.</param>
+        /// <param name="suffix">Suffix for the name of the text file written.</param>
+        /// <param name="englishSkillNames">
+        /// Replace the game's skill tree names with English ones where they are known.
+        /// Names with no English equivalent are left as the game wrote them.
+        /// </param>
+        public List<KeyValuePair<int, string>> DumpSkillSystem(string mhfpac, string suffix, bool englishSkillNames = false)
         {
             _logger.WriteLine("Dumping skill tree names.");
 
@@ -155,6 +165,11 @@ namespace FrontierDataTool.Services
             var skillNames = ReadStringRange(brInput,
                 MhfDataOffsets.MhfPac.Skills.TreeNameStart,
                 MhfDataOffsets.MhfPac.Skills.TreeNameEnd);
+
+            if (englishSkillNames)
+            {
+                skillNames = SkillLookup.ApplyEnglishNames(skillNames);
+            }
 
             var skillId = new List<KeyValuePair<int, string>>();
             for (int i = 0; i < skillNames.Count; i++)

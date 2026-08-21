@@ -43,6 +43,7 @@ namespace FrontierDataTool.CLI
         private readonly Option<bool> _cp932Option;
         private readonly Option<bool> _shiftJisOption;
         private readonly Option<bool> _jsonOption;
+        private readonly Option<bool> _englishSkillsOption;
 
         // Verb symbols.
         private readonly Argument<string> _csvArgument;
@@ -128,6 +129,11 @@ namespace FrontierDataTool.CLI
                 Recursive = true
             };
 
+            _englishSkillsOption = new Option<bool>("--english-skills")
+            {
+                Description = "Write English skill tree names instead of the game's own"
+            };
+
             _csvArgument = new Argument<string>("csv")
             {
                 Description = "CSV to import; its name selects the importer (Armor, Melee, Ranged, InfQuests, Rengoku)",
@@ -153,7 +159,8 @@ namespace FrontierDataTool.CLI
                 _mhfpacOption,
                 _mhfdatOption,
                 _mhfinfOption,
-                _rengokuOption
+                _rengokuOption,
+                _englishSkillsOption
             };
 
             _modshopCommand = new Command("modshop", "Rewrite shop prices in mhfdat.bin")
@@ -247,7 +254,8 @@ namespace FrontierDataTool.CLI
                 MhfPac = parseResult.GetValue(_mhfpacOption),
                 MhfDat = parseResult.GetValue(_mhfdatOption),
                 MhfInf = parseResult.GetValue(_mhfinfOption),
-                Rengoku = parseResult.GetValue(_rengokuOption)
+                Rengoku = parseResult.GetValue(_rengokuOption),
+                EnglishSkills = parseResult.GetValue(_englishSkillsOption)
             };
         }
 

@@ -7,8 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **FrontierDataTool**: `dump --english-skills` writes English skill tree names in place of
+  the game's own. A Japanese client dumps 受身 and 自動防御 where this gives Passive and
+  Auto-Guard. The table covers 205 of the 232 trees the current client defines; an index it
+  does not know keeps the game's string, so a dump is never left with placeholders. It is
+  worth using on an English client too, which leaves `0x13`, `0x30`, `0xC1` and others in
+  Japanese and spells `0x4A` "Deoderant".
+  Skill trees `0x01` and `0x5F` are both "Passive" in the English client — its rendering of
+  the distinct 受身 and 受け身 — so the second is written `Passive (0x5F)`. Without that the
+  names would not be unique and importing an English dump would rewrite every `0x5F` skill
+  to `0x01`. `import` accepts English names whether or not the dump used the flag, because
+  nothing in a CSV records which spelling produced it; dumping a Japanese client with and
+  without the flag and importing both yields byte-identical files.
+
 ### Changed
 
+- **FrontierDataTool**: A skill name in an imported CSV that matches neither the game's names
+  nor the English ones is now named in a warning. It is still written as skill 0, but that
+  reads back as "None", so an armour piece would quietly lose a skill on a typo.
 - **Build**: The assembly version lives in `Directory.Build.props` alone. The four shipped
   projects each carried their own `<Version>`/`<FileVersion>` pair, eight lines that had to
   be edited in lockstep at every release; they now inherit one definition. `<Nullable>` was

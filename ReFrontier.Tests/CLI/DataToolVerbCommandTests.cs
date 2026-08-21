@@ -107,6 +107,13 @@ namespace ReFrontier.Tests.CLI
         }
 
         [Fact]
+        public void EnglishSkills_IsOffUnlessAsked()
+        {
+            Assert.False(Parse("dump", "--rengoku", "rengoku_data.bin").EnglishSkills);
+            Assert.True(Parse("dump", "--rengoku", "rengoku_data.bin", "--english-skills").EnglishSkills);
+        }
+
+        [Fact]
         public void Cp932_AcceptsTheOldShiftJisSpelling()
         {
             // The flag was renamed because it named a narrower encoding than it selected.
