@@ -212,7 +212,7 @@ share.
 ./FrontierDataTool modshop mhfdat.bin
 ```
 
-Their pre-2.4.0 flat flags (`--fulldump`, `--dump`, `--insert`, `--merge`, `--cleanTrados`,
+Their pre-2.3.0 flat flags (`--fulldump`, `--dump`, `--insert`, `--merge`, `--cleanTrados`,
 `--insertCAT`, `--modshop`, `--import`, and the camelCase modifier spellings) are still
 accepted; the task-selecting ones warn and name the command to use. Both tools wait for a
 keypress when they finish unless `--close` is given.

@@ -7,33 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-
-- **FrontierTextTool**: Every task is now a command: `dump`, `insert`, `merge`,
-  `clean-trados` and `insert-cat`. The tool took one file and six boolean flags, of which
-  exactly one had to be set and any second one was an error found at run time, and the
-  meaning of that file changed with the flag chosen. Each command now names its files
-  after what they hold, so `merge <old-csv> <new-csv>` says which way round the two go,
-  and `--help` on a command lists only the options that apply to it. `--fulldump` and
-  `--dump` became one `dump`, with the range optional.
-- **FrontierDataTool**: Every task is now a command: `dump`, `modshop` and `import`. The
-  file each one acts on is its argument, so `modshop mhfdat.bin` and `import Armor.csv`
-  replace `--modshop --mhfdat mhfdat.bin` and `--import --csv Armor.csv`. The root help
-  listed nine options that only meant something in combination; it now lists three
-  commands.
-- **FrontierTextTool**: Options are named in kebab-case: `--start-index`, `--end-index`,
-  `--true-offsets`, `--null-strings`, matching `--shift-jis` which already was.
-
-### Changed
-
-- **FrontierTextTool, FrontierDataTool**: The old flat flags are still accepted, so
-  existing scripts keep running. The ones that select a task warn once and name the
-  command to use; the renamed options are accepted silently and hidden from help, so a
-  script can move over in two steps.
-- **LibReFrontier**: `LibReFrontier.CLI.CliDeprecation` holds the deprecation notice and
-  the verb/path ambiguity notice the three tools share, so they word them the same way.
-
-## [2.3.0] - 2026-08-20
+## [2.3.0] - 2026-08-21
 
 ### Added
 
@@ -78,6 +52,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   then discarded, leaving the user to guess it when repacking; guessing wrong produced a
   file the game rejects, with no error. `--restore` accepts either the original file name
   or the extracted one, and refuses to run on a file that is still packed.
+- **FrontierTextTool**: Every task is now a command: `dump`, `insert`, `merge`,
+  `clean-trados` and `insert-cat`. The tool took one file and six boolean flags, of which
+  exactly one had to be set and any second one was an error found at run time, and the
+  meaning of that file changed with the flag chosen. Each command now names its files
+  after what they hold, so `merge <old-csv> <new-csv>` says which way round the two go,
+  and `--help` on a command lists only the options that apply to it. `--fulldump` and
+  `--dump` became one `dump`, with the range optional.
+- **FrontierDataTool**: Every task is now a command: `dump`, `modshop` and `import`. The
+  file each one acts on is its argument, so `modshop mhfdat.bin` and `import Armor.csv`
+  replace `--modshop --mhfdat mhfdat.bin` and `--import --csv Armor.csv`. The root help
+  listed nine options that only meant something in combination; it now lists three
+  commands.
+- **FrontierTextTool**: Options are named in kebab-case: `--start-index`, `--end-index`,
+  `--true-offsets`, `--null-strings`, matching `--shift-jis` which already was.
 
 ### Changed
 
@@ -104,6 +92,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   folder report failures that meant nothing.
 - Directory scans skip payloads a previous run extracted, so re-running over the same
   folder no longer retries them.
+- **FrontierTextTool, FrontierDataTool**: The old flat flags are still accepted, so
+  existing scripts keep running. The ones that select a task warn once and name the
+  command to use; the renamed options are accepted silently and hidden from help, so a
+  script can move over in two steps.
+- **LibReFrontier**: `LibReFrontier.CLI.CliDeprecation` holds the deprecation notice and
+  the verb/path ambiguity notice the three tools share, so they word them the same way.
 
 ### Fixed
 
