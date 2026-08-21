@@ -114,6 +114,14 @@ namespace ReFrontier.Tests.CLI
         }
 
         [Fact]
+        public void Offsets_IsUnsetUnlessGiven()
+        {
+            Assert.Null(Parse("dump", "--rengoku", "rengoku_data.bin").Offsets);
+            Assert.Equal("zz", Parse("dump", "--rengoku", "rengoku_data.bin", "--offsets", "zz").Offsets);
+            Assert.Equal("my.json", Parse("import", "Armor.csv", "--offsets", "my.json").Offsets);
+        }
+
+        [Fact]
         public void Cp932_AcceptsTheOldShiftJisSpelling()
         {
             // The flag was renamed because it named a narrower encoding than it selected.

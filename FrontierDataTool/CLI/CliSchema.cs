@@ -44,6 +44,7 @@ namespace FrontierDataTool.CLI
         private readonly Option<bool> _shiftJisOption;
         private readonly Option<bool> _jsonOption;
         private readonly Option<bool> _englishSkillsOption;
+        private readonly Option<string?> _offsetsOption;
 
         // Verb symbols.
         private readonly Argument<string> _csvArgument;
@@ -134,6 +135,14 @@ namespace FrontierDataTool.CLI
                 Description = "Write English skill tree names instead of the game's own"
             };
 
+            _offsetsOption = new Option<string?>("--offsets")
+            {
+                Description =
+                    "Offset profile naming where the data sits: a built-in id or a JSON file. " +
+                    "Detected from the files when not given.",
+                Recursive = true
+            };
+
             _csvArgument = new Argument<string>("csv")
             {
                 Description = "CSV to import; its name selects the importer (Armor, Melee, Ranged, InfQuests, Rengoku)",
@@ -195,6 +204,7 @@ namespace FrontierDataTool.CLI
                 _cp932Option,
                 _shiftJisOption,
                 _jsonOption,
+                _offsetsOption,
                 _dumpCommand,
                 _modshopCommand,
                 _importCommand
@@ -284,7 +294,8 @@ namespace FrontierDataTool.CLI
                 Action = action,
                 Close = parseResult.GetValue(_closeOption),
                 Cp932 = parseResult.GetValue(_cp932Option) || parseResult.GetValue(_shiftJisOption),
-                Json = parseResult.GetValue(_jsonOption)
+                Json = parseResult.GetValue(_jsonOption),
+                Offsets = parseResult.GetValue(_offsetsOption)
             };
         }
 

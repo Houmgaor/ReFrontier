@@ -1,0 +1,67 @@
+{
+  "id": "zz",
+  "description": "PC, G10 through ZZ (verified against pc, pc-z-jp and pc-zz-en)",
+  "mhfDat": {
+    "armor": {
+      "dataPointers": [
+        { "start": "0x50", "end": "0xE8" },
+        { "start": "0x54", "end": "0x50" },
+        { "start": "0x58", "end": "0x54" },
+        { "start": "0x5C", "end": "0x58" },
+        { "start": "0x60", "end": "0x5C" }
+      ],
+      "stringPointers": [
+        { "start": "0x64", "end": "0x60" },
+        { "start": "0x68", "end": "0x64" },
+        { "start": "0x6C", "end": "0x68" },
+        { "start": "0x70", "end": "0x6C" },
+        { "start": "0x74", "end": "0x70" }
+      ],
+      "slotNames": ["頭", "胴", "腕", "腰", "脚"]
+    },
+    "weapons": {
+      "meleeStart": "0x7C",
+      "meleeEnd": "0x90",
+      "meleeStringStart": "0x88",
+      "rangedStart": "0x80",
+      "rangedEnd": "0x7C",
+      "rangedStringStart": "0x84"
+    },
+    "items": {
+      "stringStart": "0x100",
+      "stringEnd": "0xFC",
+      "descriptionStart": "0x12C",
+      "descriptionEnd": "0x100"
+    }
+  },
+  "mhfPac": {
+    "skills": {
+      "treeNameStart": "0xA20",
+      "treeNameEnd": "0xA1C",
+      "activeNameStart": "0xA1C",
+      "activeNameEnd": "0xBC0",
+      "descriptionStart": "0xB8",
+      "descriptionEnd": "0xC0",
+      "zSkillNameStart": "0xFBC",
+      "zSkillNameEnd": "0xFB0"
+    }
+  },
+  "mhfInf": {
+    "questEntrySize": "0x160",
+    "questSections": [
+      { "offset": "0x6BD40", "count": 95 },
+      { "offset": "0x740E0", "count": 62 },
+      { "offset": "0x797C0", "count": 99 },
+      { "offset": "0x82180", "count": 98 },
+      { "offset": "0x8A9E0", "count": 99 },
+      { "offset": "0x933A0", "count": 99 },
+      { "offset": "0x9BD60", "count": 99 },
+      { "offset": "0xA4720", "count": 99 },
+      { "offset": "0xAD0E0", "count": 99 },
+      { "offset": "0xB5B20", "count": 36 },
+      { "offset": "0xB8E40", "count": 96 },
+      { "offset": "0xC13E0", "count": 91 },
+      { "offset": "0x161200", "count": 20 }
+    ]
+  }
+}

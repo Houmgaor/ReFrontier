@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 
+using FrontierDataTool.Offsets;
 using FrontierDataTool.Services;
 
 using ReFrontier.Tests.Mocks;
@@ -297,7 +298,7 @@ namespace ReFrontier.Tests.DataToolTests
         {
             // Arrange - need to create exactly the right number of quest entries
             // CSV has all pointer offsets = 0 (no pointer data)
-            int totalCount = FrontierDataTool.MhfDataOffsets.MhfInf.TotalQuestCount;
+            int totalCount = OffsetProfiles.Default.MhfInf.TotalQuestCount;
             byte[] mhfinf = new byte[0x200000];
             string csv = CreateQuestCsv(totalCount, withPointerOffsets: false);
 
@@ -316,7 +317,7 @@ namespace ReFrontier.Tests.DataToolTests
         public void ImportQuestDataInternal_WithPointerOffsets_AppendsStringTable()
         {
             // Arrange
-            int totalCount = FrontierDataTool.MhfDataOffsets.MhfInf.TotalQuestCount;
+            int totalCount = OffsetProfiles.Default.MhfInf.TotalQuestCount;
             byte[] mhfinf = new byte[0x200000];
             string csv = CreateQuestCsv(totalCount, withPointerOffsets: true);
 

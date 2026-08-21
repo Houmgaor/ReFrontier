@@ -74,5 +74,11 @@ namespace FrontierDataTool.CLI
         /// Write English skill tree names in place of the game's own, where one is known.
         /// </summary>
         public bool EnglishSkills { get; init; }
+
+        /// <summary>
+        /// Offset profile to read the files with: a built-in id, or the path to a JSON
+        /// profile. Null detects it from the files.
+        /// </summary>
+        public string? Offsets { get; init; }
     }
 }

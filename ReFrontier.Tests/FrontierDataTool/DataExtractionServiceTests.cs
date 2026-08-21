@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-using FrontierDataTool;
+using FrontierDataTool.Offsets;
 using FrontierDataTool.Services;
 
 using ReFrontier.Tests.Mocks;
@@ -161,13 +161,13 @@ namespace ReFrontier.Tests.DataToolTests
 
         #endregion
 
-        #region MhfDataOffsets Tests
+        #region Offset profile tests
 
         [Fact]
         public void ArmorDataPointers_HasFiveEntries()
         {
             // Assert
-            Assert.Equal(5, MhfDataOffsets.MhfDat.Armor.DataPointers.Count);
+            Assert.Equal(5, OffsetProfiles.Default.MhfDat.Armor.DataPointers.Count);
         }
 
         [Fact]
@@ -175,9 +175,9 @@ namespace ReFrontier.Tests.DataToolTests
         {
             // Assert
             int expected = 0;
-            foreach (var section in MhfDataOffsets.MhfInf.QuestSections)
+            foreach (var section in OffsetProfiles.Default.MhfInf.QuestSections)
                 expected += section.Count;
-            Assert.Equal(expected, MhfDataOffsets.MhfInf.TotalQuestCount);
+            Assert.Equal(expected, OffsetProfiles.Default.MhfInf.TotalQuestCount);
         }
 
         #endregion
@@ -208,13 +208,13 @@ namespace ReFrontier.Tests.DataToolTests
         [Fact]
         public void MhfInf_QuestSections_HasExpectedSectionCount()
         {
-            Assert.Equal(13, MhfDataOffsets.MhfInf.QuestSections.Count);
+            Assert.Equal(13, OffsetProfiles.Default.MhfInf.QuestSections.Count);
         }
 
         [Fact]
         public void MhfInf_FirstSection_HasExpectedValues()
         {
-            var firstSection = MhfDataOffsets.MhfInf.QuestSections[0];
+            var firstSection = OffsetProfiles.Default.MhfInf.QuestSections[0];
             Assert.Equal(0x6BD40, firstSection.Offset);
             Assert.Equal(95, firstSection.Count);
         }
@@ -585,7 +585,7 @@ namespace ReFrontier.Tests.DataToolTests
 
         /// <summary>
         /// Create mhfdat.bin with weapon data (melee and ranged).
-        /// Based on MhfDataOffsets: RangedEnd=0x7C shares offset with MeleeStart,
+        /// Based on the zz offset profile: RangedEnd=0x7C shares offset with MeleeStart,
         /// meaning ranged data must end where melee data starts (contiguous layout).
         /// </summary>
         private static byte[] CreateMhfdatWithWeaponData(int meleeCount, int rangedCount)
@@ -690,7 +690,7 @@ namespace ReFrontier.Tests.DataToolTests
             using var bw = new BinaryWriter(ms);
 
             // Write minimal quest data at each section offset
-            var sections = MhfDataOffsets.MhfInf.QuestSections;
+            var sections = OffsetProfiles.Default.MhfInf.QuestSections;
             foreach (var section in sections)
             {
                 ms.Seek(section.Offset, SeekOrigin.Begin);

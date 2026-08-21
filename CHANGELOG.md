@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **FrontierDataTool**: Offsets are data, not constants. Where the tool looks for armor,
+  weapons, items, skills and quests now comes from an *offset profile*: a JSON file under
+  `FrontierDataTool/Offsets/Profiles/`, embedded in the executable. `--offsets <id|file>`
+  names one; without it the profile is worked out from the files, by trying each and judging
+  whether its pointers land inside the file and its regions end after they start. The
+  profile used is named in the output. Adding a game version is now a JSON file rather than
+  a recompile, and a profile is checked when it loads: pointer lists must cover every armor
+  slot, offsets cannot be negative, quest sections cannot overlap.
+- **FrontierDataTool**: A file from an unsupported version says so. Of the nine PC clients
+  this was tried against, three are read (`pc`, `pc-z-jp`, `pc-zz-en`, all G10–ZZ) and five
+  are not; those five used to fail part-way through the dump with `An attempt was made to
+  move the position before the beginning of the stream` or a stray pointer error. They now
+  stop up front, naming the closest profile, how many of its pointers resolved and the first
+  one that did not.
+
 - **FrontierDataTool**: `dump --english-skills` writes English skill tree names in place of
   the game's own. A Japanese client dumps 受身 and 自動防御 where this gives Passive and
   Auto-Guard. The table covers 205 of the 232 trees the current client defines; an index it
@@ -61,6 +76,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to the previous build under both flag spellings.
 
 ### Fixed
+
+- **FrontierDataTool**: Importing quests no longer corrupts them. The importer stepped
+  `0x128` bytes between quest entries while the reader consumes `0x160`, so every entry
+  after the first in a section was written over the tail of the one before it: dumping,
+  importing and dumping again returned different values for **754 of 1092 quests**. The
+  stride is now the entry size from the offset profile, and the round trip is identical.
 
 - **FrontierDataTool**: Quest data reads correctly. Every offset in
   `MhfDataOffsets.MhfInf.QuestSections` was `0x20` too high, which is not a multiple of the

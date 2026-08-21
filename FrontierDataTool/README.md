@@ -120,6 +120,7 @@ Adjusts shop prices in `mhfdat.bin` (buy price / 50, sell price * 5):
 
 | Option | Description |
 |--------|-------------|
+| `--offsets <id\|file>` | Offset profile naming where the data sits. Detected from the files when omitted. |
 | `--cp932` | Output CSV in CP932 / Windows-31J encoding (default: UTF-8 with BOM) |
 | `--json` | Output JSON files instead of CSV |
 | `--close` | Return without waiting for a keypress |
@@ -143,6 +144,46 @@ and will be removed in a future release.
 The renamed options are still accepted under their old spelling by the commands that take
 them, so `import --csv Armor.csv` and `modshop --mhfdat mhfdat.bin` work and a script can
 move over in two steps.
+
+## Game versions and offset profiles
+
+The data has no self-describing structure: the tool finds armor, skills and quests at
+offsets that differ between game versions. Those offsets live in **offset profiles**, JSON
+files under `FrontierDataTool/Offsets/Profiles/`, embedded in the executable.
+
+| Profile | Covers |
+|---------|--------|
+| `zz` | PC, G10 through ZZ — verified against `pc`, `pc-z-jp` and `pc-zz-en` |
+
+With no `--offsets`, the profile is worked out from the files themselves: each one is tried
+and judged on whether its pointers land inside the file and its regions end after they
+start. A profile from the wrong version fails that at once. The chosen one is named in the
+output:
+
+```console
+$ ./FrontierDataTool dump --suffix demo --mhfpac mhfpac.bin --mhfdat mhfdat.bin --mhfinf mhfinf.bin
+Offset profile: zz (PC, G10 through ZZ (verified against pc, pc-z-jp and pc-zz-en)).
+```
+
+A version with no profile is now named as such, instead of failing part-way through with a
+stream error:
+
+```console
+Error: No known offset profile matches these files, so they are from a game version this
+tool cannot read yet. The closest is 'zz', where 16 of 34 pointers resolve.
+mhfDat.armor.stringPointers[0] runs from 0x251EA0 back to 0x1249C0.
+```
+
+### Adding a version
+
+Copy `zz.json`, change the offsets, and pass it with `--offsets my-version.json`. Offsets
+are written as hex strings (`"0x6BD40"`) because that is how every other tool in this
+ecosystem quotes them; plain numbers are accepted too. The file is checked when it loads —
+pointer lists must cover every armor slot, offsets cannot be negative, and quest sections
+cannot overlap — so a mistake is reported rather than silently producing garbage.
+
+`--offsets zz` also forces a known profile onto files it was not detected for, which is
+useful when adding a version: it shows how far the existing offsets get.
 
 ## CSV Encoding
 
