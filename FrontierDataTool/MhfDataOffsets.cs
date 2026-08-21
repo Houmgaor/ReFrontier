@@ -155,22 +155,34 @@ public static class MhfDataOffsets
         /// <summary>
         /// Quest data sections with (offset, count) pairs.
         /// Each entry defines where a quest block starts and how many quests it contains.
+        /// <para>Offsets are into mhfinf.bin after decryption and JPK decompression, and
+        /// every entry is <c>0x160</c> bytes. They were each <c>0x20</c> too high, which put
+        /// the reader in the middle of an entry: the four string pointers at
+        /// <c>entry + 0x140</c> came out as ordinary small integers, and the first one that
+        /// happened to fall outside the file ended the dump. Every section moved down by
+        /// <c>0x20</c>, so all 1092 quests now read with their titles, goal types and map
+        /// IDs.</para>
+        /// <para>Sections are not contiguous: each is followed by about <c>0x1A0</c> bytes
+        /// that are not quest entries, so an offset cannot be derived from the one before
+        /// it.</para>
+        /// <para>These are version-specific. The current PC client's file holds roughly
+        /// three times this many quest entries, in sections this table does not name.</para>
         /// </summary>
         public static readonly IReadOnlyList<(int Offset, int Count)> QuestSections =
         [
-            (0x6BD60, 95),
-            (0x74100, 62),
-            (0x797E0, 99),
-            (0x821A0, 98),
-            (0x8AA00, 99),
-            (0x933C0, 99),
-            (0x9BD80, 99),
-            (0xA4740, 99),
-            (0xAD100, 99),
-            (0xB5B40, 36),
-            (0xB8E60, 96),
-            (0xC1400, 91),
-            (0x161220, 20)
+            (0x6BD40, 95),
+            (0x740E0, 62),
+            (0x797C0, 99),
+            (0x82180, 98),
+            (0x8A9E0, 99),
+            (0x933A0, 99),
+            (0x9BD60, 99),
+            (0xA4720, 99),
+            (0xAD0E0, 99),
+            (0xB5B20, 36),
+            (0xB8E40, 96),
+            (0xC13E0, 91),
+            (0x161200, 20)
         ];
 
         /// <summary>

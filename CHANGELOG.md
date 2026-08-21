@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **FrontierDataTool**: Quest data reads correctly. Every offset in
+  `MhfDataOffsets.MhfInf.QuestSections` was `0x20` too high, which is not a multiple of the
+  `0x160` entry size, so every read began in the middle of an entry: the four string
+  pointers at `entry + 0x140` came out as unrelated small integers, and the first one that
+  happened to fall outside the file ended the dump with `Unable to read beyond the end of
+  the stream`. `dump` had never produced usable quest data on the current PC client — it
+  wrote garbage until it crashed. Each section moved down by `0x20`; all 1092 quests now
+  read with their titles, goal types, map IDs and distinct quest IDs, and dump → import →
+  dump returns identical titles.
+- **FrontierDataTool**: A string pointer outside the file now says so, naming the pointer,
+  where it was read and the file size, instead of surfacing as a stream error from the read
+  that followed the seek. A pointer landing exactly at the end still reads as the empty
+  string, as it always did.
+
 ## [2.3.0] - 2026-08-21
 
 ### Added
