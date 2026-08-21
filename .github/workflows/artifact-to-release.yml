@@ -31,9 +31,14 @@ jobs:
     - name: Test
       run: dotnet test --no-restore --verbosity normal
     
-    # Build in "publish" folder
+    # Build in "publish" folder. All three tools go side by side into one folder:
+    # they share LibReFrontier and their dependencies, so the zip stays about the
+    # size it was, and each is one command away once unzipped.
     - name: Publish
-      run: dotnet publish ReFrontier/ReFrontier.csproj -c Release -o publish
+      run: |
+        dotnet publish ReFrontier/ReFrontier.csproj -c Release -o publish
+        dotnet publish FrontierTextTool/FrontierTextTool.csproj -c Release -o publish
+        dotnet publish FrontierDataTool/FrontierDataTool.csproj -c Release -o publish
     
     - name: Zip artifact
       shell: bash

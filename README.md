@@ -33,7 +33,9 @@ Key features:
 ## Installation
 
 Download the [latest release](https://github.com/Houmgaor/ReFrontier/releases) for your operating system.
-Unzip the archive to find `ReFrontier.exe` (or `ReFrontier` on Linux/macOS).
+Unzip the archive to find `ReFrontier.exe` (or `ReFrontier` on Linux/macOS), alongside
+[`FrontierTextTool`](./FrontierTextTool/README.md) and
+[`FrontierDataTool`](./FrontierDataTool/README.md).
 
 To get the latest features, you can [build from source](#build).
 
