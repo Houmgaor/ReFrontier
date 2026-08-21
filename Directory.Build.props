@@ -34,6 +34,13 @@
       FrontierDataTool (the game's skill and struct definitions) would need ~1000
       comments restating their own names.
     -->
+    <!--
+      Ship only the English resources. CsvHelper and Spectre.Console carry
+      translations of their own messages in 13 satellite assemblies, ~250 KB of
+      every release zip, for exception text a Frontier tool never surfaces.
+    -->
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PublishDocumentationFiles>false</PublishDocumentationFiles>
     <NoWarn>$(NoWarn);CS1591</NoWarn>

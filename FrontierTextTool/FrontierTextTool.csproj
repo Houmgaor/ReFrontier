@@ -3,12 +3,10 @@
     <ProjectGuid>{DE2AB100-24C7-4176-9FDB-E979A97045DE}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <AssemblyTitle>FrontierTextTool</AssemblyTitle>
     <Product>FrontierTextTool</Product>
     <Description>Extract and edit Monster Hunter Frontier game texts</Description>
     <Copyright>Copyright ©  2019</Copyright>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
     <Authors>Vuze</Authors>
     <RepositoryUrl>https://github.com/Houmgaor/ReFrontier</RepositoryUrl>
   </PropertyGroup>
@@ -16,7 +14,6 @@
     <InternalsVisibleTo Include="ReFrontier.Tests" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageReference Include="CsvHelper" Version="33.0.1" />
     <PackageReference Include="System.Text.Encoding.CodePages" Version="9.0.0" />
   </ItemGroup>

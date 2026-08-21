@@ -19,6 +19,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Build**: XML documentation is still generated, for the IDE and for IDE0005, but no longer
   published. Nothing reads it at runtime and it was ~280 KB of every release zip
   (`ReFrontier.xml` alone was 133 KB).
+- **Build**: The release zip carries only what runs. Four things had accumulated in it:
+  a `.dll.config` of 85 assembly binding redirects, written once per tool — a .NET Framework
+  mechanism that .NET 8 does not read; 13 satellite locale folders holding CsvHelper's and
+  Spectre.Console's translated exception text; the three Serilog assemblies, pulled in by a
+  `SerilogLogger` that nothing ever instantiated; and a `Microsoft.CSharp` reference in four
+  projects, needed for `dynamic`, which appears nowhere in the codebase (`FrontierDataTool`
+  floated it at `4.*`, the only unpinned version in the repo). Together with the XML docs
+  above, the published output drops from 4,297,619 to 3,428,409 bytes. Every read and write
+  path was compared against the previous build on the real PC client: 23 files, byte-identical.
+- **Build**: `dotnet pack` works again. Three projects declared `PackageReadmeFile` without
+  packing a README, which failed NU5039; none of them is published as a package.
 - **FrontierTextTool, FrontierDataTool**: The CSV output flag is `--cp932`. The tools read
   and write **CP932** (Windows-31J), Microsoft's extension of Shift_JIS: it adds the NEC and
   IBM rows and maps some code points differently, notably `0x8160`, which is FULLWIDTH TILDE
