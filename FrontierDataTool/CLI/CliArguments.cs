@@ -69,5 +69,10 @@ namespace FrontierDataTool.CLI
         /// Whether to write JSON instead of CSV.
         /// </summary>
         public bool Json { get; init; }
+
+        /// <summary>
+        /// Write English skill tree names in place of the game's own, where one is known.
+        /// </summary>
+        public bool EnglishSkills { get; init; }
     }
 }

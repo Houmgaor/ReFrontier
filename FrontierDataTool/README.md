@@ -33,6 +33,7 @@ and `./FrontierDataTool --help` lists the commands.
 | `--mhfdat <file>` | Path to `mhfdat.bin`. Required. |
 | `--mhfinf <file>` | Path to `mhfinf.bin`. Required. |
 | `--rengoku <file>` | Path to `rengoku_data.bin` (Hunting Road data) |
+| `--english-skills` | Write English skill tree names instead of the game's own |
 
 ```shell
 ./FrontierDataTool dump --suffix demo --mhfpac mhfpac.bin --mhfdat mhfdat.bin --mhfinf mhfinf.bin
@@ -45,6 +46,30 @@ Generates:
 - `Ranged.csv` - Ranged weapon data
 - `InfQuests.csv` - Quest data
 - `mhsx_[type]_demo.txt` - Various data files
+
+#### English skill names
+
+`--english-skills` replaces each skill tree name with an English one where the tool knows
+it, which is what a Japanese client needs to be readable:
+
+```shell
+./FrontierDataTool dump --suffix jp --mhfpac mhfpac.bin --mhfdat mhfdat.bin --mhfinf mhfinf.bin --english-skills
+# なし 受身 運気 運搬 自動防御  ->  None Passive Fate Backpacking Auto-Guard
+```
+
+The table covers 205 of the 232 trees the current client defines; an index it does not know
+keeps the game's own string, so nothing is lost. It is worth using even on an English
+client, which leaves several names in Japanese (`0x13` 広域回復, `0x30` 肉, `0xC1` 採集の極み)
+and spells `0x4A` "Deoderant".
+
+Two skill trees can share an English name — `0x01` and `0x5F` are both "Passive", the
+English client's rendering of the distinct 受身 and 受け身 — so the second carries its ID:
+`Passive` and `Passive (0x5F)`. This keeps names unique, which is what makes an English dump
+safe to edit and import back.
+
+`import` accepts English names whether or not the dump used the flag, since nothing in a CSV
+records which spelling produced it. A name matching neither the game's nor the English set
+is reported rather than silently written as skill 0.
 
 `--rengoku` dumps the Hunting Road data and needs none of the other files, so it can be
 given on its own:

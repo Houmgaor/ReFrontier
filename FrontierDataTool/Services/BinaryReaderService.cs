@@ -477,7 +477,8 @@ namespace FrontierDataTool.Services
         /// <param name="bw">Binary writer positioned at the entry offset.</param>
         /// <param name="entry">Armor entry to write.</param>
         /// <param name="skillLookup">Dictionary mapping skill names to IDs.</param>
-        public void WriteArmorEntry(BinaryWriter bw, ArmorDataEntry entry, Dictionary<string, byte> skillLookup)
+        /// <param name="unresolvedSkills">Collects skill names that are not in the lookup, if given.</param>
+        public void WriteArmorEntry(BinaryWriter bw, ArmorDataEntry entry, Dictionary<string, byte> skillLookup, ICollection<string>? unresolvedSkills = null)
         {
             bw.Write(entry.ModelIdMale);
             bw.Write(entry.ModelIdFemale);
@@ -513,15 +514,15 @@ namespace FrontierDataTool.Services
             bw.Write(entry.Unk24_4);
             bw.Write(entry.Unk28);
 
-            bw.Write(LookupSkillId(entry.SkillId1, skillLookup));
+            bw.Write(LookupSkillId(entry.SkillId1, skillLookup, unresolvedSkills));
             bw.Write(entry.SkillPts1);
-            bw.Write(LookupSkillId(entry.SkillId2, skillLookup));
+            bw.Write(LookupSkillId(entry.SkillId2, skillLookup, unresolvedSkills));
             bw.Write(entry.SkillPts2);
-            bw.Write(LookupSkillId(entry.SkillId3, skillLookup));
+            bw.Write(LookupSkillId(entry.SkillId3, skillLookup, unresolvedSkills));
             bw.Write(entry.SkillPts3);
-            bw.Write(LookupSkillId(entry.SkillId4, skillLookup));
+            bw.Write(LookupSkillId(entry.SkillId4, skillLookup, unresolvedSkills));
             bw.Write(entry.SkillPts4);
-            bw.Write(LookupSkillId(entry.SkillId5, skillLookup));
+            bw.Write(LookupSkillId(entry.SkillId5, skillLookup, unresolvedSkills));
             bw.Write(entry.SkillPts5);
 
             bw.Write(entry.SthHiden);
@@ -699,13 +700,20 @@ namespace FrontierDataTool.Services
         /// </summary>
         /// <param name="skillName">Skill name to look up.</param>
         /// <param name="skillLookup">Dictionary mapping skill names to IDs.</param>
+        /// <param name="unresolved">Collects names that are not in the lookup, if given.</param>
         /// <returns>Skill ID byte.</returns>
-        public static byte LookupSkillId(string? skillName, Dictionary<string, byte> skillLookup)
+        public static byte LookupSkillId(string? skillName, Dictionary<string, byte> skillLookup, ICollection<string>? unresolved = null)
         {
+            ArgumentNullException.ThrowIfNull(skillLookup);
+
             if (string.IsNullOrEmpty(skillName))
                 return 0;
             if (skillLookup.TryGetValue(skillName, out byte id))
                 return id;
+
+            // A name nobody recognises writes skill 0, which reads back as "None": the
+            // armour silently loses a skill. Record it so the caller can say so.
+            unresolved?.Add(skillName);
             return 0;
         }
 

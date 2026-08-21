@@ -43,11 +43,15 @@ namespace ReFrontier.Tests.DataToolTests
             // Act
             var lookup = _service.BuildSkillLookup("/test/mhfpac.bin");
 
-            // Assert
-            Assert.Equal(3, lookup.Count);
+            // Assert - the game's own names are keyed by their index
             Assert.Equal(0, lookup["攻撃"]);
             Assert.Equal(1, lookup["防御"]);
             Assert.Equal(2, lookup["回避"]);
+
+            // The English names are added alongside them, so a CSV dumped with
+            // --english-skills imports without having to say so again.
+            Assert.Equal(0x15, lookup["Attack"]);
+            Assert.True(lookup.Count > 3);
         }
 
         [Fact]
@@ -61,8 +65,21 @@ namespace ReFrontier.Tests.DataToolTests
             var lookup = _service.BuildSkillLookup("/test/mhfpac.bin");
 
             // Assert - first occurrence wins
-            Assert.Equal(2, lookup.Count);
             Assert.Equal(0, lookup["攻撃"]); // First one
+            Assert.Equal(2, lookup["防御"]);
+        }
+
+        [Fact]
+        public void BuildSkillLookup_GameNameWinsOverTheEnglishAlias()
+        {
+            // A client whose own name collides with one of ours must keep its meaning:
+            // here "Attack" is the game's name for index 0, not the English alias for 0x15.
+            byte[] mhfpac = TestDataFactory.CreateMinimalMhfpac(new[] { "Attack", "防御" });
+            _fileSystem.AddFile("/test/mhfpac.bin", mhfpac);
+
+            var lookup = _service.BuildSkillLookup("/test/mhfpac.bin");
+
+            Assert.Equal(0, lookup["Attack"]);
         }
 
         #endregion

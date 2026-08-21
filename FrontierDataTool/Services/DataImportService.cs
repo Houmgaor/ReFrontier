@@ -5,6 +5,7 @@ using System.Linq;
 
 using CsvHelper;
 
+using FrontierDataTool.Enums;
 using FrontierDataTool.Structs;
 
 using LibReFrontier;
@@ -77,6 +78,7 @@ namespace FrontierDataTool.Services
             // Build skill name to ID lookup from mhfpac
             var skillLookup = BuildSkillLookup(mhfpac);
             _logger.WriteLine($"Loaded {skillLookup.Count} skill names for lookup.");
+            var unresolvedSkills = new SortedSet<string>(StringComparer.Ordinal);
 
             // Read armor entries from CSV
             var armorEntries = LoadArmorCsv(csvPath);
@@ -115,8 +117,16 @@ namespace FrontierDataTool.Services
                 {
                     int entryOffset = sOffset + (j * BinaryReaderService.ARMOR_ENTRY_SIZE);
                     bw.BaseStream.Seek(entryOffset, SeekOrigin.Begin);
-                    _binaryReader.WriteArmorEntry(bw, classEntries[j], skillLookup);
+                    _binaryReader.WriteArmorEntry(bw, classEntries[j], skillLookup, unresolvedSkills);
                 }
+            }
+
+            if (unresolvedSkills.Count > 0)
+            {
+                _logger.WriteLine(
+                    $"Warning: {unresolvedSkills.Count} skill name(s) in the CSV match neither the " +
+                    "game's names nor the English ones, and were written as skill 0 (None): " +
+                    string.Join(", ", unresolvedSkills));
             }
 
             _fileSystem.CreateDirectory("output");
@@ -443,6 +453,14 @@ namespace FrontierDataTool.Services
         /// <summary>
         /// Build a dictionary mapping skill names to their IDs.
         /// </summary>
+        /// <remarks>
+        /// The game's own names are read first and always win. The English names are then
+        /// added for any ID whose game name they do not collide with, so a CSV dumped with
+        /// --english-skills imports without the user having to say so again: nothing in a
+        /// CSV records which spelling produced it.
+        /// </remarks>
+        /// <param name="mhfpac">Path to a decrypted, decompressed mhfpac.</param>
+        /// <returns>Skill name to ID, covering both the game's names and the English ones.</returns>
         public Dictionary<string, byte> BuildSkillLookup(string mhfpac)
         {
             var skillLookup = new Dictionary<string, byte>();
@@ -465,6 +483,14 @@ namespace FrontierDataTool.Services
                     skillLookup[name] = id;
                 }
                 id++;
+            }
+
+            foreach (var (englishName, englishId) in SkillLookup.IdsByEnglishName)
+            {
+                if (!skillLookup.ContainsKey(englishName))
+                {
+                    skillLookup[englishName] = englishId;
+                }
             }
 
             return skillLookup;

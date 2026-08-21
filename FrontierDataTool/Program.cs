@@ -154,7 +154,7 @@ namespace FrontierDataTool
             if (!File.Exists(arguments.MhfInf))
                 return Fail($"Error: File '{arguments.MhfInf}' does not exist.");
 
-            _extractionService.DumpData(arguments.Suffix, arguments.MhfPac, arguments.MhfDat, arguments.MhfInf);
+            _extractionService.DumpData(arguments.Suffix, arguments.MhfPac, arguments.MhfDat, arguments.MhfInf, arguments.EnglishSkills);
             return 0;
         }
 
