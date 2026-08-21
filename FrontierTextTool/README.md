@@ -121,7 +121,7 @@ Imports translations from a CAT tool export file into your CSV:
 
 ### Deprecated options
 
-The pre-2.4.0 form put every task on one command as a flag. Those flags still work, so
+The pre-2.3.0 form put every task on one command as a flag. Those flags still work, so
 existing scripts keep running, but the ones selecting a task now name the command to use
 and will be removed in a future release.
 
