@@ -14,14 +14,13 @@ namespace ReFrontier.Tests
         private const short ExpectedTableLength = 0x1FE;
 
         /// <summary>
-        /// SHA-256 of the 1022-byte Huffman table the encoder emits (2-byte length plus
-        /// 510 entries). The table does not depend on the input, so pinning it detects any
-        /// change in the permutation — including a platform or runtime difference in
-        /// seeded Random or in OrderBy, which the multi-OS CI would otherwise not catch.
-        /// Update this only when the table is meant to change.
+        /// SHA-256 of the 1022-byte Huffman table emitted for the fixed input below
+        /// (2-byte length plus 510 entries). Pinning it detects platform or runtime
+        /// differences in tree construction that the multi-OS CI would otherwise miss.
+        /// Update this only when the tree-building algorithm is meant to change.
         /// </summary>
         private const string ExpectedTableHash =
-            "3f48199120871acbb432cc02e47760ac6f89e617731a7f5efa68ec994fead6cf";
+            "64ba8bb6a45f2973ccd49045de80618880643f483824ef465f94e75959a991e2";
 
         private const int HuffmanTableSize = 1022;
 
@@ -31,6 +30,40 @@ namespace ReFrontier.Tests
             using var outStream = new MemoryStream();
             encoder.ProcessOnEncode(input, outStream, level);
             return outStream.ToArray();
+        }
+
+        private static byte[] EncodeLz(byte[] input, int level = 50)
+        {
+            var encoder = new JPKEncodeLz();
+            using var outStream = new MemoryStream();
+            encoder.ProcessOnEncode(input, outStream, level);
+            return outStream.ToArray();
+        }
+
+        private static int[] ReadCodeLengths(byte[] encoded)
+        {
+            short tableLength = BitConverter.ToInt16(encoded, 0);
+            short[] table = new short[tableLength];
+            for (int i = 0; i < table.Length; i++)
+                table[i] = BitConverter.ToInt16(encoded, HuffmanTableHeaderSize + i * 2);
+
+            int[] codeLengths = new int[256];
+
+            void WalkTree(int value, int depth)
+            {
+                if (value < 0x100)
+                {
+                    codeLengths[value] = depth;
+                    return;
+                }
+
+                int childIndex = (value - 0x100) * 2;
+                WalkTree(table[childIndex], depth + 1);
+                WalkTree(table[childIndex + 1], depth + 1);
+            }
+
+            WalkTree(tableLength, 0);
+            return codeLengths;
         }
 
         #region Determinism Tests
@@ -67,12 +100,12 @@ namespace ReFrontier.Tests
         }
 
         [Fact]
-        public void EncodeHFI_TableDoesNotDependOnInput()
+        public void EncodeHFI_TableDependsOnLzOutputFrequencies()
         {
             byte[] fromOneInput = Encode(TestHelpers.RandomData(2048, seed: 1))[..HuffmanTableSize];
             byte[] fromAnother = Encode(TestHelpers.RandomData(3000, seed: 2))[..HuffmanTableSize];
 
-            Assert.Equal(fromOneInput, fromAnother);
+            Assert.False(fromOneInput.AsSpan().SequenceEqual(fromAnother));
         }
 
         [Fact]
@@ -89,6 +122,32 @@ namespace ReFrontier.Tests
         #endregion
 
         #region Encode Tests
+
+        [Fact]
+        public void EncodeHFI_SkewedInputUsesVariableLengthCodes()
+        {
+            byte[] encoded = Encode(new byte[4096], level: 200);
+
+            int[] codeLengths = ReadCodeLengths(encoded);
+
+            Assert.Contains(codeLengths, length => length != codeLengths[0]);
+            Assert.All(codeLengths, length => Assert.InRange(length, 1, 30));
+        }
+
+        [Fact]
+        public void EncodeHFI_SkewedInputShrinksLzPayload()
+        {
+            byte[] input = new byte[4096];
+
+            byte[] lz = EncodeLz(input, level: 200);
+            byte[] hfi = Encode(input, level: 200);
+            int huffmanPayloadLength = hfi.Length - HuffmanTableSize;
+
+            Assert.True(
+                huffmanPayloadLength < lz.Length,
+                $"Huffman payload ({huffmanPayloadLength}) should be smaller than LZ output ({lz.Length})."
+            );
+        }
 
         [Fact]
         public void EncodeHFI_ProducesHuffmanTableHeader()

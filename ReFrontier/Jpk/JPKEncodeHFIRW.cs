@@ -7,7 +7,7 @@ namespace ReFrontier.Jpk
     ///
     /// <para><b>Algorithm Overview:</b></para>
     /// <para>Applies Huffman coding without LZ77 compression. Each input byte is replaced
-    /// by a variable-length bit code based on a randomly-generated Huffman tree. Bytes
+    /// by a variable-length bit code based on a frequency-derived Huffman tree. Bytes
     /// that appear frequently in typical data get shorter codes.</para>
     ///
     /// <para><b>Output Format:</b></para>
@@ -28,9 +28,8 @@ namespace ReFrontier.Jpk
     /// compression stage.</para>
     ///
     /// <para><b>Note on Tree Generation:</b></para>
-    /// <para>The Huffman tree is randomly shuffled at encode time. This means the same
-    /// input will produce different (but equally valid) output on each run. Decoding
-    /// always works because the tree is stored in the file header.</para>
+    /// <para>The Huffman tree is built deterministically from the input byte frequencies.
+    /// The same input therefore produces the same encoded output.</para>
     /// </summary>
     internal class JPKEncodeHFIRW : JPKEncodeHFI
     {
@@ -44,7 +43,7 @@ namespace ReFrontier.Jpk
         public override void ProcessOnEncode(byte[] inBuffer, Stream outStream, int level = 16)
         {
             // Initialize and write the Huffman table
-            FillTable();
+            FillTable(inBuffer);
             BinaryWriter bw = new(outStream);
             bw.Write(m_hfTableLen);
             for (int i = 0; i < m_hfTableLen; i++)
