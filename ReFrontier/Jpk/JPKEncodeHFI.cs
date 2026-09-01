@@ -323,8 +323,7 @@ namespace ReFrontier.Jpk
                 m_writingLzOutput = false;
             }
 
-            ReadOnlySpan<byte> lzData =
-                lzStream.GetBuffer().AsSpan(0, checked((int)lzStream.Length));
+            ReadOnlySpan<byte> lzData = lzStream.GetBuffer().AsSpan(0, checked((int)lzStream.Length));
             FillTable(lzData);
 
             BinaryWriter bw = new(outStream);

@@ -8,6 +8,36 @@ namespace ReFrontier.Tests
     public static class TestHelpers
     {
         /// <summary>
+        /// Reads the Huffman code length for each byte from a JPK HFI table.
+        /// </summary>
+        public static int[] ReadHuffmanCodeLengths(byte[] encoded)
+        {
+            const int huffmanTableHeaderSize = sizeof(short);
+            short tableLength = BitConverter.ToInt16(encoded, 0);
+            short[] table = new short[tableLength];
+
+            for (int i = 0; i < table.Length; i++)
+                table[i] = BitConverter.ToInt16(encoded, huffmanTableHeaderSize + i * sizeof(short));
+
+            int[] codeLengths = new int[256];
+            ReadHuffmanCodeLengths(table, tableLength, 0, codeLengths);
+            return codeLengths;
+        }
+
+        private static void ReadHuffmanCodeLengths(short[] table, int value, int depth, int[] codeLengths)
+        {
+            if (value < 0x100)
+            {
+                codeLengths[value] = depth;
+                return;
+            }
+
+            int childIndex = (value - 0x100) * 2;
+            ReadHuffmanCodeLengths(table, table[childIndex], depth + 1, codeLengths);
+            ReadHuffmanCodeLengths(table, table[childIndex + 1], depth + 1, codeLengths);
+        }
+
+        /// <summary>
         /// Returns an empty byte array.
         /// </summary>
         public static byte[] EmptyData() => [];

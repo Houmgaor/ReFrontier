@@ -10,34 +10,6 @@ namespace ReFrontier.Tests
     /// </summary>
     public class TestJpkHfirw
     {
-        private const int HuffmanTableHeaderSize = 2;
-
-        private static int[] ReadCodeLengths(byte[] encoded)
-        {
-            short tableLength = BitConverter.ToInt16(encoded, 0);
-            short[] table = new short[tableLength];
-            for (int i = 0; i < table.Length; i++)
-                table[i] = BitConverter.ToInt16(encoded, HuffmanTableHeaderSize + i * 2);
-
-            int[] codeLengths = new int[256];
-
-            void WalkTree(int value, int depth)
-            {
-                if (value < 0x100)
-                {
-                    codeLengths[value] = depth;
-                    return;
-                }
-
-                int childIndex = (value - 0x100) * 2;
-                WalkTree(table[childIndex], depth + 1);
-                WalkTree(table[childIndex + 1], depth + 1);
-            }
-
-            WalkTree(tableLength, 0);
-            return codeLengths;
-        }
-
         #region Decoder Tests
 
         [Fact]
@@ -115,7 +87,7 @@ namespace ReFrontier.Tests
             byte[] encoded = encodedStream.ToArray();
 
             int maximumCodeLength = 0;
-            foreach (int codeLength in ReadCodeLengths(encoded))
+            foreach (int codeLength in TestHelpers.ReadHuffmanCodeLengths(encoded))
                 maximumCodeLength = Math.Max(maximumCodeLength, codeLength);
 
             Assert.Equal(30, maximumCodeLength);
