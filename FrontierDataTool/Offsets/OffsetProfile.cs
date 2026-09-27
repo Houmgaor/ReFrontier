@@ -151,6 +151,11 @@ namespace FrontierDataTool.Offsets
         [JsonConverter(typeof(HexIntConverter))] public int QuestEntrySize { get; init; } = 0x160;
 
         /// <summary>Where the quest blocks are and how many entries each holds.</summary>
+        /// <remarks>
+        /// Only a fallback: quests are read through the section table in the mhfinf header
+        /// (see <see cref="QuestTable"/>), which lists every entry. These sections are used
+        /// for a file whose header holds no such table.
+        /// </remarks>
         public IReadOnlyList<QuestSection> QuestSections { get; init; } = [];
 
         /// <summary>Total number of quests across every section.</summary>

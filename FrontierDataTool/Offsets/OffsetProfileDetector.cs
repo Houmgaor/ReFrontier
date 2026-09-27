@@ -157,7 +157,14 @@ namespace FrontierDataTool.Offsets
                 CheckPointer(mhfPac, s.DescriptionEnd, "mhfPac.skills.descriptionEnd", Check);
             }
 
-            if (mhfInf is not null)
+            if (mhfInf is not null
+                && QuestTable.TryReadEntryOffsets(mhfInf, profile.MhfInf.QuestEntrySize, out _) is not null)
+            {
+                // Quests are read through the file's own table, so the profile's sections,
+                // which only serve as a fallback, say nothing about whether it fits.
+                Check(true, "");
+            }
+            else if (mhfInf is not null)
             {
                 var sections = profile.MhfInf.QuestSections;
                 int entrySize = profile.MhfInf.QuestEntrySize;

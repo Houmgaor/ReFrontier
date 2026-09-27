@@ -286,6 +286,22 @@ namespace ReFrontier.Tests.DataToolTests
             Assert.True(_logger.Lines.Count > 0);
         }
 
+        [Fact]
+        public void DumpQuestData_WithHeaderTable_ReadsEveryListedEntry()
+        {
+            // Arrange
+            _fileSystem.AddFile("/test/mhfinf.bin", ReFrontier.Tests.Offsets.QuestTableTests.CreateMhfinfWithTable());
+
+            // Act
+            _service.DumpQuestData("/test/mhfinf.bin");
+
+            // Assert
+            Assert.True(_logger.ContainsMessage("header lists 3 entries"));
+            string csv = Encoding.UTF8.GetString(_fileSystem.ReadAllBytes("InfQuests.csv"));
+            int rows = csv.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Length - 1;
+            Assert.Equal(3, rows);
+        }
+
         #endregion
 
         #region JSON Output Tests
