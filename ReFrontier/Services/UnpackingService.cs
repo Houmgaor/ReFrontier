@@ -551,7 +551,7 @@ namespace ReFrontier.Services
         /// </summary>
         /// <param name="input">Input ftxt file, usually has MHF header.</param>
         /// <param name="brInput">Binary reader to the file.</param>
-        /// <param name="createLog">True if we should create a meta file with the header.</param>
+        /// <param name="createLog">True to save a copy of the file as meta, which PackFTXT needs.</param>
         /// <returns>Output file path.</returns>
         public string PrintFTXT(string input, BinaryReader brInput, bool createLog = false)
         {
@@ -562,19 +562,20 @@ namespace ReFrontier.Services
                 _fileSystem.DeleteFile(outputPath);
             using var txtOutput = _fileSystem.CreateStreamWriter(outputPath, true, TextFileConfiguration.Cp932Encoding);
 
-            // Save the 16-byte header as meta if requested
+            // Save a copy of the file as meta if requested: PackFTXT keeps
+            // its header, the text block's tail and the data after the block.
             if (createLog)
             {
                 brInput.BaseStream.Seek(0, SeekOrigin.Begin);
-                byte[] header = brInput.ReadBytes(FileFormatConstants.FtxtHeaderLength);
+                byte[] original = brInput.ReadBytes((int)brInput.BaseStream.Length);
                 string metaPath = $"{input}{_config.MetaSuffix}";
-                _fileSystem.WriteAllBytes(metaPath, header);
+                _fileSystem.WriteAllBytes(metaPath, original);
             }
 
             // Read header
-            brInput.BaseStream.Seek(10, SeekOrigin.Begin);
-            int stringCount = brInput.ReadInt16();
-            brInput.ReadInt32(); // textBlockSize
+            brInput.BaseStream.Seek(FileFormatConstants.FtxtStringCountOffset, SeekOrigin.Begin);
+            int stringCount = brInput.ReadUInt16();
+            brInput.ReadUInt32(); // textBlockSize
 
             for (int i = 0; i < stringCount; i++)
             {

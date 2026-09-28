@@ -87,6 +87,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **ReFrontier**: FTXT text files unpack again. The header is 20 bytes, with the string
+  count at `0x0E` and the strings from `0x14`, but the reader took the count from `0x0A`
+  since the FTXT repacking change turned a relative seek into an absolute one. Real files
+  have 0 there, so the `.txt` came out empty: the four entries of `dat/extend/mazpac.bin`
+  now give their 156, 156, 154 and 154 strings. `--diff` and `--validate` used the same
+  16-byte layout and are fixed too; `--validate` also checks that the strings stay inside
+  the text block.
+- **ReFrontier**: `PackFTXT` rebuilds FTXT files instead of cutting them short. It wrote
+  a 16-byte header and the strings, dropping the text block's tail and everything after
+  the block (about 900 KB per mazpac.bin entry), and read the `.txt` as UTF-8 although the
+  unpacker writes CP932. The `.meta` saved on unpack is now a copy of the whole file:
+  packing keeps its header, tail and trailing data and updates the count and sizes, so an
+  unchanged `.txt` gives back the original bytes. Meta files from older versions only held
+  part of the header and are refused; unpack the file again to repack it.
 - **FrontierDataTool**: Importing quests no longer corrupts them. The importer stepped
   `0x128` bytes between quest entries while the reader consumes `0x160`, so every entry
   after the first in a section was written over the tail of the one before it: dumping,

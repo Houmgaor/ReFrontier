@@ -191,6 +191,39 @@ namespace ReFrontier.Tests
         }
 
         /// <summary>
+        /// Create an FTXT file laid out like the entries of dat/extend/mazpac.bin:
+        /// a 20-byte header, the strings, a tail of 0xFF and 8 bytes inside the text
+        /// block, then other data after the block.
+        /// </summary>
+        /// <param name="strings">Strings of the text block.</param>
+        /// <returns>FTXT file data.</returns>
+        public static byte[] CreateFtxt(params string[] strings)
+        {
+            byte[] block = [.. CreateBinaryWithStrings(strings), .. FtxtBlockTail];
+            using var ms = new MemoryStream();
+            using var bw = new BinaryWriter(ms);
+            bw.Write(FileMagic.FTXT);
+            bw.Write(FileFormatConstants.FtxtHeaderLength + block.Length + FtxtDataAfterBlock.Length);
+            bw.Write(0);
+            bw.Write((ushort)1);
+            bw.Write((ushort)strings.Length);
+            bw.Write(block.Length);
+            bw.Write(block);
+            bw.Write(FtxtDataAfterBlock);
+            return ms.ToArray();
+        }
+
+        /// <summary>
+        /// Tail of the text block of mazpac.bin's first entry.
+        /// </summary>
+        public static readonly byte[] FtxtBlockTail = [0xFF, 0x02, 0x00, 0x94, 0x25, 0x98, 0x54, 0x0C, 0x00];
+
+        /// <summary>
+        /// Start of the data after the text block in mazpac.bin's first entry.
+        /// </summary>
+        public static readonly byte[] FtxtDataAfterBlock = [0x00, 0x00, 0x00, 0x00, 0x05, 0x00, 0x05, 0x00];
+
+        /// <summary>
         /// Create a binary file with string pointers followed by string data.
         /// </summary>
         /// <param name="strings">Array of strings to include.</param>
