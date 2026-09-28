@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 
 using ReFrontier.Jpk;
@@ -55,6 +56,47 @@ namespace ReFrontier.Tests
         {
             var encoder = new JPKEncodeHFIRW();
             Assert.IsAssignableFrom<IJPKEncode>(encoder);
+        }
+
+        [Fact]
+        public void HFIRW_FibonacciDistributionLimitsCodeLength()
+        {
+            // With the 232 unused symbols, this distribution produces a 32-bit
+            // unconstrained Huffman tree and therefore exercises the 30-bit limiter.
+            int[] frequencies = new int[24];
+            frequencies[0] = 1;
+            frequencies[1] = 1;
+            int totalLength = 2;
+            for (int i = 2; i < frequencies.Length; i++)
+            {
+                frequencies[i] = frequencies[i - 1] + frequencies[i - 2];
+                totalLength += frequencies[i];
+            }
+
+            byte[] original = new byte[totalLength];
+            int offset = 0;
+            for (int symbol = 0; symbol < frequencies.Length; symbol++)
+            {
+                Array.Fill(original, (byte)symbol, offset, frequencies[symbol]);
+                offset += frequencies[symbol];
+            }
+
+            var encoder = new JPKEncodeHFIRW();
+            using var encodedStream = new MemoryStream();
+            encoder.ProcessOnEncode(original, encodedStream);
+            byte[] encoded = encodedStream.ToArray();
+
+            int maximumCodeLength = 0;
+            foreach (int codeLength in TestHelpers.ReadHuffmanCodeLengths(encoded))
+                maximumCodeLength = Math.Max(maximumCodeLength, codeLength);
+
+            Assert.Equal(30, maximumCodeLength);
+
+            var decoder = new JPKDecodeHFIRW();
+            byte[] decoded = new byte[original.Length];
+            using var decodeStream = new MemoryStream(encoded);
+            decoder.ProcessOnDecode(decodeStream, decoded, decoded.Length);
+            Assert.Equal(original, decoded);
         }
 
         #endregion

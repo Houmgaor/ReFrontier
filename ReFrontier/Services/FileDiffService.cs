@@ -403,7 +403,7 @@ namespace ReFrontier.Services
             if (buffer.Length < FileFormatConstants.FtxtHeaderLength)
                 return layer;
 
-            int stringCount = BitConverter.ToInt16(buffer, 10);
+            int stringCount = BitConverter.ToUInt16(buffer, FileFormatConstants.FtxtStringCountOffset);
             layer.Metadata["StringCount"] = stringCount.ToString();
 
             return layer; // FTXT is a terminal container — strings compared separately
@@ -653,8 +653,8 @@ namespace ReFrontier.Services
             if (buf1.Length < FileFormatConstants.FtxtHeaderLength || buf2.Length < FileFormatConstants.FtxtHeaderLength)
                 return diffs;
 
-            int count1 = BitConverter.ToInt16(buf1, 10);
-            int count2 = BitConverter.ToInt16(buf2, 10);
+            int count1 = BitConverter.ToUInt16(buf1, FileFormatConstants.FtxtStringCountOffset);
+            int count2 = BitConverter.ToUInt16(buf2, FileFormatConstants.FtxtStringCountOffset);
 
             if (count1 != count2)
             {

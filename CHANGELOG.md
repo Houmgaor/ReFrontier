@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Docs**: `docs/OFFSET_PROFILES.md` records what every PC client in the ecosystem does
+  with its offsets, and `docs/tools/scan_string_tables.py` and
+  `docs/tools/scan_quest_sections.py` find them. Both scripts are validated against the
+  `zz` profile, whose armour, weapon and item pointers and quest sections they recover
+  exactly. Findings: the armour pointers ascend in GG and earlier but descend in G10-ZZ;
+  the version byte at `0x04` cannot tell the layouts apart, since `pc` and `pc-gg` share
+  `0x59` and run in opposite directions; and the quest entry is `0x160` bytes in G10-ZZ,
+  `0xC0` in GG and G2 and `0xA8` in Forward.4 and 5, so those versions' quests need a
+  reader per layout rather than offsets alone.
+
 - **FrontierDataTool**: Offsets are data, not constants. Where the tool looks for armor,
   weapons, items, skills and quests now comes from an *offset profile*: a JSON file under
   `FrontierDataTool/Offsets/Profiles/`, embedded in the executable. `--offsets <id|file>`
@@ -87,6 +97,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   through the table ("The Blue Hunter's Nest") shows at the General Quests counter. Dump →
   import → dump is identical over all 2839 entries. A CSV dumped by an older version has
   1092 rows and is refused on import with a request to dump again (#20).
+- **ReFrontier**: FTXT text files unpack again. The header is 20 bytes, with the string
+  count at `0x0E` and the strings from `0x14`, but the reader took the count from `0x0A`
+  since the FTXT repacking change turned a relative seek into an absolute one. Real files
+  have 0 there, so the `.txt` came out empty: the four entries of `dat/extend/mazpac.bin`
+  now give their 156, 156, 154 and 154 strings. `--diff` and `--validate` used the same
+  16-byte layout and are fixed too; `--validate` also checks that the strings stay inside
+  the text block.
+- **ReFrontier**: `PackFTXT` rebuilds FTXT files instead of cutting them short. It wrote
+  a 16-byte header and the strings, dropping the text block's tail and everything after
+  the block (about 900 KB per mazpac.bin entry), and read the `.txt` as UTF-8 although the
+  unpacker writes CP932. The `.meta` saved on unpack is now a copy of the whole file:
+  packing keeps its header, tail and trailing data and updates the count and sizes, so an
+  unchanged `.txt` gives back the original bytes. The tail is 0xFF padding to a 4-byte
+  boundary, then 8 bytes; the padding is rewritten for the new strings, so those 8 bytes
+  stay aligned when the text changes length. Meta files from older versions only held
+  part of the header and are refused; unpack the file again to repack it.
 - **FrontierDataTool**: Importing quests no longer corrupts them. The importer stepped
   `0x128` bytes between quest entries while the reader consumes `0x160`, so every entry
   after the first in a section was written over the tail of the one before it: dumping,

@@ -168,21 +168,7 @@ namespace ReFrontier.Tests.Services
 
         private static byte[] BuildFtxtBuffer(params string[] strings)
         {
-            using var ms = new System.IO.MemoryStream();
-            using var bw = new System.IO.BinaryWriter(ms);
-
-            bw.Write((uint)FileMagic.FTXT);
-            bw.Write(new byte[6]); // padding to offset 10
-            bw.Write((short)strings.Length);
-            bw.Write((int)0); // text block size placeholder
-
-            foreach (var s in strings)
-            {
-                bw.Write(System.Text.Encoding.ASCII.GetBytes(s));
-                bw.Write((byte)0);
-            }
-
-            return ms.ToArray();
+            return TestDataFactory.CreateFtxt(strings);
         }
 
         #endregion
