@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 
 using LibReFrontier;
@@ -289,5 +290,40 @@ namespace ReFrontier.Tests.Services
 
 
 
+
+        [Fact]
+        public void PrintFTXT_ReadsStringsAfterTheHeader()
+        {
+            // Arrange
+            byte[] ftxt = TestDataFactory.CreateFtxt("駆け抜けろ！", "A\nB");
+            _fileSystem.AddFile("/test/text.ftxt", ftxt);
+            using var br = new BinaryReader(new MemoryStream(ftxt));
+
+            // Act
+            string output = _service.PrintFTXT("/test/text.ftxt", br);
+
+            // Assert
+            string text = TextFileConfiguration.Cp932Encoding.GetString(_fileSystem.ReadAllBytes(output));
+            Assert.Equal("駆け抜けろ！\r\nA\\nB\r\n".Replace("\r\n", Environment.NewLine), text);
+            Assert.False(_fileSystem.FileExists("/test/text.ftxt.meta"));
+        }
+
+        [Fact]
+        public void PrintFTXT_ThenPackFTXT_RebuildsTheFile()
+        {
+            // Arrange
+            byte[] ftxt = TestDataFactory.CreateFtxt("駆け抜けろ！", "", "Tab\there");
+            _fileSystem.AddFile("/test/text.ftxt", ftxt);
+            using var br = new BinaryReader(new MemoryStream(ftxt));
+
+            // Act
+            string output = _service.PrintFTXT("/test/text.ftxt", br, createLog: true);
+            _fileSystem.DeleteFile("/test/text.ftxt");
+            var packing = new PackingService(_fileSystem, _logger, _codecFactory, _config);
+            packing.PackFTXT(output, "/test/text.ftxt.meta", false);
+
+            // Assert
+            Assert.Equal(ftxt, _fileSystem.ReadAllBytes("/test/text.ftxt"));
+        }
     }
 }

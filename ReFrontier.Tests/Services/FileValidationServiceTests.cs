@@ -486,27 +486,31 @@ namespace ReFrontier.Tests.Services
         [Fact]
         public void ValidateFtxt_ValidFile_Passes()
         {
-            // Build a minimal FTXT file
-            // Header: 10 bytes padding, 2 bytes string count, 4 bytes text block size
-            using var ms = new System.IO.MemoryStream();
-            using var bw = new System.IO.BinaryWriter(ms);
-
-            // Magic at offset 0 (FTXT = 0x000B0000)
-            bw.Write((uint)FileMagic.FTXT);
-            bw.Write(new byte[6]);  // padding to offset 10
-            bw.Write((short)2);     // 2 strings
-            bw.Write((int)20);      // text block size (doesn't matter for validation)
-
-            // Two null-terminated strings
-            bw.Write(System.Text.Encoding.ASCII.GetBytes("hello"));
-            bw.Write((byte)0);
-            bw.Write(System.Text.Encoding.ASCII.GetBytes("world"));
-            bw.Write((byte)0);
-
-            byte[] buffer = ms.ToArray();
+            byte[] buffer = TestDataFactory.CreateFtxt("hello", "world");
             var checks = _service.ValidateFtxt(buffer);
 
             Assert.All(checks, c => Assert.True(c.Passed, $"{c.CheckName} failed: {c.Detail}"));
+            Assert.Contains(checks, c => c.CheckName == "StringCount" && c.Detail == "2 strings");
+        }
+
+        [Fact]
+        public void ValidateFtxt_StringsPastTextBlock_Fails()
+        {
+            byte[] buffer = TestDataFactory.CreateFtxt("hello", "world");
+            BitConverter.GetBytes(8).CopyTo(buffer, FileFormatConstants.FtxtTextBlockSizeOffset);
+            var checks = _service.ValidateFtxt(buffer);
+
+            Assert.Contains(checks, c => c.CheckName == "StringBounds" && !c.Passed);
+        }
+
+        [Fact]
+        public void ValidateFtxt_TextBlockPastEndOfFile_Fails()
+        {
+            byte[] buffer = TestDataFactory.CreateFtxt("hello");
+            BitConverter.GetBytes(0x1000).CopyTo(buffer, FileFormatConstants.FtxtTextBlockSizeOffset);
+            var checks = _service.ValidateFtxt(buffer);
+
+            Assert.Contains(checks, c => c.CheckName == "TextBlockSize" && !c.Passed);
         }
 
         #endregion

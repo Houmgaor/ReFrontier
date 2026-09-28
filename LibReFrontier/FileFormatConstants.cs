@@ -68,8 +68,25 @@ public static class FileFormatConstants
     public const int StageContainerRestEntrySize = 0x0C;
 
     /// <summary>
-    /// Header length for FTXT text files (16 bytes).
-    /// Contains: 10 bytes padding/unknown, 2 bytes string count, 4 bytes text block size.
+    /// Header length for FTXT text files (20 bytes). The strings start right after it.
+    /// Contains: magic, u32 file size, u32 0, u16 1, u16 string count, u32 text block size.
     /// </summary>
-    public const int FtxtHeaderLength = 0x10;
+    public const int FtxtHeaderLength = 0x14;
+
+    /// <summary>
+    /// Offset of the FTXT file size (u32).
+    /// </summary>
+    public const int FtxtFileSizeOffset = 0x04;
+
+    /// <summary>
+    /// Offset of the FTXT string count (u16).
+    /// </summary>
+    public const int FtxtStringCountOffset = 0x0E;
+
+    /// <summary>
+    /// Offset of the FTXT text block size (u32). The block starts at
+    /// <see cref="FtxtHeaderLength"/> and holds the strings, then a short tail.
+    /// Other data may follow the block.
+    /// </summary>
+    public const int FtxtTextBlockSizeOffset = 0x10;
 }

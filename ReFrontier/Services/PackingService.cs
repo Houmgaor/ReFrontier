@@ -658,11 +658,14 @@ namespace ReFrontier.Services
         /// <summary>
         /// Pack an FTXT text file from extracted .txt format.
         ///
-        /// The input file should be a .txt file with one string per line.
-        /// Newlines within strings are represented as &lt;NEWLINE&gt; markers.
+        /// The input file should be a .txt file with one string per line, with
+        /// newlines, tabs and backslashes escaped as the unpacker writes them.
+        /// The strings replace the original ones; the header, the text block's
+        /// tail (0xFF and a few bytes) and any data after the block are kept
+        /// from the meta file, and the header's sizes are updated.
         /// </summary>
         /// <param name="inputFile">Input .txt file path.</param>
-        /// <param name="metaFile">Meta file containing the original 16-byte header.</param>
+        /// <param name="metaFile">Meta file: a copy of the original FTXT file, written by the unpacker with --saveMeta.</param>
         /// <param name="cleanUp">Remove input and meta files after packing.</param>
         /// <param name="verbose">Show per-file processing messages.</param>
         /// <returns>Output file path.</returns>
@@ -684,19 +687,30 @@ namespace ReFrontier.Services
                 );
             }
 
-            // Read meta (original header)
+            // Read meta (the original file)
             byte[] meta = _fileSystem.ReadAllBytes(metaFile);
             if (meta.Length < FileFormatConstants.FtxtHeaderLength)
             {
                 throw new PackingException(
-                    $"META file {metaFile} is too small: expected {FileFormatConstants.FtxtHeaderLength} bytes, got {meta.Length}.",
+                    $"META file {metaFile} is too small: expected at least {FileFormatConstants.FtxtHeaderLength} bytes, got {meta.Length}. " +
+                    "Meta files from older versions only kept part of the header: extract the original file again with --saveMeta.",
                     inputFile
                 );
             }
+            int stringsEnd = FindFtxtStringsEnd(meta, out int blockEnd)
+                ?? throw new PackingException(
+                    $"META file {metaFile} is not the original FTXT file: its strings run past its text block. " +
+                    "Extract the original file again with --saveMeta.",
+                    inputFile
+                );
 
-            // Read strings from text file
-            string[] lines = _fileSystem.ReadAllLines(inputFile);
-            List<byte[]> encodedStrings = new();
+            // Read strings from the text file, in the unpacker's encoding: one
+            // string per line, each line ended by a newline
+            List<string> lines = [.. shiftJis.GetString(_fileSystem.ReadAllBytes(inputFile))
+                .Split(["\r\n", "\n"], StringSplitOptions.None)];
+            if (lines.Count > 0 && lines[^1].Length == 0)
+                lines.RemoveAt(lines.Count - 1);
+            using var text = new MemoryStream();
 
             foreach (string line in lines)
             {
@@ -707,40 +721,34 @@ namespace ReFrontier.Services
                     .Replace("\\t", "\t")
                     .Replace("\\\\", "\\");
                 byte[] encoded = shiftJis.GetBytes(processed);
-                encodedStrings.Add(encoded);
+                text.Write(encoded);
+                text.WriteByte(0); // null terminator
             }
 
-            // Calculate text block size (sum of encoded lengths + null terminators)
-            int textBlockSize = 0;
-            foreach (byte[] encoded in encodedStrings)
-            {
-                textBlockSize += encoded.Length + 1; // +1 for null terminator
-            }
+            // The text block is the strings, then the original block's tail
+            text.Write(meta, stringsEnd, blockEnd - stringsEnd);
+            int textBlockSize = (int)text.Length;
 
-            // Build output: 16-byte header + string data
+            byte[] output = new byte[FileFormatConstants.FtxtHeaderLength + textBlockSize + (meta.Length - blockEnd)];
+            Array.Copy(meta, output, FileFormatConstants.FtxtHeaderLength);
+            text.ToArray().CopyTo(output, FileFormatConstants.FtxtHeaderLength);
+            Array.Copy(meta, blockEnd, output, FileFormatConstants.FtxtHeaderLength + textBlockSize, meta.Length - blockEnd);
+
+            BitConverter.GetBytes((ushort)lines.Count).CopyTo(output, FileFormatConstants.FtxtStringCountOffset);
+            BitConverter.GetBytes(textBlockSize).CopyTo(output, FileFormatConstants.FtxtTextBlockSizeOffset);
+            // The file size field holds the length of a standalone file; keep other values
+            if (BitConverter.ToUInt32(meta, FileFormatConstants.FtxtFileSizeOffset) == meta.Length)
+                BitConverter.GetBytes(output.Length).CopyTo(output, FileFormatConstants.FtxtFileSizeOffset);
+
             // From file.ftxt.txt to file.ftxt
             string outputFile = Path.Join(
                 Path.GetDirectoryName(inputFile),
                 Path.GetFileNameWithoutExtension(inputFile)
             );
-
-            using var stream = _fileSystem.OpenWrite(outputFile);
-            using BinaryWriter bw = new(stream);
-
-            // Write header: copy first 10 bytes from meta, then update count and size
-            bw.Write(meta, 0, 10);
-            bw.Write((short)encodedStrings.Count);
-            bw.Write(textBlockSize);
-
-            // Write strings with null terminators
-            foreach (byte[] encoded in encodedStrings)
-            {
-                bw.Write(encoded);
-                bw.Write((byte)0); // null terminator
-            }
+            _fileSystem.WriteAllBytes(outputFile, output);
 
             if (verbose)
-                _logger.PrintWithSeparator($"FTXT packed to {outputFile} ({encodedStrings.Count} strings).", false);
+                _logger.PrintWithSeparator($"FTXT packed to {outputFile} ({lines.Count} strings).", false);
 
             if (cleanUp)
             {
@@ -749,6 +757,30 @@ namespace ReFrontier.Services
             }
 
             return outputFile;
+        }
+
+        /// <summary>
+        /// Find where the strings of an FTXT file end.
+        /// </summary>
+        /// <param name="data">FTXT file data.</param>
+        /// <param name="blockEnd">End of the text block, from the header.</param>
+        /// <returns>Offset after the last string's terminator, or null if the
+        /// strings run past the text block.</returns>
+        internal static int? FindFtxtStringsEnd(byte[] data, out int blockEnd)
+        {
+            int count = BitConverter.ToUInt16(data, FileFormatConstants.FtxtStringCountOffset);
+            long end = FileFormatConstants.FtxtHeaderLength
+                + (long)BitConverter.ToUInt32(data, FileFormatConstants.FtxtTextBlockSizeOffset);
+            blockEnd = (int)Math.Min(end, data.Length);
+            int pos = FileFormatConstants.FtxtHeaderLength;
+            for (int i = 0; i < count; i++)
+            {
+                int nullPos = Array.IndexOf(data, (byte)0, pos, blockEnd - pos);
+                if (nullPos < 0)
+                    return null;
+                pos = nullPos + 1;
+            }
+            return pos;
         }
     }
 }

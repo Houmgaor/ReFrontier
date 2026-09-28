@@ -709,18 +709,29 @@ namespace ReFrontier.Services
                 Detail = $"{buffer.Length} bytes"
             });
 
-            // String count at offset 10 (2 bytes)
-            int stringCount = BitConverter.ToInt16(buffer, 10);
-            bool countValid = stringCount >= 0;
+            int stringCount = BitConverter.ToUInt16(buffer, FileFormatConstants.FtxtStringCountOffset);
+            long blockEnd = FileFormatConstants.FtxtHeaderLength
+                + (long)BitConverter.ToUInt32(buffer, FileFormatConstants.FtxtTextBlockSizeOffset);
             checks.Add(new ValidationCheck
             {
                 Layer = "FTXT",
                 CheckName = "StringCount",
-                Passed = countValid,
+                Passed = true,
                 Detail = $"{stringCount} strings"
             });
 
-            if (!countValid)
+            bool blockValid = blockEnd <= buffer.Length;
+            checks.Add(new ValidationCheck
+            {
+                Layer = "FTXT",
+                CheckName = "TextBlockSize",
+                Passed = blockValid,
+                Detail = blockValid
+                    ? $"Text block ends at 0x{blockEnd:X8}"
+                    : $"Text block ends at 0x{blockEnd:X8}, past the end of the file (0x{buffer.Length:X8})"
+            });
+
+            if (!blockValid)
                 return checks;
 
             // Try reading all strings
@@ -730,28 +741,28 @@ namespace ReFrontier.Services
                 int pos = FileFormatConstants.FtxtHeaderLength;
                 for (int i = 0; i < stringCount; i++)
                 {
-                    if (pos >= buffer.Length)
+                    if (pos >= blockEnd)
                     {
                         checks.Add(new ValidationCheck
                         {
                             Layer = "FTXT",
                             CheckName = "StringBounds",
                             Passed = false,
-                            Detail = $"String {i} at offset 0x{pos:X8} overflows buffer"
+                            Detail = $"String {i} at offset 0x{pos:X8} is past the text block"
                         });
                         return checks;
                     }
 
                     // Find null terminator
-                    int nullPos = Array.IndexOf(buffer, (byte)0, pos);
-                    if (nullPos < 0 || nullPos > buffer.Length)
+                    int nullPos = Array.IndexOf(buffer, (byte)0, pos, (int)blockEnd - pos);
+                    if (nullPos < 0)
                     {
                         checks.Add(new ValidationCheck
                         {
                             Layer = "FTXT",
                             CheckName = "StringBounds",
                             Passed = false,
-                            Detail = $"String {i} at offset 0x{pos:X8} has no null terminator"
+                            Detail = $"String {i} at offset 0x{pos:X8} runs past the text block"
                         });
                         return checks;
                     }
