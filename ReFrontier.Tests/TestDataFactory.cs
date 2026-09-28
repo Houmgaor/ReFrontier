@@ -192,14 +192,15 @@ namespace ReFrontier.Tests
 
         /// <summary>
         /// Create an FTXT file laid out like the entries of dat/extend/mazpac.bin:
-        /// a 20-byte header, the strings, a tail of 0xFF and 8 bytes inside the text
-        /// block, then other data after the block.
+        /// a 20-byte header, the strings, a tail of 0xFF padding to a 4-byte boundary and
+        /// 8 bytes inside the text block, then other data after the block.
         /// </summary>
         /// <param name="strings">Strings of the text block.</param>
         /// <returns>FTXT file data.</returns>
         public static byte[] CreateFtxt(params string[] strings)
         {
-            byte[] block = [.. CreateBinaryWithStrings(strings), .. FtxtBlockTail];
+            byte[] text = CreateBinaryWithStrings(strings);
+            byte[] block = [.. text, .. FtxtTailPadding(FileFormatConstants.FtxtHeaderLength + text.Length), .. FtxtBlockTail];
             using var ms = new MemoryStream();
             using var bw = new BinaryWriter(ms);
             bw.Write(FileMagic.FTXT);
@@ -214,9 +215,20 @@ namespace ReFrontier.Tests
         }
 
         /// <summary>
-        /// Tail of the text block of mazpac.bin's first entry.
+        /// 0xFF padding after strings that end at <paramref name="stringsEnd"/>: up to the
+        /// next 4-byte boundary, at least one byte.
         /// </summary>
-        public static readonly byte[] FtxtBlockTail = [0xFF, 0x02, 0x00, 0x94, 0x25, 0x98, 0x54, 0x0C, 0x00];
+        public static byte[] FtxtTailPadding(int stringsEnd)
+        {
+            byte[] padding = new byte[4 - stringsEnd % 4];
+            Array.Fill(padding, (byte)0xFF);
+            return padding;
+        }
+
+        /// <summary>
+        /// Tail of the text block of mazpac.bin's first entry, after its 0xFF padding.
+        /// </summary>
+        public static readonly byte[] FtxtBlockTail = [0x02, 0x00, 0x94, 0x25, 0x98, 0x54, 0x0C, 0x00];
 
         /// <summary>
         /// Start of the data after the text block in mazpac.bin's first entry.

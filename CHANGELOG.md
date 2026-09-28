@@ -99,7 +99,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the block (about 900 KB per mazpac.bin entry), and read the `.txt` as UTF-8 although the
   unpacker writes CP932. The `.meta` saved on unpack is now a copy of the whole file:
   packing keeps its header, tail and trailing data and updates the count and sizes, so an
-  unchanged `.txt` gives back the original bytes. Meta files from older versions only held
+  unchanged `.txt` gives back the original bytes. The tail is 0xFF padding to a 4-byte
+  boundary, then 8 bytes; the padding is rewritten for the new strings, so those 8 bytes
+  stay aligned when the text changes length. Meta files from older versions only held
   part of the header and are refused; unpack the file again to repack it.
 - **FrontierDataTool**: Importing quests no longer corrupts them. The importer stepped
   `0x128` bytes between quest entries while the reader consumes `0x160`, so every entry

@@ -273,13 +273,15 @@ Sequential null-terminated Shift-JIS (CP932) strings, as in the entries of
 
 ### Layout
 
-The text block starts at 0x14: the strings, then a short tail (0xFF and 8 bytes in
-mazpac.bin). Other data may follow the block; the mazpac.bin entries carry about 900 KB
+The text block starts at 0x14: the strings, then a short tail. In mazpac.bin the tail is
+0xFF padding up to a 4-byte boundary (1 to 3 bytes), then 8 bytes. Other data may follow the block; the mazpac.bin entries carry about 900 KB
 after their 154 or 156 strings.
 
 Unpacking with metadata saves a copy of the whole file as `.meta`. `PackFTXT` writes the
 new strings in its place, keeps the tail and the data after the block, and updates the
-string count, the block size and, when it held the file's length, the file size.
+string count, the block size and, when it held the file's length, the file size. The tail's
+0xFF padding is rewritten for the new end of the strings, so the 8 bytes stay aligned; it
+keeps at least one 0xFF, and a tail without this layout is copied as it is.
 
 ## File Detection
 
