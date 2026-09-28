@@ -1,9 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 using LibReFrontier.Abstractions;
-
-using System.Collections.Generic;
 
 using ReFrontier.CLI;
 using ReFrontier.Jpk;
