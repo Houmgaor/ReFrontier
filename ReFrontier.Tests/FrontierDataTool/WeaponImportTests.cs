@@ -6,9 +6,9 @@ using System.Text;
 using FrontierDataTool.Services;
 using FrontierDataTool.Structs;
 
-using ReFrontier.Tests.Mocks;
-
 using LibReFrontier;
+
+using ReFrontier.Tests.Mocks;
 
 namespace ReFrontier.Tests.DataToolTests
 {
