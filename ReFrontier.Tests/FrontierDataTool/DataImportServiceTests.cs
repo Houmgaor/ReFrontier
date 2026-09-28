@@ -294,6 +294,44 @@ namespace ReFrontier.Tests.DataToolTests
         }
 
         [Fact]
+        public void ImportQuestDataInternal_WithHeaderTable_WritesEachRowToItsEntry()
+        {
+            // Arrange: rows go to the table's entries in file order (0x400, 0x700, 0x860)
+            byte[] mhfinf = ReFrontier.Tests.Offsets.QuestTableTests.CreateMhfinfWithTable();
+            string csv = CreateQuestCsv(3);
+
+            _fileSystem.AddFile("/test/mhfinf.bin", mhfinf);
+            _fileSystem.AddFile("/test/InfQuests.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csv));
+
+            // Act
+            _service.ImportQuestDataInternal("/test/mhfinf.bin", "/test/InfQuests.csv");
+
+            // Assert: QuestId sits at entry + 0x2E
+            byte[] output = _fileSystem.ReadAllBytes("output/mhfinf.bin");
+            Assert.Equal(1, BitConverter.ToInt16(output, 0x400 + 0x2E));
+            Assert.Equal(2, BitConverter.ToInt16(output, 0x700 + 0x2E));
+            Assert.Equal(3, BitConverter.ToInt16(output, 0x860 + 0x2E));
+        }
+
+        [Fact]
+        public void ImportQuestDataInternal_WithHeaderTable_AbortsOnProfileSizedCsv()
+        {
+            // Arrange: a CSV sized for the profile's sections, as older versions dumped
+            byte[] mhfinf = ReFrontier.Tests.Offsets.QuestTableTests.CreateMhfinfWithTable();
+            string csv = CreateQuestCsv(4);
+
+            _fileSystem.AddFile("/test/mhfinf.bin", mhfinf);
+            _fileSystem.AddFile("/test/InfQuests.csv", TextFileConfiguration.Cp932Encoding.GetBytes(csv));
+
+            // Act
+            _service.ImportQuestDataInternal("/test/mhfinf.bin", "/test/InfQuests.csv");
+
+            // Assert
+            Assert.True(_logger.ContainsMessage("dump again"));
+            Assert.False(_fileSystem.FileExists("output/mhfinf.bin"));
+        }
+
+        [Fact]
         public void ImportQuestDataInternal_LogsNoPointerOffsetsWarning()
         {
             // Arrange - need to create exactly the right number of quest entries

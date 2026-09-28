@@ -574,23 +574,19 @@ namespace FrontierDataTool.Services
         /// </summary>
         public void DumpQuestData(string mhfinf)
         {
-            var questSections = _offsets.MhfInf.QuestSections;
+            byte[] data = _fileSystem.ReadAllBytes(mhfinf);
+            var entryOffsets = QuestTable.Resolve(data, _offsets.MhfInf, out string source);
+            _logger.WriteLine(source);
 
-            using var msInput = new MemoryStream(_fileSystem.ReadAllBytes(mhfinf));
+            using var msInput = new MemoryStream(data);
             using var brInput = new BinaryReader(msInput);
 
-            var quests = new QuestData[_offsets.MhfInf.TotalQuestCount];
-            int currentCount = 0;
-
-            foreach (var section in questSections)
+            var quests = new QuestData[entryOffsets.Count];
+            for (int i = 0; i < entryOffsets.Count; i++)
             {
-                brInput.BaseStream.Seek(section.Offset, SeekOrigin.Begin);
-                for (int i = 0; i < section.Count; i++)
-                {
-                    quests[currentCount + i] = _binaryReader.ReadQuestEntry(brInput);
-                    _logger.WriteLine(brInput.BaseStream.Position.ToString("X8"));
-                }
-                currentCount += section.Count;
+                brInput.BaseStream.Seek(entryOffsets[i], SeekOrigin.Begin);
+                quests[i] = _binaryReader.ReadQuestEntry(brInput);
+                _logger.WriteLine(brInput.BaseStream.Position.ToString("X8"));
             }
 
             // Write output

@@ -395,40 +395,32 @@ namespace FrontierDataTool.Services
             var questEntries = LoadQuestCsv(csvPath);
             _logger.WriteLine($"Read {questEntries.Count} quest entries from CSV.");
 
-            // Calculate expected total count
-            var questSections = _offsets.MhfInf.QuestSections;
-            int expectedCount = _offsets.MhfInf.TotalQuestCount;
+            // Rows map to entries in the order the dump wrote them, so both sides must resolve
+            // the same entry list.
+            byte[] mhfinfData = _fileSystem.ReadAllBytes(mhfinf);
+            var entryOffsets = QuestTable.Resolve(mhfinfData, _offsets.MhfInf, out string source);
+            _logger.WriteLine(source);
 
-            if (questEntries.Count != expectedCount)
+            if (questEntries.Count != entryOffsets.Count)
             {
-                _logger.Error($"Warning: CSV has {questEntries.Count} entries, but mhfinf expects {expectedCount}. Aborting.");
+                _logger.Error(
+                    $"Warning: CSV has {questEntries.Count} entries, but mhfinf expects {entryOffsets.Count}. " +
+                    "A CSV dumped by an older version holds fewer quests: dump again. Aborting.");
                 return;
             }
 
             // Load mhfinf.bin into a resizable stream
-            byte[] mhfinfData = _fileSystem.ReadAllBytes(mhfinf);
             using var ms = new MemoryStream();
             ms.Write(mhfinfData, 0, mhfinfData.Length);
             using var bw = new BinaryWriter(ms);
 
-            int currentEntry = 0;
-
-            foreach (var section in questSections)
+            _logger.WriteLine($"Writing {entryOffsets.Count} quest entries.");
+            for (int i = 0; i < entryOffsets.Count; i++)
             {
-                _logger.WriteLine($"Writing {section.Count} quest entries starting at 0x{section.Offset:X8}");
-
-                bw.BaseStream.Seek(section.Offset, SeekOrigin.Begin);
-
-                for (int i = 0; i < section.Count; i++)
-                {
-                    long entryStart = bw.BaseStream.Position;
-                    _binaryReader.WriteQuestEntry(bw, questEntries[currentEntry]);
-                    currentEntry++;
-
-                    // Step over the whole entry, not just the fields written: the rest of
-                    // it holds values this tool does not model, which must survive untouched.
-                    bw.BaseStream.Seek(entryStart + _offsets.MhfInf.QuestEntrySize, SeekOrigin.Begin);
-                }
+                // Seek to each entry rather than stepping: the rest of an entry holds values
+                // this tool does not model, which must survive untouched.
+                bw.BaseStream.Seek(entryOffsets[i], SeekOrigin.Begin);
+                _binaryReader.WriteQuestEntry(bw, questEntries[i]);
             }
 
             // Build and append string table for quest text

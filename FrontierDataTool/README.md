@@ -147,9 +147,14 @@ move over in two steps.
 
 ## Game versions and offset profiles
 
-The data has no self-describing structure: the tool finds armor, skills and quests at
+Most of the data has no self-describing structure: the tool finds armor and skills at
 offsets that differ between game versions. Those offsets live in **offset profiles**, JSON
 files under `FrontierDataTool/Offsets/Profiles/`, embedded in the executable.
+
+Quests are the exception. `mhfinf.bin` indexes its own quests: the header word at `0x14`
+points to a table of sections, each listing pointers to its entries, and the tool reads
+every entry through it (2839 on the ZZ PC client). A profile's `questSections` are only
+used for a file whose header holds no such table.
 
 | Profile | Covers |
 |---------|--------|

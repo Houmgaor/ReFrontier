@@ -87,6 +87,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **FrontierDataTool**: Every quest is dumped, not a third of them. The quest sections in
+  the offset profile named 13 blocks and 1092 entries, but `mhfinf.bin` holds **2839**: its
+  header word at `0x14` points to a table of 44 sections (`{u16 endId, u16 slots, u32 list}`,
+  count at the pointer in `0x10`), each listing pointers to its entries. Dump and import now
+  read that table, so the entry list comes from the file rather than from hand-found
+  offsets; the profile's sections remain as a fallback for a file with no table. The running
+  client relocates exactly these pointers when it loads the file, and a quest found only
+  through the table ("The Blue Hunter's Nest") shows at the General Quests counter. Dump →
+  import → dump is identical over all 2839 entries. A CSV dumped by an older version has
+  1092 rows and is refused on import with a request to dump again (#20).
 - **ReFrontier**: FTXT text files unpack again. The header is 20 bytes, with the string
   count at `0x0E` and the strings from `0x14`, but the reader took the count from `0x0A`
   since the FTXT repacking change turned a relative seek into an absolute one. Real files
