@@ -253,15 +253,50 @@ namespace ReFrontier.Tests.Services
             // Assert
             byte[] result = _fileSystem.ReadAllBytes("/test/file.ftxt");
             byte[] strings = TestDataFactory.CreateBinaryWithStrings("Run through!", "B", "New");
+            byte[] padding = TestDataFactory.FtxtTailPadding(FileFormatConstants.FtxtHeaderLength + strings.Length);
             Assert.Equal(original[..4], result[..4]);
             Assert.Equal(original[0x08..0x0E], result[0x08..0x0E]);
             Assert.Equal(3, BitConverter.ToUInt16(result, FileFormatConstants.FtxtStringCountOffset));
-            Assert.Equal(strings.Length + TestDataFactory.FtxtBlockTail.Length,
+            Assert.Equal(strings.Length + padding.Length + TestDataFactory.FtxtBlockTail.Length,
                 BitConverter.ToInt32(result, FileFormatConstants.FtxtTextBlockSizeOffset));
             Assert.Equal(result.Length, BitConverter.ToInt32(result, FileFormatConstants.FtxtFileSizeOffset));
             Assert.Equal(
-                [.. strings, .. TestDataFactory.FtxtBlockTail, .. TestDataFactory.FtxtDataAfterBlock],
+                [.. strings, .. padding, .. TestDataFactory.FtxtBlockTail, .. TestDataFactory.FtxtDataAfterBlock],
                 result[FileFormatConstants.FtxtHeaderLength..]);
+        }
+
+        [Theory]
+        [InlineData("A")]    // strings end at 0x16: two 0xFF
+        [InlineData("AB")]   // 0x17: one 0xFF
+        [InlineData("ABC")]  // 0x18: on a boundary, four 0xFF
+        [InlineData("ABCD")] // 0x19: three 0xFF
+        public void PackFTXT_RealignsTailPadding(string text)
+        {
+            // Arrange: the original strings end at 0x1B, with one 0xFF
+            _fileSystem.AddFile("/test/file.ftxt.meta", TestDataFactory.CreateFtxt("ABCDEF"));
+            _fileSystem.AddFile("/test/file.ftxt.txt", text);
+
+            // Act
+            _service.PackFTXT("/test/file.ftxt.txt", "/test/file.ftxt.meta", false);
+
+            // Assert
+            byte[] result = _fileSystem.ReadAllBytes("/test/file.ftxt");
+            int stringsEnd = FileFormatConstants.FtxtHeaderLength + text.Length + 1;
+            int tailStart = stringsEnd + TestDataFactory.FtxtTailPadding(stringsEnd).Length;
+            Assert.Equal(0, tailStart % 4);
+            Assert.All(result[stringsEnd..tailStart], b => Assert.Equal(0xFF, b));
+            Assert.Equal(
+                [.. TestDataFactory.FtxtBlockTail, .. TestDataFactory.FtxtDataAfterBlock],
+                result[tailStart..]);
+        }
+
+        [Fact]
+        public void RepadFtxtTail_OtherLayouts_AreKept()
+        {
+            byte[] noPadding = [0x02, 0x00, 0x94, 0x25];
+            byte[] unaligned = [0xFF, 0xFF, 0x02, 0x00];
+            Assert.Equal(noPadding, PackingService.RepadFtxtTail(noPadding, 0x13, 0x15));
+            Assert.Equal(unaligned, PackingService.RepadFtxtTail(unaligned, 0x13, 0x15));
         }
 
         [Fact]

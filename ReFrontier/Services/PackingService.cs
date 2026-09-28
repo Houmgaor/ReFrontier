@@ -661,7 +661,8 @@ namespace ReFrontier.Services
         /// The input file should be a .txt file with one string per line, with
         /// newlines, tabs and backslashes escaped as the unpacker writes them.
         /// The strings replace the original ones; the header, the text block's
-        /// tail (0xFF and a few bytes) and any data after the block are kept
+        /// tail and any data after the block are kept (the tail's 0xFF padding
+        /// re-aligned for the new strings, see <see cref="RepadFtxtTail"/>)
         /// from the meta file, and the header's sizes are updated.
         /// </summary>
         /// <param name="inputFile">Input .txt file path.</param>
@@ -726,7 +727,8 @@ namespace ReFrontier.Services
             }
 
             // The text block is the strings, then the original block's tail
-            text.Write(meta, stringsEnd, blockEnd - stringsEnd);
+            text.Write(RepadFtxtTail(meta[stringsEnd..blockEnd], stringsEnd,
+                FileFormatConstants.FtxtHeaderLength + (int)text.Length));
             int textBlockSize = (int)text.Length;
 
             byte[] output = new byte[FileFormatConstants.FtxtHeaderLength + textBlockSize + (meta.Length - blockEnd)];
@@ -757,6 +759,31 @@ namespace ReFrontier.Services
             }
 
             return outputFile;
+        }
+
+        /// <summary>
+        /// Re-pad the tail of an FTXT text block for strings that now end elsewhere.
+        ///
+        /// In mazpac.bin the tail is 0xFF padding up to a 4-byte boundary (1 to 3 bytes
+        /// in the files seen), then 8 bytes. The padding is rewritten for the new end of
+        /// the strings, with at least one 0xFF: strings that end on a boundary get four.
+        /// A tail that doesn't follow this layout is kept as it is.
+        /// </summary>
+        /// <param name="tail">Bytes between the original strings and the end of the text block.</param>
+        /// <param name="oldStringsEnd">File offset where the original strings ended.</param>
+        /// <param name="newStringsEnd">File offset where the new strings end.</param>
+        /// <returns>The tail to write after the new strings.</returns>
+        internal static byte[] RepadFtxtTail(byte[] tail, int oldStringsEnd, int newStringsEnd)
+        {
+            int padding = 0;
+            while (padding < tail.Length && tail[padding] == 0xFF)
+                padding++;
+            if (padding == 0 || (oldStringsEnd + padding) % 4 != 0)
+                return tail;
+            byte[] result = new byte[4 - newStringsEnd % 4 + tail.Length - padding];
+            Array.Fill(result, (byte)0xFF, 0, 4 - newStringsEnd % 4);
+            Array.Copy(tail, padding, result, 4 - newStringsEnd % 4, tail.Length - padding);
+            return result;
         }
 
         /// <summary>
